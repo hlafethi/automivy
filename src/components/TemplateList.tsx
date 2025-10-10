@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Eye, EyeOff, FileJson, Loader2, Rocket } from 'lucide-react';
+import { Trash2, Eye, EyeOff, FileJson, Loader2, Rocket, Edit } from 'lucide-react';
 import { templateService } from '../services';
 import { Template } from '../types';
 import { WorkflowDeployModal } from './WorkflowDeployModal';
+import { TemplateEditModal } from './TemplateEditModal';
 import { useAuth } from '../contexts/AuthContext';
 
 export function TemplateList() {
@@ -11,6 +12,7 @@ export function TemplateList() {
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [deployTemplate, setDeployTemplate] = useState<Template | null>(null);
+  const [editTemplate, setEditTemplate] = useState<Template | null>(null);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -38,6 +40,10 @@ export function TemplateList() {
     } catch (error) {
       alert('Failed to delete template');
     }
+  };
+
+  const handleEdit = (template: Template) => {
+    setEditTemplate(template);
   };
 
   const handleToggleVisibility = async (templateId: string, currentVisible: boolean) => {
@@ -141,6 +147,13 @@ export function TemplateList() {
                   <Rocket className="w-5 h-5" />
                 </button>
                 <button
+                  onClick={() => handleEdit(template)}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                  title="Edit template"
+                >
+                  <Edit className="w-5 h-5" />
+                </button>
+                <button
                   onClick={() => handleToggleVisibility(template.id, template.visible)}
                   className={`p-2 rounded-lg transition ${
                     template.visible 
@@ -199,6 +212,17 @@ export function TemplateList() {
           onClose={() => setDeployTemplate(null)}
           onSuccess={() => {
             setDeployTemplate(null);
+            loadTemplates();
+          }}
+        />
+      )}
+
+      {editTemplate && (
+        <TemplateEditModal
+          template={editTemplate}
+          onClose={() => setEditTemplate(null)}
+          onSuccess={() => {
+            setEditTemplate(null);
             loadTemplates();
           }}
         />
