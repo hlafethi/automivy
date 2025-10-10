@@ -32,13 +32,20 @@ router.get('/visible', async (req, res) => {
 // Récupérer un template par ID
 router.get('/:id', async (req, res) => {
   try {
-    const template = await db.getTemplateById(req.params.id, req.user.userId);
+    console.log('🔍 [Backend] GET /templates/:id');
+    console.log('🔍 [Backend] Template ID:', req.params.id);
+    console.log('🔍 [Backend] User ID:', req.user.userId);
+    
+    const template = await db.getTemplateByIdForUser(req.params.id, req.user.userId);
     if (!template) {
+      console.log('❌ [Backend] Template non trouvé');
       return res.status(404).json({ error: 'Template not found' });
     }
+    
+    console.log('✅ [Backend] Template trouvé:', template.name);
     res.json(template);
   } catch (error) {
-    console.error('Get template error:', error);
+    console.error('❌ [Backend] Get template error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

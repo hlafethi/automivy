@@ -114,13 +114,51 @@ export const n8nService = {
   },
 
   async activateWorkflow(workflowId: string): Promise<void> {
-    // Some n8n versions use PUT instead of PATCH for updates
-    await callN8nProxy('PUT', `/workflows/${workflowId}`, { active: true });
+    console.log(`🔧 [n8nService] Activation workflow ${workflowId}`);
+    try {
+      // Récupérer le workflow pour obtenir le nom
+      const workflow = await callN8nProxy('GET', `/workflows/${workflowId}`);
+      console.log('🔍 [n8nService] Workflow récupéré:', workflow.name);
+      
+      // Utiliser PUT pour mettre à jour le workflow complet
+      try {
+        const { id, ...updatedWorkflow } = workflow;
+        updatedWorkflow.active = true;
+        
+        await callN8nProxy('PUT', `/workflows/${workflowId}`, updatedWorkflow);
+        console.log('✅ [n8nService] Workflow activé via API v1 (PUT)');
+      } catch (apiError) {
+        console.error('❌ [n8nService] Erreur activation workflow:', apiError);
+        throw apiError;
+      }
+    } catch (error) {
+      console.error('❌ [n8nService] Erreur activation workflow:', error);
+      throw error;
+    }
   },
 
   async deactivateWorkflow(workflowId: string): Promise<void> {
-    // Some n8n versions use PUT instead of PATCH for updates
-    await callN8nProxy('PUT', `/workflows/${workflowId}`, { active: false });
+    console.log(`🔧 [n8nService] Désactivation workflow ${workflowId}`);
+    try {
+      // Récupérer le workflow pour obtenir le nom
+      const workflow = await callN8nProxy('GET', `/workflows/${workflowId}`);
+      console.log('🔍 [n8nService] Workflow récupéré:', workflow.name);
+      
+      // Utiliser PUT pour mettre à jour le workflow complet
+      try {
+        const { id, ...updatedWorkflow } = workflow;
+        updatedWorkflow.active = false;
+        
+        await callN8nProxy('PUT', `/workflows/${workflowId}`, updatedWorkflow);
+        console.log('✅ [n8nService] Workflow désactivé via API v1 (PUT)');
+      } catch (apiError) {
+        console.error('❌ [n8nService] Erreur désactivation workflow:', apiError);
+        throw apiError;
+      }
+    } catch (error) {
+      console.error('❌ [n8nService] Erreur désactivation workflow:', error);
+      throw error;
+    }
   },
 
   async deleteWorkflow(workflowId: string): Promise<void> {
@@ -506,5 +544,29 @@ export const n8nService = {
     console.log('Cleaned workflow:', JSON.stringify(cleanedWorkflow, null, 2));
 
     return cleanedWorkflow;
+  },
+
+  // Méthodes pour la gestion des credentials utilisateur
+  async createCredential(credentialData: any): Promise<{ id: string }> {
+    console.log('🔧 [n8nService] Création credential:', credentialData.name);
+    const result = await callN8nProxy('POST', '/credentials', credentialData);
+    console.log('✅ [n8nService] Credential créé:', result.id);
+    return result;
+  },
+
+  async deleteCredential(credentialId: string): Promise<void> {
+    console.log('🔧 [n8nService] Suppression credential:', credentialId);
+    await callN8nProxy('DELETE', `/credentials/${credentialId}`);
+    console.log('✅ [n8nService] Credential supprimé');
+  },
+
+  async getCredential(credentialId: string): Promise<any> {
+    return await callN8nProxy('GET', `/credentials/${credentialId}`);
+  },
+
+  async updateCredential(credentialId: string, data: any): Promise<void> {
+    console.log('🔧 [n8nService] Mise à jour credential:', credentialId);
+    await callN8nProxy('PUT', `/credentials/${credentialId}`, data);
+    console.log('✅ [n8nService] Credential mis à jour');
   }
 };

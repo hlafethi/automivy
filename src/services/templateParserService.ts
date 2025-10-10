@@ -67,24 +67,94 @@ export const templateParserService = {
         hasMetadata: !!template.templateMetadata,
         hasUserInputs: !!template.userInputs,
         hasWorkflowDef: !!template.workflowDefinition,
+        hasN8nFormat: !!(template.nodes && template.connections),
         topLevelKeys: Object.keys(template)
       });
 
-      if (!template.templateMetadata || !template.userInputs || !template.workflowDefinition) {
-        throw new Error('Invalid template format: missing required fields');
+      // Format Automivy (nouveau format)
+      if (template.templateMetadata && template.userInputs && template.workflowDefinition) {
+        console.log('Detected Automivy format');
+        return template as WorkflowTemplate;
       }
 
-      console.log('Parsed template workflowDefinition:', {
-        hasNodes: !!template.workflowDefinition?.nodes,
-        nodeCount: template.workflowDefinition?.nodes?.length || 0,
-        hasConnections: !!template.workflowDefinition?.connections,
-        keys: Object.keys(template.workflowDefinition || {})
-      });
+      // Format n8n direct (ancien format)
+      if (template.nodes && template.connections) {
+        console.log('Detected n8n direct format, converting...');
+        return {
+          templateMetadata: {
+            name: template.name || 'Untitled Template',
+            description: template.description || '',
+            version: '1.0.0',
+            author: 'System',
+            category: 'General'
+          },
+          userInputs: this.extractUserInputsFromN8n(template),
+          workflowDefinition: {
+            nodes: template.nodes,
+            connections: template.connections,
+            settings: template.settings || {},
+            active: template.active || false
+          },
+          replacementRules: this.extractReplacementRulesFromN8n(template)
+        } as WorkflowTemplate;
+      }
 
-      return template as WorkflowTemplate;
+      throw new Error('Invalid template format: missing required fields');
     } catch (error) {
       throw new Error(`Failed to parse template: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  },
+
+  extractUserInputsFromN8n(n8nTemplate: any): UserInput[] {
+    const userInputs: UserInput[] = [];
+    
+    // Chercher les nodes qui ont des paramètres utilisateur
+    n8nTemplate.nodes?.forEach((node: any) => {
+      if (node.parameters) {
+        Object.entries(node.parameters).forEach(([key, value]) => {
+          if (typeof value === 'string' && value.includes('{{$json.USER_')) {
+            const inputName = value.match(/\{\{\$json\.USER_([^}]+)\}\}/)?.[1];
+            if (inputName && !userInputs.find(input => input.name === inputName)) {
+              userInputs.push({
+                name: inputName,
+                label: inputName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                type: 'text',
+                required: true,
+                placeholder: `Enter ${inputName.replace(/_/g, ' ').toLowerCase()}`
+              });
+            }
+          }
+        });
+      }
+    });
+
+    return userInputs;
+  },
+
+  extractReplacementRulesFromN8n(n8nTemplate: any): ReplacementRule[] {
+    const replacementRules: ReplacementRule[] = [];
+    
+    // Chercher les nodes qui ont des paramètres avec des placeholders utilisateur
+    n8nTemplate.nodes?.forEach((node: any) => {
+      if (node.parameters) {
+        Object.entries(node.parameters).forEach(([key, value]) => {
+          if (typeof value === 'string' && value.includes('{{$json.USER_')) {
+            const inputName = value.match(/\{\{\$json\.USER_([^}]+)\}\}/)?.[1];
+            if (inputName) {
+              replacementRules.push({
+                source: 'userInput',
+                sourceType: 'userInput',
+                sourceKey: inputName,
+                key: key,
+                target: `{{$json.USER_${inputName}}}`
+              });
+            }
+          }
+        });
+      }
+    });
+
+    return replacementRules;
   },
 
   async replacePlaceholders(
@@ -98,6 +168,18 @@ export const templateParserService = {
       hasConnections: !!workflow?.connections,
       keys: Object.keys(workflow || {})
     });
+
+    console.log('replacePlaceholders replacementRules:', {
+      isArray: Array.isArray(replacementRules),
+      length: replacementRules?.length || 0,
+      rules: replacementRules
+    });
+
+    // Si pas de règles de remplacement, retourner le workflow tel quel
+    if (!replacementRules || !Array.isArray(replacementRules) || replacementRules.length === 0) {
+      console.log('No replacement rules found, returning workflow as-is');
+      return workflow;
+    }
 
     let workflowString = JSON.stringify(workflow);
 
@@ -292,6 +374,6 @@ export const templateParserService = {
     }
 
     const dependentValue = formValues[input.conditionalDisplay.dependsOn];
-    return input.conditionalDisplay.values.includes(dependentValue);
+    return input.conditionalDisplay.values && input.conditionalDisplay.values.includes(dependentValue);
   }
 };

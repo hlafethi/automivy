@@ -7,6 +7,7 @@ import { templateParserService, WorkflowTemplate } from '../services/templatePar
 import { DynamicTemplateForm } from './DynamicTemplateForm';
 import { workflowService, oauthService, emailCredentialService, apiKeyService } from '../services';
 import { n8nService } from '../services/n8nService';
+import { userWorkflowService } from '../services/userWorkflowService';
 
 interface Props {
   template: Template;
@@ -16,6 +17,7 @@ interface Props {
 
 export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
   console.log('WorkflowDeployModal RENDERED with template:', template.name);
+  console.log('WorkflowDeployModal template object:', template);
 
   const { user } = useAuth();
   const [params, setParams] = useState<Record<string, string>>({});
@@ -26,6 +28,7 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
   const [emailRequirements, setEmailRequirements] = useState<CredentialRequirement[]>([]);
   const [oauthConnected, setOauthConnected] = useState<Record<string, boolean>>({});
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
+  const [showCredentialForm, setShowCredentialForm] = useState(false);
   const [emailCredentials, setEmailCredentials] = useState<Partial<EmailCredentialData>>({
     imap_port: 993,
     smtp_port: 587,
@@ -111,7 +114,7 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
     };
 
     checkCredentialRequirements();
-  }, [template]);
+  }, [template.id, template.json]);
 
   // Listen for OAuth success from popup
   useEffect(() => {
@@ -216,11 +219,52 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
     }
 
     try {
-      await emailCredentialService.createOrUpdateEmailCredential(emailCredentials as EmailCredentialData);
+      // Ajouter un nom pour l'API
+      const credentialData = {
+        ...emailCredentials,
+        name: `Email-${emailCredentials.email_address}-${Date.now()}`
+      };
+      
+      await emailCredentialService.createOrUpdateEmailCredential(credentialData as EmailCredentialData);
       setEmailConfigured(true);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to save email credentials');
+    }
+  };
+
+  const handleCreateWorkflowWithCredentials = async () => {
+    if (!user || !parsedTemplate) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('🔧 [WorkflowDeployModal] Création du workflow avec credentials...');
+      console.log('🔧 [WorkflowDeployModal] Template ID:', template.id);
+      
+      // Créer le workflow avec les credentials
+      const config = {
+        templateId: template.id,
+        name: `${template.name} - ${user.email}`,
+        description: template.description || 'Workflow déployé avec credentials',
+        email: emailCredentials.email_address || user.email || 'user@example.com',
+        imapHost: emailCredentials.imap_host || 'mail.example.com',
+        imapPort: emailCredentials.imap_port || 993,
+        imapUser: emailCredentials.imap_user || user.email || 'user@example.com',
+        imapPassword: emailCredentials.imap_password || 'password',
+        schedule: 'every 60 minutes'
+      };
+      
+      await userWorkflowService.createUserWorkflow(config, user.id);
+      
+      console.log('✅ [WorkflowDeployModal] Workflow créé avec succès');
+      onSuccess();
+    } catch (err: any) {
+      console.error('❌ [WorkflowDeployModal] Erreur création workflow:', err);
+      setError(err.message || 'Failed to create workflow');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -231,27 +275,13 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
     setError('');
 
     try {
-      // Créer des valeurs par défaut pour le déploiement immédiat
-      const defaultValues: Record<string, any> = {};
+      // Au lieu de déployer immédiatement, demander les credentials
+      console.log('🔧 [WorkflowDeployModal] Demande des credentials utilisateur...');
       
-      // Remplir avec des valeurs par défaut basées sur le type d'input
-      for (const input of parsedTemplate.userInputs) {
-        switch (input.type) {
-          case 'email':
-            defaultValues[input.key] = 'user@heleam.com';
-            break;
-          case 'password':
-            defaultValues[input.key] = 'defaultPassword123';
-            break;
-          case 'text':
-            defaultValues[input.key] = `Default ${input.label}`;
-            break;
-          default:
-            defaultValues[input.key] = `Default ${input.label}`;
-        }
-      }
-
-      console.log('Déploiement immédiat avec valeurs par défaut:', defaultValues);
+      // Afficher le formulaire de credentials
+      setShowCredentialForm(true);
+      setLoading(false);
+      return;
 
       const processedWorkflow = await templateParserService.createWorkflowFromTemplate(
         parsedTemplate,
@@ -277,13 +307,21 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
       const n8nWorkflow = await n8nService.createWorkflow(workflowWithName);
       console.log('Workflow créé sur n8n:', n8nWorkflow);
 
-      // Sauvegarder en base de données
-      await workflowService.createWorkflow(
+      // Sauvegarder en base de données avec le nouveau système user-workflows
+      console.log('🔧 [WorkflowDeployModal] Création user workflow avec templateId:', template.id);
+      await userWorkflowService.createUserWorkflow(
+        user.id,
+        template.id,
         workflowName,
         template.description || 'Workflow déployé automatiquement',
-        processedWorkflow,
-        n8nWorkflow.id,
-        template.id
+        'every 60 minutes', // Schedule par défaut
+        {
+          host: 'mail.example.com',
+          port: 993,
+          secure: true,
+          user: user.email || 'user@example.com',
+          pass: 'default-password'
+        }
       );
       
       onSuccess();
@@ -403,7 +441,115 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
         </div>
 
         <div className="p-6 space-y-4">
-          {useDynamicForm && parsedTemplate ? (
+          {showCredentialForm ? (
+            <>
+              <div className="mb-4">
+                <h4 className="text-lg font-semibold text-slate-900 mb-2">Configure Your Email Credentials</h4>
+                <p className="text-sm text-slate-600">Please provide your email credentials to create this automation.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={emailCredentials.email_address || ''}
+                    onChange={(e) => setEmailCredentials(prev => ({ ...prev, email_address: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="your-email@example.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">IMAP Host</label>
+                  <input
+                    type="text"
+                    value={emailCredentials.imap_host || ''}
+                    onChange={(e) => setEmailCredentials(prev => ({ ...prev, imap_host: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="mail.example.com"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">IMAP Port</label>
+                    <input
+                      type="number"
+                      value={emailCredentials.imap_port || 993}
+                      onChange={(e) => setEmailCredentials(prev => ({ ...prev, imap_port: parseInt(e.target.value) }))}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={emailCredentials.imap_secure || true}
+                      onChange={(e) => setEmailCredentials(prev => ({ ...prev, imap_secure: e.target.checked }))}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                    />
+                    <label className="ml-2 block text-sm text-slate-900">Use SSL/TLS</label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">IMAP Username</label>
+                  <input
+                    type="text"
+                    value={emailCredentials.imap_user || ''}
+                    onChange={(e) => setEmailCredentials(prev => ({ ...prev, imap_user: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="your-email@example.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">IMAP Password</label>
+                  <input
+                    type="password"
+                    value={emailCredentials.imap_password || ''}
+                    onChange={(e) => setEmailCredentials(prev => ({ ...prev, imap_password: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="Your email password"
+                    required
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowCredentialForm(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateWorkflowWithCredentials}
+                  disabled={loading || !emailCredentials.email_address || !emailCredentials.imap_host || !emailCredentials.imap_user || !emailCredentials.imap_password}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Workflow'
+                  )}
+                </button>
+              </div>
+            </>
+          ) : useDynamicForm && parsedTemplate ? (
             <>
               <p className="text-sm text-slate-600 mb-4">
                 {parsedTemplate.templateMetadata.description}
@@ -693,23 +839,6 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
               )}
             </button>
             
-            <button
-              onClick={handleDeploy}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Deploying...
-                </>
-              ) : (
-                <>
-                  <Rocket className="w-4 h-4" />
-                  Deploy with Form
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>

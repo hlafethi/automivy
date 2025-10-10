@@ -26,6 +26,20 @@ export interface Workflow {
   updated_at: string;
 }
 
+export interface UserWorkflow {
+  id: string;
+  user_id: string;
+  template_id: string;
+  n8n_workflow_id: string;
+  n8n_credential_id: string;
+  name: string;
+  description?: string;
+  schedule: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ApiKey {
   id: string;
   user_id: string;

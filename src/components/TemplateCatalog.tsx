@@ -119,6 +119,8 @@ export function TemplateCatalog() {
             onClose={() => setSelectedTemplate(null)}
             onSuccess={() => {
               setSelectedTemplate(null);
+              // Rediriger vers My Automations après création
+              window.location.href = '/user-dashboard';
             }}
           />
         </>

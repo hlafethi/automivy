@@ -93,6 +93,15 @@ class Database {
     return result.rows[0];
   }
 
+  async getTemplateByIdForUser(id, userId) {
+    // Permet aux utilisateurs d'accéder aux templates visibles même s'ils ne les ont pas créés
+    const result = await this.query(
+      'SELECT * FROM templates WHERE id = $1 AND (created_by = $2 OR visible = true)',
+      [id, userId]
+    );
+    return result.rows[0];
+  }
+
   async updateTemplate(id, userId, updates) {
     const setClause = Object.keys(updates)
       .map((key, index) => `${key} = $${index + 3}`)
@@ -239,6 +248,75 @@ class Database {
   async deleteEmailCredential(id, userId) {
     const result = await this.query(
       'DELETE FROM email_credentials WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, userId]
+    );
+    return result.rows[0];
+  }
+
+  // Méthodes pour les workflows utilisateur
+  async createUserWorkflow(data) {
+    const {
+      userId,
+      templateId,
+      n8nWorkflowId,
+      n8nCredentialId,
+      name,
+      description,
+      schedule,
+      isActive = true
+    } = data;
+
+    const result = await this.query(
+      `INSERT INTO user_workflows 
+       (user_id, template_id, n8n_workflow_id, n8n_credential_id, name, description, schedule, is_active) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+       RETURNING *`,
+      [userId, templateId, n8nWorkflowId, n8nCredentialId, name, description, schedule, isActive]
+    );
+    return result.rows[0];
+  }
+
+  async getUserWorkflows(userId) {
+    const result = await this.query(
+      'SELECT * FROM user_workflows WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    return result.rows;
+  }
+
+  async getUserWorkflowById(id, userId) {
+    const result = await this.query(
+      'SELECT * FROM user_workflows WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+    return result.rows[0];
+  }
+
+  async updateUserWorkflow(id, userId, updates) {
+    const setClause = Object.keys(updates)
+      .map((key, index) => `${key} = $${index + 3}`)
+      .join(', ');
+    
+    const values = [id, userId, ...Object.values(updates)];
+    
+    const result = await this.query(
+      `UPDATE user_workflows SET ${setClause} WHERE id = $1 AND user_id = $2 RETURNING *`,
+      values
+    );
+    return result.rows[0];
+  }
+
+  async toggleUserWorkflow(id, userId, active) {
+    const result = await this.query(
+      'UPDATE user_workflows SET is_active = $3 WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, userId, active]
+    );
+    return result.rows[0];
+  }
+
+  async deleteUserWorkflow(id, userId) {
+    const result = await this.query(
+      'DELETE FROM user_workflows WHERE id = $1 AND user_id = $2 RETURNING *',
       [id, userId]
     );
     return result.rows[0];

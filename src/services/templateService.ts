@@ -30,12 +30,10 @@ export class TemplateService {
     return apiClient.updateTemplateVisibility(id, visible);
   }
 
-  async updateTemplate(id: string, updates: Partial<Template>): Promise<Template> {
-    return apiClient.updateTemplate(id, updates);
-  }
-
   // Méthodes de compatibilité
   async getAllTemplates(): Promise<Template[]> {
     return this.getTemplates();
   }
 }
+
+export const templateService = new TemplateService();

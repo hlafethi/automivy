@@ -30,8 +30,19 @@ export const authService = {
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      return await apiClient.verifyToken();
+      const response = await apiClient.verifyToken();
+      console.log('🔍 [AuthService] Réponse verifyToken:', response);
+      
+      // L'API retourne {user: {...}}, on extrait l'objet user
+      if (response && response.user) {
+        console.log('✅ [AuthService] Utilisateur extrait:', response.user);
+        return response.user;
+      } else {
+        console.log('❌ [AuthService] Structure de réponse invalide');
+        return null;
+      }
     } catch (error) {
+      console.log('❌ [AuthService] Erreur getCurrentUser:', error);
       return null;
     }
   },

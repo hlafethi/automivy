@@ -72,6 +72,8 @@ class ApiClient {
   }
 
   async getTemplate(id: string) {
+    console.log('🔍 [ApiClient] getTemplate appelé avec ID:', id);
+    console.log('🔍 [ApiClient] Token présent:', !!this.token);
     return this.request(`/templates/${id}`);
   }
 
@@ -198,6 +200,42 @@ class ApiClient {
 
   async deleteEmailCredential(id: string) {
     return this.request(`/email-credentials/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Méthodes pour les workflows utilisateur
+  async createUserWorkflow(data: any) {
+    return this.request('/user-workflows', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getUserWorkflows(userId: string) {
+    return this.request(`/user-workflows/user/${userId}`);
+  }
+
+  async getUserWorkflow(id: string) {
+    return this.request(`/user-workflows/${id}`);
+  }
+
+  async updateUserWorkflow(id: string, updates: any) {
+    return this.request(`/user-workflows/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async toggleUserWorkflow(id: string, active: boolean) {
+    return this.request(`/user-workflows/${id}/toggle`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active }),
+    });
+  }
+
+  async deleteUserWorkflow(id: string) {
+    return this.request(`/user-workflows/${id}`, {
       method: 'DELETE',
     });
   }

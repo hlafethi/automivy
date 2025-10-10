@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Library, Activity } from 'lucide-react';
 import { TemplateCatalog } from './TemplateCatalog';
 import { MyAutomations } from './MyAutomations';
+import { UserAutomations } from './UserAutomations';
 
 export function UserDashboard() {
   const [activeTab, setActiveTab] = useState<'catalog' | 'automations'>('catalog');
@@ -35,7 +36,7 @@ export function UserDashboard() {
         </div>
       </div>
 
-      {activeTab === 'catalog' ? <TemplateCatalog /> : <MyAutomations />}
+      {activeTab === 'catalog' ? <TemplateCatalog /> : <UserAutomations />}
     </div>
   );
 }
