@@ -1,0 +1,163 @@
+{
+  "userInputs": [
+    {
+      "key": "USER_EMAIL",
+      "type": "email",
+      "label": "Votre adresse email",
+      "required": true,
+      "description": "L'adresse email dont vous souhaitez analyser les messages",
+      "placeholder": "vous@exemple.com"
+    },
+    {
+      "key": "EMAIL_PASSWORD",
+      "type": "password",
+      "label": "Mot de passe d'application",
+      "required": true,
+      "description": "Mot de passe d'application de votre email (Gmail, Outlook, etc.)"
+    },
+    {
+      "key": "EMAIL_PROVIDER",
+      "type": "select",
+      "label": "Fournisseur email",
+      "default": "gmail",
+      "options": [
+        {"label": "Gmail", "value": "gmail"},
+        {"label": "Outlook", "value": "outlook"},
+        {"label": "Yahoo", "value": "yahoo"}
+      ],
+      "required": true,
+      "description": "Votre fournisseur de messagerie"
+    },
+    {
+      "key": "REPORT_TIME",
+      "type": "time",
+      "label": "Heure du rapport quotidien",
+      "default": "18:00",
+      "required": true,
+      "description": "À quelle heure recevoir votre résumé quotidien"
+    }
+  ],
+  "adminCredentials": [
+    {
+      "key": "openrouter",
+      "name": "OpenRouter",
+      "type": "openAiApi",
+      "required": true,
+      "description": "Credential OpenRouter pour l'analyse IA"
+    }
+  ],
+  "replacementRules": [
+    {"sourceKey": "USER_EMAIL", "sourceType": "userInput", "placeholder": "USEREMAIL"},
+    {"sourceKey": "EMAIL_PASSWORD", "sourceType": "userInput", "placeholder": "EMAILPASSWORD"},
+    {"sourceKey": "EMAIL_PROVIDER", "sourceType": "userInput", "placeholder": "EMAILPROVIDER"},
+    {"sourceKey": "REPORT_TIME", "sourceType": "userInput", "placeholder": "REPORTTIME"},
+    {"sourceKey": "openrouter", "sourceType": "adminCredential", "placeholder": "ADMINOPENAI"},
+    {"sourceKey": "userId", "sourceType": "context", "placeholder": "USERID"}
+  ],
+  "templateMetadata": {
+    "id": "email-analysis-v1",
+    "icon": "📧",
+    "name": "Analyse d'emails par IA",
+    "tags": ["email", "ia", "productivité", "automatisation"],
+    "author": "admin",
+    "version": "1.0.0",
+    "category": "Email & Communication",
+    "description": "Analyse vos emails avec l'IA et vous envoie un rapport quotidien"
+  },
+  "workflowDefinition": {
+    "name": "email_analysis_user_USERID",
+    "active": true,
+    "nodes": [
+      {
+        "id": "schedule-trigger",
+        "name": "Déclencheur quotidien",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "position": [240, 300],
+        "parameters": {
+          "rule": {
+            "interval": [{"field": "cronExpression", "expression": "0 REPORTTIME * * *"}]
+          }
+        },
+        "typeVersion": 1.2
+      },
+      {
+        "id": "imap-fetch",
+        "name": "Récupération emails",
+        "type": "n8n-nodes-base.emailReadImap",
+        "position": [460, 300],
+        "parameters": {
+          "mailbox": "INBOX",
+          "options": {
+            "customEmailConfig": "imap.EMAILPROVIDER.com"
+          }
+        },
+        "credentials": {
+          "imap": {
+            "user": "USEREMAIL",
+            "password": "EMAILPASSWORD"
+          }
+        },
+        "typeVersion": 2.1
+      },
+      {
+        "id": "ai-analysis",
+        "name": "Analyse IA",
+        "type": "n8n-nodes-base.openAi",
+        "position": [680, 300],
+        "parameters": {
+          "resource": "chat",
+          "operation": "message",
+          "model": "gpt-4o-mini",
+          "messages": {
+            "values": [
+              {
+                "role": "system",
+                "content": "Analyse cet email et réponds au format JSON"
+              },
+              {
+                "role": "user",
+                "content": "Analyse: {{$json.subject}}"
+              }
+            ]
+          }
+        },
+        "credentials": {
+          "openAiApi": "ADMINOPENAI"
+        },
+        "typeVersion": 1.3
+      },
+      {
+        "id": "send-email",
+        "name": "Envoyer rapport",
+        "type": "n8n-nodes-base.emailSend",
+        "position": [900, 300],
+        "parameters": {
+          "fromEmail": "USEREMAIL",
+          "toEmail": "USEREMAIL",
+          "subject": "Rapport emails",
+          "text": "Votre rapport"
+        },
+        "credentials": {
+          "smtp": {
+            "user": "USEREMAIL",
+            "password": "EMAILPASSWORD",
+            "host": "smtp.EMAILPROVIDER.com",
+            "port": 587
+          }
+        },
+        "typeVersion": 2.1
+      }
+    ],
+    "connections": {
+      "schedule-trigger": {
+        "main": [[{"node": "imap-fetch", "type": "main", "index": 0}]]
+      },
+      "imap-fetch": {
+        "main": [[{"node": "ai-analysis", "type": "main", "index": 0}]]
+      },
+      "ai-analysis": {
+        "main": [[{"node": "send-email", "type": "main", "index": 0}]]
+      }
+    }
+  }
+}
