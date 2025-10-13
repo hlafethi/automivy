@@ -1,0 +1,56 @@
+{
+  "name": "Test Ultra Simple - USER_EMAIL_PLACEHOLDER",
+  "active": false,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Déclencheur planifié",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{
+            "field": "minutes",
+            "minutesInterval": 60
+          }]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "email-send",
+      "name": "Send Test Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [460, 300],
+      "parameters": {
+        "fromEmail": "noreply@votre-app.com",
+        "toEmail": "USER_EMAIL_PLACEHOLDER",
+        "subject": "Test Email from n8n",
+        "text": "Hello! This is a test email from n8n workflow.",
+        "options": {}
+      },
+      "typeVersion": 2.1,
+      "credentials": {
+        "smtp": {
+          "id": "IIL6ud7OH0klmE36",
+          "name": "smtp_auto_ff8afa8b"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Déclencheur planifié": {
+      "main": [
+        [
+          {
+            "node": "Send Test Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "versionId": "test-ultra-simple-v1"
+}

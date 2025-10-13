@@ -3,6 +3,43 @@ const router = express.Router();
 const config = require('../config');
 
 // Routes spécifiques pour n8n
+
+// Récupérer tous les credentials
+router.get('/credentials', async (req, res) => {
+  try {
+    const n8nUrl = config.n8n.url;
+    const n8nApiKey = config.n8n.apiKey;
+    
+    const fullUrl = `${n8nUrl}/api/v1/credentials`;
+    console.log(`Proxying GET ${fullUrl}`);
+    
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': n8nApiKey,
+      },
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error(`n8n API error: ${response.status}`, data);
+      return res.status(response.status).json(data);
+    }
+    
+    console.log(`n8n API success: ${response.status}`);
+    res.json(data);
+    
+  } catch (error) {
+    console.error('n8n proxy error:', error);
+    res.status(500).json({ 
+      error: 'Failed to communicate with n8n',
+      details: error.message 
+    });
+  }
+});
+
 router.get('/workflows', async (req, res) => {
   try {
     const n8nUrl = config.n8n.url;
@@ -237,6 +274,7 @@ router.patch('/rest/workflows/:id', async (req, res) => {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${n8nApiKey}`,
         'X-N8N-API-KEY': n8nApiKey,
       },
       body: JSON.stringify(req.body),
@@ -275,6 +313,7 @@ router.delete('/rest/workflows/:id', async (req, res) => {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${n8nApiKey}`,
         'X-N8N-API-KEY': n8nApiKey,
       },
     });
@@ -363,6 +402,80 @@ router.delete('/credentials/:id', async (req, res) => {
     console.error('n8n credentials delete proxy error:', error);
     res.status(500).json({ 
       error: 'Failed to communicate with n8n credentials API',
+      details: error.message 
+    });
+  }
+});
+
+// Route pour activer un workflow
+router.post('/workflows/:id/activate', async (req, res) => {
+  try {
+    const n8nUrl = config.n8n.url;
+    const n8nApiKey = config.n8n.apiKey;
+    const workflowId = req.params.id;
+    
+    const fullUrl = `${n8nUrl}/api/v1/workflows/${workflowId}/activate`;
+    console.log(`Proxying POST ${fullUrl}`);
+    
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': n8nApiKey,
+      },
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error(`n8n API error: ${response.status}`, data);
+      return res.status(response.status).json(data);
+    }
+    
+    console.log(`n8n API success: ${response.status}`);
+    res.json(data);
+    
+  } catch (error) {
+    console.error('n8n proxy error:', error);
+    res.status(500).json({ 
+      error: 'Failed to communicate with n8n',
+      details: error.message 
+    });
+  }
+});
+
+// Route pour désactiver un workflow
+router.post('/workflows/:id/deactivate', async (req, res) => {
+  try {
+    const n8nUrl = config.n8n.url;
+    const n8nApiKey = config.n8n.apiKey;
+    const workflowId = req.params.id;
+    
+    const fullUrl = `${n8nUrl}/api/v1/workflows/${workflowId}/deactivate`;
+    console.log(`Proxying POST ${fullUrl}`);
+    
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': n8nApiKey,
+      },
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error(`n8n API error: ${response.status}`, data);
+      return res.status(response.status).json(data);
+    }
+    
+    console.log(`n8n API success: ${response.status}`);
+    res.json(data);
+    
+  } catch (error) {
+    console.error('n8n proxy error:', error);
+    res.status(500).json({ 
+      error: 'Failed to communicate with n8n',
       details: error.message 
     });
   }

@@ -113,7 +113,7 @@ class ApiClient {
     return this.request('/workflows');
   }
 
-  async getUserWorkflows() {
+  async getUserWorkflowsForCurrentUser() {
     return this.request('/workflows/user');
   }
 

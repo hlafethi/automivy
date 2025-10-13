@@ -221,15 +221,15 @@ class UserWorkflowService {
       }
 
       // 2. Supprimer le workflow de n8n
-      if (userWorkflow.n8nWorkflowId) {
-        console.log('🔧 [UserWorkflowService] Suppression workflow n8n:', userWorkflow.n8nWorkflowId);
-        await n8nService.deleteWorkflow(userWorkflow.n8nWorkflowId);
+      if (userWorkflow.n8n_workflow_id) {
+        console.log('🔧 [UserWorkflowService] Suppression workflow n8n:', userWorkflow.n8n_workflow_id);
+        await n8nService.deleteWorkflow(userWorkflow.n8n_workflow_id);
       }
 
       // 3. Supprimer le credential de n8n
-      if (userWorkflow.n8nCredentialId) {
-        console.log('🔧 [UserWorkflowService] Suppression credential n8n:', userWorkflow.n8nCredentialId);
-        await n8nService.deleteCredential(userWorkflow.n8nCredentialId);
+      if (userWorkflow.n8n_credential_id) {
+        console.log('🔧 [UserWorkflowService] Suppression credential n8n:', userWorkflow.n8n_credential_id);
+        await n8nService.deleteCredential(userWorkflow.n8n_credential_id);
       }
 
       // 4. Supprimer de la BDD
@@ -243,12 +243,6 @@ class UserWorkflowService {
     }
   }
 
-  /**
-   * Met à jour la configuration d'un workflow utilisateur
-   */
-  async updateUserWorkflow(workflowId: string, updates: Partial<UserWorkflowConfig>): Promise<UserWorkflow> {
-    return apiClient.updateUserWorkflow(workflowId, updates);
-  }
 }
 
 export const userWorkflowService = new UserWorkflowService();

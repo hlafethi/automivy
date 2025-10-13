@@ -1,0 +1,113 @@
+{
+  "name": "Test Simple - USER_EMAIL_PLACEHOLDER",
+  "active": false,
+  "nodes": [
+    {
+      "id": "email-trigger",
+      "name": "Email Trigger (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "position": [240, 300],
+      "parameters": {
+        "options": {},
+        "downloadAttachments": true
+      },
+      "credentials": {
+        "imap": {
+          "id": "USER_IMAP_CREDENTIAL_PLACEHOLDER",
+          "name": "IMAP account"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "ai-analysis",
+      "name": "AI Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [460, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$credentials.httpHeaderAuth.apiKey}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "anthropic/claude-3.5-sonnet"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\": \"user\", \"content\": \"Analyze this email: \" + JSON.stringify($json)}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "DJ4JtAswl4vKWvdI",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "id": "send-reply",
+      "name": "Send Reply",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [680, 300],
+      "parameters": {
+        "fromEmail": "noreply@votre-app.com",
+        "toEmail": "={{$json.from}}",
+        "subject": "Re: {{$json.subject}}",
+        "text": "Hello,\n\nI have analyzed your email:\n\n{{$json.choices[0].message.content}}\n\nBest regards,\nYour AI Assistant",
+        "options": {}
+      },
+      "typeVersion": 2.1,
+      "credentials": {
+        "smtp": {
+          "id": "D4oqu1Q1cbRrqVPc",
+          "name": "smtp_auto_0e371f97"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "versionId": "test-simple-corrected-v1"
+}
