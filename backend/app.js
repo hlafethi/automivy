@@ -12,6 +12,7 @@ const apiKeyRoutes = require('./routes/apiKeys');
 const oauthRoutes = require('./routes/oauth');
 const emailCredentialRoutes = require('./routes/emailCredentials');
 const n8nRoutes = require('./routes/n8n');
+const smartDeployRoutes = require('./routes/smartDeploy');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/api-keys', apiKeyRoutes);
 app.use('/api/oauth', oauthRoutes);
 app.use('/api/email-credentials', emailCredentialRoutes);
 app.use('/api/n8n', n8nRoutes);
+app.use('/api/smart-deploy', smartDeployRoutes);
 
 // Route de test
 app.get('/api/health', (req, res) => {

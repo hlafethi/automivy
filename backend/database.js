@@ -62,11 +62,20 @@ class Database {
     return result.rows[0];
   }
 
-  async getTemplates(userId) {
-    const result = await this.query(
-      'SELECT * FROM templates WHERE created_by = $1 ORDER BY created_at DESC',
-      [userId]
-    );
+  async getTemplates(userId, userRole = 'user') {
+    let query, params;
+    
+    if (userRole === 'admin') {
+      // Les admins voient tous les templates
+      query = 'SELECT * FROM templates ORDER BY created_at DESC';
+      params = [];
+    } else {
+      // Les utilisateurs normaux voient les templates visibles
+      query = 'SELECT * FROM templates WHERE visible = true ORDER BY created_at DESC';
+      params = [];
+    }
+    
+    const result = await this.query(query, params);
     return result.rows;
   }
 
@@ -95,8 +104,9 @@ class Database {
 
   async getTemplateByIdForUser(id, userId) {
     // Permet aux utilisateurs d'accéder aux templates visibles même s'ils ne les ont pas créés
+    // Les admins peuvent accéder à tous les templates
     const result = await this.query(
-      'SELECT * FROM templates WHERE id = $1 AND (created_by = $2 OR visible = true)',
+      'SELECT * FROM templates WHERE id = $1 AND (created_by = $2 OR visible = true OR $2 = (SELECT id FROM users WHERE role = \'admin\' LIMIT 1))',
       [id, userId]
     );
     return result.rows[0];
@@ -181,9 +191,9 @@ class Database {
   }
 
   async getApiKeys(userId) {
+    // Seuls les admins peuvent accéder aux clés API
     const result = await this.query(
-      'SELECT * FROM admin_api_keys WHERE created_by = $1 ORDER BY created_at DESC',
-      [userId]
+      'SELECT * FROM admin_api_keys ORDER BY created_at DESC'
     );
     return result.rows;
   }

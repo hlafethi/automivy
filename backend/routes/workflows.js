@@ -10,7 +10,7 @@ router.use(authenticateToken);
 // Récupérer tous les workflows de l'utilisateur
 router.get('/', async (req, res) => {
   try {
-    const workflows = await db.getWorkflows(req.user.userId);
+    const workflows = await db.getWorkflows(req.user.id);
     res.json(workflows);
   } catch (error) {
     console.error('Get workflows error:', error);
@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 // Récupérer les workflows de l'utilisateur connecté
 router.get('/user', async (req, res) => {
   try {
-    const workflows = await db.getWorkflows(req.user.userId);
+    const workflows = await db.getWorkflows(req.user.id);
     res.json(workflows);
   } catch (error) {
     console.error('Get user workflows error:', error);
@@ -32,7 +32,7 @@ router.get('/user', async (req, res) => {
 // Récupérer un workflow par ID
 router.get('/:id', async (req, res) => {
   try {
-    const workflow = await db.getWorkflowById(req.params.id, req.user.userId);
+    const workflow = await db.getWorkflowById(req.params.id, req.user.id);
     if (!workflow) {
       return res.status(404).json({ error: 'Workflow not found' });
     }
@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
     }
 
     const workflow = await db.createWorkflow(
-      req.user.userId,
+      req.user.id,
       name,
       description,
       workflowData,
@@ -84,7 +84,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'No updates provided' });
     }
 
-    const workflow = await db.updateWorkflow(req.params.id, req.user.userId, updates);
+    const workflow = await db.updateWorkflow(req.params.id, req.user.id, updates);
     if (!workflow) {
       return res.status(404).json({ error: 'Workflow not found' });
     }
@@ -99,12 +99,12 @@ router.put('/:id', async (req, res) => {
 // Supprimer un workflow
 router.delete('/:id', async (req, res) => {
   console.log('🔍 [Backend] DELETE /workflows/:id appelé avec ID:', req.params.id);
-  console.log('🔍 [Backend] User ID:', req.user.userId);
+  console.log('🔍 [Backend] User ID:', req.user.id);
   
   try {
     // Récupérer le workflow avant suppression pour obtenir l'ID n8n
     console.log('🔍 [Backend] Récupération du workflow avant suppression...');
-    const workflow = await db.getWorkflowById(req.params.id, req.user.userId);
+    const workflow = await db.getWorkflowById(req.params.id, req.user.id);
     if (!workflow) {
       console.log('❌ [Backend] Workflow non trouvé');
       return res.status(404).json({ error: 'Workflow not found' });
@@ -117,7 +117,7 @@ router.delete('/:id', async (req, res) => {
 
     // Supprimer de la base de données
     console.log('🔍 [Backend] Suppression de la base de données...');
-    await db.deleteWorkflow(req.params.id, req.user.userId);
+    await db.deleteWorkflow(req.params.id, req.user.id);
     console.log('✅ [Backend] Workflow supprimé de la base de données');
 
     // Supprimer aussi de n8n si l'ID n8n existe (comme hier)

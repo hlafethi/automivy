@@ -10,7 +10,7 @@ router.use(authenticateToken);
 // Récupérer toutes les credentials email de l'utilisateur
 router.get('/', async (req, res) => {
   try {
-    const credentials = await db.getEmailCredentials(req.user.userId);
+    const credentials = await db.getEmailCredentials(req.user.id);
     res.json(credentials);
   } catch (error) {
     console.error('Get email credentials error:', error);
@@ -38,7 +38,7 @@ router.post('/', async (req, res) => {
     }
 
     const credential = await db.createEmailCredential(
-      req.user.userId,
+      req.user.id,
       name,
       imapHost,
       imapPort,
@@ -60,7 +60,7 @@ router.post('/', async (req, res) => {
 // Supprimer une credential email
 router.delete('/:id', async (req, res) => {
   try {
-    const credential = await db.deleteEmailCredential(req.params.id, req.user.userId);
+    const credential = await db.deleteEmailCredential(req.params.id, req.user.id);
     if (!credential) {
       return res.status(404).json({ error: 'Email credential not found' });
     }

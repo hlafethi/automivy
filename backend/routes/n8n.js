@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const config = require('../config');
+const { deployEmailSummaryWorkflow } = require('../services/n8nService');
 
 // Routes spécifiques pour n8n
 
@@ -477,6 +478,47 @@ router.post('/workflows/:id/deactivate', async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to communicate with n8n',
       details: error.message 
+    });
+  }
+});
+
+// 🚀 Déployer un workflow Email Summary avec credentials automatiques
+router.post('/deploy-email-summary', async (req, res) => {
+  try {
+    const { userId, userEmail, userPassword, userImapServer } = req.body;
+    
+    console.log('🚀 [API] Déploiement workflow Email Summary pour:', userEmail);
+    
+    // Validation des paramètres
+    if (!userId || !userEmail || !userPassword || !userImapServer) {
+      return res.status(400).json({
+        success: false,
+        error: 'Paramètres manquants: userId, userEmail, userPassword, userImapServer requis'
+      });
+    }
+    
+    // Déployer le workflow avec credentials automatiques
+    const result = await deployEmailSummaryWorkflow(
+      userId,
+      userEmail,
+      userPassword,
+      userImapServer
+    );
+    
+    console.log('✅ [API] Workflow déployé avec succès:', result.id);
+    
+    res.json({
+      success: true,
+      workflowId: result.id,
+      message: 'Workflow Email Summary déployé avec succès'
+    });
+    
+  } catch (error) {
+    console.error('❌ [API] Erreur déploiement workflow:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors du déploiement du workflow',
+      details: error.message
     });
   }
 });

@@ -11,7 +11,7 @@ router.use(authenticateToken);
 router.get('/', async (req, res) => {
   try {
     const { provider } = req.query;
-    const credentials = await db.getOAuthCredentials(req.user.userId, provider);
+    const credentials = await db.getOAuthCredentials(req.user.id, provider);
     res.json(credentials);
   } catch (error) {
     console.error('Get OAuth credentials error:', error);
@@ -29,7 +29,7 @@ router.post('/', async (req, res) => {
     }
 
     const credential = await db.createOAuthCredential(
-      req.user.userId,
+      req.user.id,
       provider,
       encryptedData,
       n8nCredentialId,
@@ -47,7 +47,7 @@ router.post('/', async (req, res) => {
 // Supprimer une credential OAuth
 router.delete('/:id', async (req, res) => {
   try {
-    const credential = await db.deleteOAuthCredential(req.params.id, req.user.userId);
+    const credential = await db.deleteOAuthCredential(req.params.id, req.user.id);
     if (!credential) {
       return res.status(404).json({ error: 'OAuth credential not found' });
     }

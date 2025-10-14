@@ -10,10 +10,15 @@ router.use(authenticateToken);
 // Récupérer tous les templates de l'utilisateur
 router.get('/', async (req, res) => {
   try {
-    const templates = await db.getTemplates(req.user.userId);
+    console.log('🔍 [Templates] GET /templates');
+    console.log('🔍 [Templates] User:', req.user);
+    console.log('🔍 [Templates] User ID:', req.user.id);
+    
+    const templates = await db.getTemplates(req.user.id, req.user.role);
+    console.log('✅ [Templates] Templates trouvés:', templates.length);
     res.json(templates);
   } catch (error) {
-    console.error('Get templates error:', error);
+    console.error('❌ [Templates] Get templates error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -34,9 +39,9 @@ router.get('/:id', async (req, res) => {
   try {
     console.log('🔍 [Backend] GET /templates/:id');
     console.log('🔍 [Backend] Template ID:', req.params.id);
-    console.log('🔍 [Backend] User ID:', req.user.userId);
+    console.log('🔍 [Backend] User ID:', req.user.id);
     
-    const template = await db.getTemplateByIdForUser(req.params.id, req.user.userId);
+    const template = await db.getTemplateByIdForUser(req.params.id, req.user.id);
     if (!template) {
       console.log('❌ [Backend] Template non trouvé');
       return res.status(404).json({ error: 'Template not found' });
@@ -60,7 +65,7 @@ router.post('/', async (req, res) => {
     }
 
     const template = await db.createTemplate(
-      req.user.userId,
+      req.user.id,
       name,
       description,
       workflowData
@@ -87,7 +92,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'No updates provided' });
     }
 
-    const template = await db.updateTemplate(req.params.id, req.user.userId, updates);
+    const template = await db.updateTemplate(req.params.id, req.user.id, updates);
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
     }
@@ -124,11 +129,11 @@ router.patch('/:id/visibility', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     console.log('🔍 [Backend] DELETE /templates/:id appelé avec ID:', req.params.id);
-    console.log('🔍 [Backend] User ID:', req.user.userId);
+    console.log('🔍 [Backend] User ID:', req.user.id);
     
     // Récupérer les workflows associés à ce template avant suppression
     console.log('🔍 [Backend] Récupération des workflows associés au template...');
-    const workflows = await db.getWorkflows(req.user.userId);
+    const workflows = await db.getWorkflows(req.user.id);
     const workflowsFromTemplate = workflows.filter(workflow => {
       const hasTemplateId = workflow.template_id === req.params.id;
       console.log(`🔍 [Backend] Workflow ${workflow.id} - template_id: ${workflow.template_id}, match: ${hasTemplateId}`);
@@ -143,7 +148,7 @@ router.delete('/:id', async (req, res) => {
         console.log(`🔍 [Backend] Suppression du workflow ${workflow.id} (${workflow.name})...`);
         
         // Supprimer de la base de données
-        await db.deleteWorkflow(workflow.id, req.user.userId);
+        await db.deleteWorkflow(workflow.id, req.user.id);
         console.log(`✅ [Backend] Workflow ${workflow.id} supprimé de la base de données`);
         
         // Supprimer de n8n si l'ID n8n existe
@@ -179,7 +184,7 @@ router.delete('/:id', async (req, res) => {
     
     // Supprimer le template
     console.log('🔍 [Backend] Suppression du template...');
-    const template = await db.deleteTemplate(req.params.id, req.user.userId);
+    const template = await db.deleteTemplate(req.params.id, req.user.id);
     if (!template) {
       console.log('❌ [Backend] Template non trouvé');
       return res.status(404).json({ error: 'Template not found' });

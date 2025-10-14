@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Library, Activity } from 'lucide-react';
+import { Library, Activity, Plus } from 'lucide-react';
 import { TemplateCatalog } from './TemplateCatalog';
 import { MyAutomations } from './MyAutomations';
 import { UserAutomations } from './UserAutomations';
+import SmartDeployModal from './SmartDeployModal';
+import { SmartDeployTest } from './SmartDeployTest';
 
 export function UserDashboard() {
   const [activeTab, setActiveTab] = useState<'catalog' | 'automations'>('catalog');
+  const [showSmartDeploy, setShowSmartDeploy] = useState(false);
 
   return (
     <div>
@@ -37,6 +40,36 @@ export function UserDashboard() {
       </div>
 
       {activeTab === 'catalog' ? <TemplateCatalog /> : <UserAutomations />}
+      
+      {/* Test Smart Deploy */}
+      <div className="mt-8">
+        <SmartDeployTest />
+      </div>
+      
+      {/* Bouton de déploiement intelligent */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => {
+            console.log('🔧 [UserDashboard] Bouton SmartDeploy cliqué');
+            setShowSmartDeploy(true);
+          }}
+          className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors border-2 border-white"
+          title="Déployer un workflow intelligent"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Modal de déploiement intelligent */}
+      <SmartDeployModal
+        isOpen={showSmartDeploy}
+        onClose={() => setShowSmartDeploy(false)}
+        onSuccess={(workflow) => {
+          console.log('Workflow déployé avec succès:', workflow);
+          // Rafraîchir la liste des automations si nécessaire
+          setActiveTab('automations');
+        }}
+      />
     </div>
   );
 }

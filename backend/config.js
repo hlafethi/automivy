@@ -1,4 +1,18 @@
 require('dotenv').config();
+const os = require('os');
+
+// Fonction pour détecter l'IP locale
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
 
 module.exports = {
   database: {
@@ -20,5 +34,16 @@ module.exports = {
   n8n: {
     url: process.env.N8N_URL || 'https://n8n.globalsaas.eu',
     apiKey: process.env.N8N_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiNmM3ZmUyNy1kNGY4LTQxYTktOTI3OS1kYzVjMmNhZWVmNDciLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU5MzAzOTM2fQ.nejAxVx_Yv-Cz6TwJbEUvZufsNlSNl9Bw7psRb3JPzA'
+  },
+  email: {
+    smtpHost: process.env.SMTP_HOST || 'mail.heleam.com',
+    smtpPort: parseInt(process.env.SMTP_PORT || '587'),
+    smtpUser: process.env.SMTP_USER || 'admin@heleam.com',
+    smtpPassword: process.env.SMTP_PASSWORD || 'Fethi@2025*',
+    fromEmail: process.env.FROM_EMAIL || 'admin@heleam.com'
+  },
+  app: {
+    name: process.env.APP_NAME || 'Automivy',
+    frontendUrl: process.env.FRONTEND_URL || `http://${getLocalIP()}:5173`
   }
 };

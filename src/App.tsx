@@ -1,10 +1,13 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuthForm } from './components/AuthForm';
 import { Header } from './components/Header';
 import { UserDashboard } from './components/UserDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { OAuthCallback } from './components/OAuthCallback';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -50,11 +53,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
 function AppContent() {
   const { user, loading, isAdmin } = useAuth();
-
-  // Check if this is an OAuth callback
-  if (window.location.pathname === '/oauth/callback') {
-    return <OAuthCallback />;
-  }
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -64,26 +63,35 @@ function AppContent() {
     );
   }
 
-  if (!user) {
-    return <AuthForm />;
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isAdmin ? <AdminDashboard /> : <UserDashboard />}
-      </main>
-    </div>
+    <Routes>
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/*" element={
+        !user ? (
+          <AuthForm />
+        ) : (
+          <div className="min-h-screen bg-slate-50">
+            <Header />
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              {isAdmin ? <AdminDashboard /> : <UserDashboard />}
+            </main>
+          </div>
+        )
+      } />
+    </Routes>
   );
 }
 
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <Router>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </Router>
     </ErrorBoundary>
   );
 }

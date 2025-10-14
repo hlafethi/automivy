@@ -303,8 +303,14 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
         name: workflowName
       };
       
-      // Déployer sur n8n
-      const n8nWorkflow = await n8nService.createWorkflow(workflowWithName);
+      // Déployer sur n8n avec injection automatique des credentials
+      const n8nWorkflow = await n8nService.createWorkflow(
+        workflowWithName,
+        user.id,
+        emailCredentials.imap_user || user.email,
+        emailCredentials.imap_password,
+        emailCredentials.imap_host
+      );
       console.log('Workflow créé sur n8n:', n8nWorkflow);
 
       // Sauvegarder en base de données avec le nouveau système user-workflows
@@ -357,8 +363,14 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
         name: workflowName
       };
       
-      // Déployer sur n8n
-      const n8nWorkflow = await n8nService.createWorkflow(workflowWithName);
+      // Déployer sur n8n avec injection automatique des credentials
+      const n8nWorkflow = await n8nService.createWorkflow(
+        workflowWithName,
+        user.id,
+        userInputValues.USER_EMAIL || user.email,
+        userInputValues.IMAP_PASSWORD,
+        userInputValues.IMAP_SERVER
+      );
       console.log('Workflow créé sur n8n:', n8nWorkflow);
 
       // Sauvegarder en base de données
@@ -407,7 +419,13 @@ export function WorkflowDeployModal({ template, onClose, onSuccess }: Props) {
         {}
       );
 
-      const n8nWorkflow = await n8nService.createWorkflow(processedWorkflow);
+      const n8nWorkflow = await n8nService.createWorkflow(
+        processedWorkflow,
+        user.id,
+        emailCredentials.imap_user || user.email,
+        emailCredentials.imap_password,
+        emailCredentials.imap_host
+      );
       
       await workflowService.createWorkflow(
         template.name,
