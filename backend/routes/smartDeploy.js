@@ -59,18 +59,45 @@ router.post('/analyze', authenticateToken, async (req, res) => {
     console.log('🔍 [SmartDeploy] Template JSON type:', typeof template.json);
     
     // Utiliser le workflow JSON du template
-    const workflowJson = template.json;
+    let workflowJson;
+    try {
+      workflowJson = typeof template.json === 'string'
+        ? JSON.parse(template.json)
+        : template.json;
+      console.log('✅ [SmartDeploy] JSON parsé avec succès');
+      console.log('🔍 [SmartDeploy] Workflow JSON type:', typeof workflowJson);
+      console.log('🔍 [SmartDeploy] Workflow JSON keys:', Object.keys(workflowJson || {}));
+    } catch (parseErr) {
+      console.error('❌ [SmartDeploy] Erreur parsing JSON workflow:', parseErr);
+      console.error('❌ [SmartDeploy] Template JSON brut:', template.json);
+      return res.status(400).json({ 
+        error: 'JSON du workflow invalide', 
+        details: parseErr.message,
+        templateId: template.id
+      });
+    }
     
     if (!workflowJson) {
-      console.log('❌ [SmartDeploy] Template JSON manquant');
+      console.log('❌ [SmartDeploy] Template JSON manquant après parsing');
       return res.status(500).json({ error: 'Template JSON manquant' });
     }
     
     console.log('🔍 [SmartDeploy] Début analyse des credentials...');
     
     // Analyser les credentials requis
-    const requiredCredentials = analyzeWorkflowCredentials(workflowJson);
-    console.log('✅ [SmartDeploy] Credentials analysés:', requiredCredentials.length);
+    let requiredCredentials;
+    try {
+      requiredCredentials = analyzeWorkflowCredentials(workflowJson);
+      console.log('✅ [SmartDeploy] Credentials analysés:', requiredCredentials.length);
+    } catch (analyzeErr) {
+      console.error('❌ [SmartDeploy] Erreur analyse des credentials:', analyzeErr);
+      console.error('❌ [SmartDeploy] Workflow JSON:', JSON.stringify(workflowJson, null, 2));
+      return res.status(400).json({ 
+        error: 'Erreur analyse credentials', 
+        details: analyzeErr.message,
+        templateId: template.id
+      });
+    }
     
     // Générer le formulaire dynamique
     const formConfig = generateDynamicForm(requiredCredentials);
@@ -128,6 +155,16 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     
     // Injecter les credentials utilisateur
     console.log('🔧 [SmartDeploy] Injection des credentials...');
+    console.log('🔧 [SmartDeploy] Credentials reçus:', Object.keys(credentials));
+    console.log('🔧 [SmartDeploy] Détails credentials:', {
+      email: credentials.email,
+      imapServer: credentials.imapServer,
+      imapPort: credentials.imapPort,
+      smtpServer: credentials.smtpServer,
+      smtpPort: credentials.smtpPort,
+      passwordLength: credentials.imapPassword?.length
+    });
+    
     const injectedWorkflow = await injectUserCredentials(workflowJson, credentials, req.user.id);
     
     // Créer un nouveau workflow dans n8n avec les credentials injectés
@@ -155,11 +192,12 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     
     // Enregistrer le workflow déployé dans la base de données
     const userWorkflow = await db.createUserWorkflow({
-      user_id: req.user.id,
-      workflow_id: template.id,
-      n8n_workflow_id: deployedWorkflow.id,
+      userId: req.user.id,
+      templateId: template.id,
+      n8nWorkflowId: deployedWorkflow.id,
+      n8nCredentialId: null, // Pas de credential spécifique pour ce workflow
       name: `${template.name} - ${req.user.email}`,
-      status: 'active'
+      isActive: true
     });
     
     console.log('✅ [SmartDeploy] Workflow déployé avec succès:', deployedWorkflow.id);

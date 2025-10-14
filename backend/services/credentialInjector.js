@@ -42,39 +42,69 @@ async function injectUserCredentials(workflow, userCredentials, userId) {
     }
   }
   
-  // Injecter les credentials dans les nœuds
+  // Injecter les credentials et paramètres dans les nœuds
   if (injectedWorkflow.nodes) {
     injectedWorkflow.nodes = injectedWorkflow.nodes.map(node => {
       const updatedNode = { ...node };
       
+      // Injecter les credentials
       if (node.credentials && Object.keys(node.credentials).length > 0) {
         const updatedCredentials = {};
         
         Object.entries(node.credentials).forEach(([credType, credValue]) => {
-          // Vérifier si c'est un credential utilisateur
-          if (typeof credValue === 'string' && credValue.includes('USER_')) {
-            if (createdCredentials[credType]) {
-              updatedCredentials[credType] = {
-                id: createdCredentials[credType].id,
-                name: createdCredentials[credType].name
-              };
-              console.log(`✅ [CredentialInjector] Credential ${credType} injecté dans ${node.name}`);
-            }
-          } else if (typeof credValue === 'object' && credValue.id && credValue.id.includes('USER_')) {
-            if (createdCredentials[credType]) {
-              updatedCredentials[credType] = {
-                id: createdCredentials[credType].id,
-                name: createdCredentials[credType].name
-              };
-              console.log(`✅ [CredentialInjector] Credential ${credType} injecté dans ${node.name}`);
-            }
+          // Remplacer les credentials IMAP et SMTP par les nouveaux créés
+          if (credType === 'imap' && createdCredentials.imap) {
+            updatedCredentials[credType] = {
+              id: createdCredentials.imap.id,
+              name: createdCredentials.imap.name
+            };
+            console.log(`✅ [CredentialInjector] Credential IMAP remplacé dans ${node.name}: ${createdCredentials.imap.id}`);
+          } else if (credType === 'smtp' && createdCredentials.smtp) {
+            updatedCredentials[credType] = {
+              id: createdCredentials.smtp.id,
+              name: createdCredentials.smtp.name
+            };
+            console.log(`✅ [CredentialInjector] Credential SMTP remplacé dans ${node.name}: ${createdCredentials.smtp.id}`);
           } else {
-            // Garder les credentials admin existants
+            // Garder les credentials admin existants (ex: OpenRouter)
             updatedCredentials[credType] = credValue;
+            console.log(`🔒 [CredentialInjector] Credential ${credType} conservé dans ${node.name}`);
           }
         });
         
         updatedNode.credentials = updatedCredentials;
+      }
+      
+      // Injecter les paramètres des nœuds
+      if (node.parameters) {
+        const updatedParameters = { ...node.parameters };
+        
+        // Remplacer les placeholders dans les paramètres
+        Object.keys(updatedParameters).forEach(paramKey => {
+          if (typeof updatedParameters[paramKey] === 'string') {
+            // Remplacer USER_EMAIL par l'email de l'utilisateur
+            if (updatedParameters[paramKey].includes('{{USER_EMAIL}}')) {
+              updatedParameters[paramKey] = updatedParameters[paramKey].replace('{{USER_EMAIL}}', userCredentials.email);
+              console.log(`✅ [CredentialInjector] Paramètre ${paramKey} mis à jour avec l'email utilisateur`);
+            }
+            // Remplacer d'autres placeholders si nécessaire
+            if (updatedParameters[paramKey].includes('{{USER_EMAIL_PLACEHOLDER}}')) {
+              updatedParameters[paramKey] = updatedParameters[paramKey].replace('{{USER_EMAIL_PLACEHOLDER}}', userCredentials.email);
+              console.log(`✅ [CredentialInjector] Paramètre ${paramKey} mis à jour avec l'email utilisateur`);
+            }
+            // Remplacer les expressions n8n qui ne fonctionnent pas
+            if (updatedParameters[paramKey].includes('{{ $credentials.smtp.user }}')) {
+              updatedParameters[paramKey] = updatedParameters[paramKey].replace('{{ $credentials.smtp.user }}', userCredentials.email);
+              console.log(`✅ [CredentialInjector] Paramètre ${paramKey} remplacé par l'email utilisateur`);
+            }
+            if (updatedParameters[paramKey].includes('{{ $credentials.imap.user }}')) {
+              updatedParameters[paramKey] = updatedParameters[paramKey].replace('{{ $credentials.imap.user }}', userCredentials.email);
+              console.log(`✅ [CredentialInjector] Paramètre ${paramKey} remplacé par l'email utilisateur`);
+            }
+          }
+        });
+        
+        updatedNode.parameters = updatedParameters;
       }
       
       return updatedNode;
@@ -92,19 +122,37 @@ async function injectUserCredentials(workflow, userCredentials, userId) {
  * @returns {Object} Credential créé
  */
 async function createImapCredential(userCredentials, userId) {
+  console.log('🔍 [CredentialInjector] DEBUG - Credentials reçus pour IMAP:');
+  console.log('  - userCredentials.email:', userCredentials.email);
+  console.log('  - userCredentials.imapPassword:', userCredentials.imapPassword);
+  console.log('  - userCredentials.imapPassword type:', typeof userCredentials.imapPassword);
+  console.log('  - userCredentials.imapPassword length:', userCredentials.imapPassword?.length);
+  console.log('  - userCredentials.imapServer:', userCredentials.imapServer);
+  console.log('  - userCredentials.imapPort:', userCredentials.imapPort);
+  console.log('  - userCredentials.imapPassword COMPLET:', JSON.stringify(userCredentials.imapPassword));
+  
   const credentialData = {
     name: `IMAP-${userId}-${Date.now()}`,
     type: 'imap',
     data: {
       user: userCredentials.email,
-      password: userCredentials.imapPassword,
+      password: userCredentials.smtpPassword, // Utiliser le mot de passe SMTP (qui est le bon)
       host: userCredentials.imapServer,
-      port: userCredentials.imapPort || 993,
+      port: parseInt(userCredentials.imapPort) || 993,
       secure: true
     }
   };
   
   console.log('🔧 [CredentialInjector] Création credential IMAP:', credentialData.name);
+  console.log('🔧 [CredentialInjector] Données IMAP finales:', {
+    user: credentialData.data.user,
+    host: credentialData.data.host,
+    port: credentialData.data.port,
+    secure: credentialData.data.secure,
+    passwordLength: credentialData.data.password?.length,
+    passwordPreview: credentialData.data.password ? credentialData.data.password.substring(0, 2) + '***' : 'UNDEFINED'
+  });
+  
   return await createCredentialInN8n(credentialData);
 }
 
@@ -115,15 +163,23 @@ async function createImapCredential(userCredentials, userId) {
  * @returns {Object} Credential créé
  */
 async function createSmtpCredential(userCredentials, userId) {
+  // Corriger le serveur SMTP si nécessaire
+  let smtpHost = userCredentials.smtpServer;
+  if (smtpHost === 'mail.heleam.com') {
+    smtpHost = 'mail.cygne.o2switch.net'; // Utiliser le serveur avec le bon certificat
+    console.log('🔧 [CredentialInjector] Serveur SMTP corrigé:', smtpHost);
+  }
+  
   const credentialData = {
     name: `SMTP-${userId}-${Date.now()}`,
     type: 'smtp',
     data: {
       user: userCredentials.smtpEmail || userCredentials.email,
       password: userCredentials.smtpPassword,
-      host: userCredentials.smtpServer,
+      host: smtpHost,
       port: userCredentials.smtpPort || 587,
-      secure: false // STARTTLS
+      secure: false, // STARTTLS
+      disableStartTls: false // Champ requis par n8n
     }
   };
   
@@ -138,6 +194,14 @@ async function createSmtpCredential(userCredentials, userId) {
  */
 async function createCredentialInN8n(credentialData) {
   try {
+    console.log('🔍 [CredentialInjector] DEBUG - Envoi à n8n:');
+    console.log('  - Type:', credentialData.type);
+    console.log('  - Name:', credentialData.name);
+    console.log('  - Data keys:', Object.keys(credentialData.data));
+    console.log('  - Password length:', credentialData.data.password?.length);
+    console.log('  - Password preview:', credentialData.data.password ? credentialData.data.password.substring(0, 2) + '***' : 'UNDEFINED');
+    console.log('  - Password COMPLET:', JSON.stringify(credentialData.data.password));
+    
     const response = await fetch('http://localhost:3004/api/n8n/credentials', {
       method: 'POST',
       headers: {
@@ -148,11 +212,13 @@ async function createCredentialInN8n(credentialData) {
     
     if (!response.ok) {
       const error = await response.text();
+      console.error('❌ [CredentialInjector] Erreur API n8n:', error);
       throw new Error(`Erreur création credential: ${error}`);
     }
     
     const result = await response.json();
     console.log('✅ [CredentialInjector] Credential créé dans n8n:', result.id);
+    console.log('✅ [CredentialInjector] Credential name:', result.name);
     return result;
     
   } catch (error) {

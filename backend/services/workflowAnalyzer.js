@@ -19,6 +19,14 @@ function analyzeWorkflowCredentials(workflow) {
   workflow.nodes.forEach((node, index) => {
     console.log(`🔍 [WorkflowAnalyzer] Analyse du nœud ${index + 1}: ${node.name} (${node.type})`);
     
+    // Détecter automatiquement les nœuds qui nécessitent des credentials utilisateur
+    const userCredentialTypes = detectUserCredentialTypes(node);
+    userCredentialTypes.forEach(credType => {
+      console.log(`  ✅ Credential utilisateur détecté: ${credType}`);
+      credentialTypes.add(credType);
+    });
+    
+    // Vérifier aussi les credentials existants pour des placeholders
     if (node.credentials && Object.keys(node.credentials).length > 0) {
       Object.entries(node.credentials).forEach(([credType, credValue]) => {
         console.log(`  - Credential ${credType}: ${JSON.stringify(credValue)}`);
@@ -49,6 +57,41 @@ function analyzeWorkflowCredentials(workflow) {
   });
   
   return requiredCredentials;
+}
+
+/**
+ * Détecte automatiquement les types de credentials utilisateur requis par un nœud
+ * @param {Object} node - Le nœud à analyser
+ * @returns {Array} Liste des types de credentials requis
+ */
+function detectUserCredentialTypes(node) {
+  const credentialTypes = [];
+  
+  // Détecter les nœuds IMAP
+  if (node.type === 'n8n-nodes-base.emailReadImap' || 
+      (node.type && node.type.includes('imap')) ||
+      (node.name && node.name.toLowerCase().includes('imap'))) {
+    credentialTypes.push('imap');
+  }
+  
+  // Détecter les nœuds SMTP
+  if (node.type === 'n8n-nodes-base.emailSend' || 
+      (node.type && node.type.includes('smtp')) ||
+      (node.name && node.name.toLowerCase().includes('smtp')) ||
+      (node.name && node.name.toLowerCase().includes('send email'))) {
+    credentialTypes.push('smtp');
+  }
+  
+  // Détecter les nœuds OpenAI/OpenRouter (gérés par l'admin)
+  if (node.type === 'n8n-nodes-base.openAi' || 
+      (node.type && node.type.includes('openai')) ||
+      (node.name && node.name.toLowerCase().includes('openai')) ||
+      (node.name && node.name.toLowerCase().includes('openrouter'))) {
+    // Les credentials OpenAI sont gérés par l'admin, pas par l'utilisateur
+    // credentialTypes.push('openAiApi');
+  }
+  
+  return credentialTypes;
 }
 
 /**
