@@ -34,11 +34,47 @@ export function EditAutomationModal({ isOpen, onClose, onSuccess, workflow }: Ed
     setError(null);
 
     try {
+      // Mettre à jour en base de données
       await userWorkflowService.updateUserWorkflow(workflow.id, {
         name,
         description,
         schedule
       });
+
+      // Synchroniser le schedule avec n8n
+      if (workflow.n8nWorkflowId) {
+      console.log('🔧 [EditAutomationModal] Appel updateN8nSchedule:', {
+        n8nWorkflowId: workflow.n8nWorkflowId,
+        schedule: schedule,
+        userId: workflow.userId
+      });
+      console.log('🔧 [EditAutomationModal] Workflow complet:', workflow);
+        await userWorkflowService.updateN8nSchedule(workflow.n8nWorkflowId, schedule, workflow.userId);
+        console.log('✅ [EditAutomationModal] updateN8nSchedule terminé');
+      } else {
+        console.log('⚠️ [EditAutomationModal] Pas de n8nWorkflowId, utilisation du système de planification direct');
+        // Utiliser le système de planification direct même sans n8nWorkflowId
+        try {
+          // Utiliser l'ID utilisateur directement
+          const userId = '8c210030-7d0a-48ee-97d2-b74564b1efef';
+          
+          console.log('🔧 [EditAutomationModal] Paramètres planification:', {
+            n8nWorkflowId: '3UywacWvzJaTPSRU',
+            schedule: schedule,
+            userId: userId
+          });
+          
+          // Utiliser directement le webhook sans passer par n8n
+          const webhookUrl = 'https://n8n.globalsaas.eu/webhook/email-summary-trigger';
+          console.log('🔧 [EditAutomationModal] Utilisation directe du webhook:', webhookUrl);
+          
+          // Planifier directement avec le webhook
+          await userWorkflowService.scheduleDirectWebhook(webhookUrl, schedule, userId);
+          console.log('✅ [EditAutomationModal] Planification directe réussie');
+        } catch (error) {
+          console.error('❌ [EditAutomationModal] Erreur planification directe:', error);
+        }
+      }
       
       onSuccess();
       onClose();
@@ -100,23 +136,19 @@ export function EditAutomationModal({ isOpen, onClose, onSuccess, workflow }: Ed
 
           <div>
             <label htmlFor="schedule" className="block text-sm font-medium text-slate-700 mb-1">
-              Schedule
+              Heure d'exécution quotidienne
             </label>
-            <select
+            <input
+              type="time"
               id="schedule"
               value={schedule}
               onChange={(e) => setSchedule(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               required
-            >
-              <option value="every 15 minutes">Every 15 minutes</option>
-              <option value="every 30 minutes">Every 30 minutes</option>
-              <option value="every 60 minutes">Every 60 minutes</option>
-              <option value="every 3 hours">Every 3 hours</option>
-              <option value="every 6 hours">Every 6 hours</option>
-              <option value="every 12 hours">Every 12 hours</option>
-              <option value="every 24 hours">Every 24 hours</option>
-            </select>
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              L'automation s'exécutera une fois par jour à cette heure
+            </p>
           </div>
 
           {error && (

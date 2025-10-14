@@ -30,9 +30,16 @@ class ApiClient {
       (headers as any).Authorization = `Bearer ${this.token}`;
     }
 
+    // Sérialiser le body en JSON si c'est un objet
+    let body = options.body;
+    if (body && typeof body === 'object' && !(body instanceof FormData)) {
+      body = JSON.stringify(body);
+    }
+
     const response = await fetch(url, {
       ...options,
       headers,
+      body,
     });
 
     if (!response.ok) {

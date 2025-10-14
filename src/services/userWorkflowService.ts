@@ -208,6 +208,74 @@ class UserWorkflowService {
   }
 
   /**
+   * Planifie directement un webhook sans passer par n8n
+   */
+  async scheduleDirectWebhook(webhookUrl: string, schedule: string, userId: string): Promise<void> {
+    try {
+      console.log('🔧 [UserWorkflowService] Planification directe webhook:', { webhookUrl, schedule, userId });
+      
+      // Appeler le script de planification backend avec l'URL webhook directe
+      const response = await fetch('http://localhost:3004/api/schedule-direct-webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          userId,
+          webhookUrl,
+          schedule
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Schedule service error: ${error}`);
+      }
+
+      console.log('✅ [UserWorkflowService] Planification directe réussie');
+      
+    } catch (error) {
+      console.error('❌ [UserWorkflowService] Erreur planification directe:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Met à jour le schedule d'un workflow via webhook n8n
+   */
+  async updateN8nSchedule(n8nWorkflowId: string, schedule: string, userId: string): Promise<void> {
+    try {
+      console.log('🔧 [UserWorkflowService] Mise à jour schedule via webhook:', { n8nWorkflowId, schedule, userId });
+      
+      // Appeler le script de planification backend
+      const response = await fetch('http://localhost:3004/api/schedule-workflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          userId,
+          n8nWorkflowId,
+          schedule
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Schedule service error: ${error}`);
+      }
+
+      console.log('✅ [UserWorkflowService] Schedule mis à jour via webhook');
+      
+    } catch (error) {
+      console.error('❌ [UserWorkflowService] Erreur mise à jour schedule:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Supprime un workflow utilisateur (cascade n8n + BDD)
    */
   async deleteUserWorkflow(workflowId: string): Promise<void> {

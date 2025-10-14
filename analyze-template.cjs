@@ -1,0 +1,35 @@
+const db = require('./backend/database');
+
+async function analyzeTemplate() {
+  try {
+    console.log('🔍 Analyse du template v11...');
+    const template = await db.getTemplateByIdForUser('77a79f77-188c-45df-a799-bdaaf06acaeb', '00000000-0000-0000-0000-000000000001');
+    
+    if (template) {
+      console.log('✅ Template trouvé:', template.name);
+      
+      if (template.json && template.json.nodes) {
+        console.log('\n🔍 Analyse des nœuds:');
+        template.json.nodes.forEach((node, index) => {
+          console.log(`\n--- Nœud ${index + 1}: ${node.name} (${node.type}) ---`);
+          if (node.credentials) {
+            console.log('Credentials présents:', Object.keys(node.credentials));
+            Object.entries(node.credentials).forEach(([type, cred]) => {
+              console.log(`  ${type}:`, JSON.stringify(cred));
+            });
+          } else {
+            console.log('Aucun credential');
+          }
+        });
+      }
+    } else {
+      console.log('❌ Template non trouvé');
+    }
+  } catch (error) {
+    console.error('❌ Erreur:', error);
+  } finally {
+    await db.end();
+  }
+}
+
+analyzeTemplate();

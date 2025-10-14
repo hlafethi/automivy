@@ -68,6 +68,12 @@ export function UserAutomations() {
     console.log('🔧 [UserAutomations] handleEdit appelé:', workflowId);
     const workflow = workflows.find(w => w.id === workflowId);
     if (workflow) {
+      console.log('🔧 [UserAutomations] Workflow trouvé:', {
+        id: workflow.id,
+        name: workflow.name,
+        n8nWorkflowId: workflow.n8nWorkflowId,
+        hasN8nWorkflowId: !!workflow.n8nWorkflowId
+      });
       setEditingWorkflow(workflow);
       setShowEditModal(true);
     }

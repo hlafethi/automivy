@@ -198,6 +198,10 @@ export const n8nService = {
     return await callN8nProxy('GET', `/workflows/${workflowId}`);
   },
 
+  async updateWorkflow(workflowId: string, workflow: N8nWorkflow): Promise<N8nWorkflow> {
+    return await callN8nProxy('PATCH', `/workflows/${workflowId}`, workflow);
+  },
+
   async deleteWorkflow(workflowId: string): Promise<void> {
     try {
       console.log(`Suppression du workflow ${workflowId} sur n8n...`);
