@@ -29,7 +29,7 @@ module.exports = {
   },
   server: {
     port: process.env.PORT || 3004,
-    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173'
+    corsOrigin: process.env.CORS_ORIGIN || ['http://localhost:5173', 'http://localhost:3005']
   },
   n8n: {
     url: process.env.N8N_URL || 'https://n8n.globalsaas.eu',

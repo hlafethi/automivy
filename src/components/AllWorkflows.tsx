@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, Trash2, Loader2, Activity, Clock, User, Eye } from 'lucide-react';
+import { Play, Pause, Trash2, Loader2, Activity, Clock, User, Eye, FileText } from 'lucide-react';
 import { Workflow } from '../types';
 import { workflowService } from '../services';
 import { useAuth } from '../contexts/AuthContext';
+import PDFFormModal from './PDFFormModal';
 
 export function AllWorkflows() {
   const { user } = useAuth();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showPDFModal, setShowPDFModal] = useState(false);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -72,10 +75,15 @@ export function AllWorkflows() {
     }
   };
 
+  const handlePDFForm = (workflow: Workflow) => {
+    setSelectedWorkflow(workflow);
+    setShowPDFModal(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
       </div>
     );
   }
@@ -103,52 +111,74 @@ export function AllWorkflows() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {workflows.map((workflow) => (
             <div
               key={workflow.id}
-              className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition"
+              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-green-300"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-semibold text-slate-900">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-900 text-lg mb-1">
                       {workflow.name}
                     </h4>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      workflow.active 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {workflow.active ? 'Active' : 'Inactive'}
-                    </span>
+                    <p className="text-xs text-slate-500">
+                      Workflow ID: {workflow.id.slice(0, 8)}...
+                    </p>
                   </div>
-                  
-                  <div className="flex items-center gap-4 text-sm text-slate-600 mb-2">
-                    <div className="flex items-center gap-1">
-                      <User className="w-4 h-4" />
-                      <span>User: {workflow.user_id}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>Created: {new Date(workflow.created_at).toLocaleDateString()}</span>
-                    </div>
-                    {workflow.n8n_workflow_id && (
-                      <div className="flex items-center gap-1">
-                        <Activity className="w-4 h-4" />
-                        <span>n8n ID: {workflow.n8n_workflow_id}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {workflow.params && typeof workflow.params === 'object' && (
-                    <div className="text-sm text-slate-600">
-                      <strong>Description:</strong> {workflow.params.description || 'No description'}
-                    </div>
-                  )}
                 </div>
+                <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                  workflow.active 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {workflow.active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
 
+              <div className="mb-4">
+                <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
+                  <div className="flex items-center gap-1">
+                    <User className="w-4 h-4" />
+                    <span>User: {workflow.user_id}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    <span>{new Date(workflow.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                
+                {workflow.n8n_workflow_id && (
+                  <div className="flex items-center gap-1 text-sm text-slate-600 mb-3">
+                    <Activity className="w-4 h-4" />
+                    <span>n8n ID: {workflow.n8n_workflow_id}</span>
+                  </div>
+                )}
+
+                {workflow.params && typeof workflow.params === 'object' && (
+                  <p className="text-sm text-slate-600 line-clamp-2">
+                    <strong>Description:</strong> {workflow.params.description || 'No description'}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
+                  {/* Bouton PDF Form - uniquement pour PDF Analysis Complete */}
+                  {workflow.name === 'PDF Analysis Complete' && (
+                    <button
+                      onClick={() => handlePDFForm(workflow)}
+                      className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                      title="Lancer le formulaire PDF"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
+                  )}
+                  
                   <button
                     onClick={() => handleToggleWorkflow(workflow.id, workflow.active)}
                     disabled={actionLoading === workflow.id}
@@ -160,11 +190,11 @@ export function AllWorkflows() {
                     title={workflow.active ? 'Deactivate' : 'Activate'}
                   >
                     {actionLoading === workflow.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : workflow.active ? (
-                      <Pause className="w-5 h-5" />
+                      <Pause className="w-4 h-4" />
                     ) : (
-                      <Play className="w-5 h-5" />
+                      <Play className="w-4 h-4" />
                     )}
                   </button>
                   
@@ -178,9 +208,9 @@ export function AllWorkflows() {
                     title="Delete workflow"
                   >
                     {actionLoading === workflow.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4" />
                     )}
                   </button>
                 </div>
@@ -188,6 +218,18 @@ export function AllWorkflows() {
             </div>
           ))}
         </div>
+      )}
+
+      {showPDFModal && selectedWorkflow && (
+        <PDFFormModal
+          workflowId={selectedWorkflow.id}
+          workflowName={selectedWorkflow.name}
+          isOpen={showPDFModal}
+          onClose={() => {
+            setShowPDFModal(false);
+            setSelectedWorkflow(null);
+          }}
+        />
       )}
     </div>
   );

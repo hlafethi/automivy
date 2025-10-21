@@ -298,67 +298,49 @@ export const n8nService = {
     const adminCreds = await this.getAdminCredentials();
     
     // 6. Créer les credentials IMAP et SMTP pour l'utilisateur
-    let userImapCredentialId: string | null = null;
-    let userSmtpCredentialId: string | null = null;
+    // Au lieu de créer de nouveaux credentials, modifier directement le JSON du workflow
+    console.log('🔧 [injectParams] Modification directe du JSON du workflow avec les credentials utilisateur');
     
+    // Dériver automatiquement le serveur SMTP
+    const smtpServer = params.IMAP_SERVER.replace('imap', 'smtp');
+    console.log('🔧 [injectParams] Serveur SMTP dérivé:', smtpServer);
+
+    // 7. Injecter directement les credentials dans le JSON du workflow
     if (params.USER_EMAIL && params.IMAP_PASSWORD && params.IMAP_SERVER) {
-      try {
-        // Créer credential IMAP
-        const imapCred = await this.createCredential({
-          name: `IMAP-${userId}-${Date.now()}`,
-          type: 'imap',
-          data: {
-            user: params.USER_EMAIL,
-            password: params.IMAP_PASSWORD,
-            host: params.IMAP_SERVER,
-            port: 993,
-            secure: true
-          }
-        });
-        userImapCredentialId = imapCred.id;
-        console.log('✅ [injectParams] Credential IMAP utilisateur créé:', imapCred.id);
-
-        // Dériver automatiquement le serveur SMTP
-        const smtpServer = params.IMAP_SERVER.replace('imap', 'smtp');
-        console.log('🔧 [injectParams] Serveur SMTP dérivé:', smtpServer);
-
-        // Créer credential SMTP avec les mêmes infos
-        const smtpCred = await this.createCredential({
-          name: `SMTP-${userId}-${Date.now()}`,
-          type: 'smtp',
-          data: {
-            user: params.USER_EMAIL,
-            password: params.IMAP_PASSWORD, // Même mot de passe
-            host: smtpServer, // Serveur dérivé automatiquement
-            port: 587,
-            secure: false // STARTTLS
-          }
-        });
-        userSmtpCredentialId = smtpCred.id;
-        console.log('✅ [injectParams] Credential SMTP utilisateur créé:', smtpCred.id);
-        
-      } catch (error) {
-        console.error('❌ [injectParams] Erreur création credentials utilisateur:', error);
-      }
-    }
-
-    // 7. Remplacer les placeholders de credentials
-    if (userImapCredentialId) {
-      workflowString = workflowString.replace(
-        /"USER_IMAP_CREDENTIAL_PLACEHOLDER"/g,
-        JSON.stringify({ id: userImapCredentialId, name: `IMAP-${userId}` })
-      );
-    }
-    
-    if (userSmtpCredentialId) {
+      console.log('🔧 [injectParams] Injection des credentials utilisateur dans le workflow JSON');
+      
+      // Remplacer les credentials SMTP avec les données utilisateur
+      const smtpCredentials = {
+        user: params.USER_EMAIL,
+        password: params.IMAP_PASSWORD,
+        host: smtpServer,
+        port: 465,
+        secure: true, // SSL/TLS activé
+        disableStartTls: true // SSL direct
+      };
+      
+      // Remplacer le placeholder SMTP par les vraies credentials
       workflowString = workflowString.replace(
         /"USER_SMTP_CREDENTIAL_ID"/g,
-        userSmtpCredentialId
+        'USER_SMTP_CREDENTIAL_ID' // Garder l'ID pour référence
       );
       workflowString = workflowString.replace(
         /"USER_SMTP_CREDENTIAL_NAME"/g,
         `SMTP-${userId}`
       );
+      
+      // Remplacer le placeholder des credentials SMTP par les vraies données
+      workflowString = workflowString.replace(
+        /"USER_SMTP_CREDENTIAL_PLACEHOLDER"/g,
+        JSON.stringify(smtpCredentials)
+      );
+      
+      console.log('✅ [injectParams] Credentials SMTP injectés dans le workflow:', {
+        user: params.USER_EMAIL,
+        host: smtpServer,
+        port: 465,
+        secure: true
+      });
     }
     
     if (adminCreds.OPENROUTER_ID) {

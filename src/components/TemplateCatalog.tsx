@@ -74,38 +74,48 @@ export function TemplateCatalog() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {templates.map((template) => (
             <div
               key={template.id}
-              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition"
+              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-green-300"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <FileCode className="w-5 h-5 text-blue-600" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
+                    <FileCode className="w-6 h-6 text-green-600" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">{template.name}</h3>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-900 text-lg">{template.name}</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Template ID: {template.id.slice(0, 8)}...
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <p className="text-sm text-slate-600 mb-4 line-clamp-2">
-                {template.description || 'No description available'}
-              </p>
+              <div className="mb-4">
+                <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                  {template.description || 'No description available'}
+                </p>
+              </div>
 
-              <button
-                onClick={() => {
-                  console.log('Deploy button clicked for template:', template.name);
-                  console.log('Template object:', template);
-                  setSelectedTemplate(template);
-                }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
-              >
-                <Plus className="w-4 h-4" />
-                Deploy
-              </button>
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-slate-500">
+                  Created: {new Date(template.created_at).toLocaleDateString()}
+                </div>
+                <button
+                  onClick={() => {
+                    console.log('Deploy button clicked for template:', template.name);
+                    console.log('Template object:', template);
+                    setSelectedTemplate(template);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  Deploy
+                </button>
+              </div>
             </div>
           ))}
         </div>

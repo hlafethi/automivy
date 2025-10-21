@@ -25,7 +25,7 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('list')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'list'
-                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -36,7 +36,7 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('upload')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'upload'
-                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -47,7 +47,7 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('ai')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'ai'
-                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -58,7 +58,7 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('apikeys')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'apikeys'
-                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -69,7 +69,7 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('workflows')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'workflows'
-                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >

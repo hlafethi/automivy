@@ -36,9 +36,10 @@ async function injectUserCredentials(workflow, userCredentials, userId) {
     }
     
     if (credConfig.type === 'smtp') {
+      // Créer le credential SMTP natif dans n8n avec SSL/TLS
       const smtpCred = await createSmtpCredential(userCredentials, userId);
       createdCredentials.smtp = smtpCred;
-      console.log('✅ [CredentialInjector] Credential SMTP créé:', smtpCred.id);
+      console.log('✅ [CredentialInjector] Credential SMTP natif créé:', smtpCred.id);
     }
   }
   
@@ -65,6 +66,18 @@ async function injectUserCredentials(workflow, userCredentials, userId) {
               name: createdCredentials.smtp.name
             };
             console.log(`✅ [CredentialInjector] Credential SMTP remplacé dans ${node.name}: ${createdCredentials.smtp.id}`);
+          } else if (credType === 'smtp' && credValue.id === 'USER_SMTP_CREDENTIAL_ID' && createdCredentials.smtp) {
+            updatedCredentials[credType] = {
+              id: createdCredentials.smtp.id,
+              name: createdCredentials.smtp.name
+            };
+            console.log(`✅ [CredentialInjector] Placeholder SMTP remplacé dans ${node.name}: ${createdCredentials.smtp.id}`);
+          } else if (credType === 'imap' && credValue.id === 'USER_IMAP_CREDENTIAL_ID' && createdCredentials.imap) {
+            updatedCredentials[credType] = {
+              id: createdCredentials.imap.id,
+              name: createdCredentials.imap.name
+            };
+            console.log(`✅ [CredentialInjector] Placeholder IMAP remplacé dans ${node.name}: ${createdCredentials.imap.id}`);
           } else {
             // Garder les credentials admin existants (ex: OpenRouter)
             updatedCredentials[credType] = credValue;
@@ -104,6 +117,29 @@ async function injectUserCredentials(workflow, userCredentials, userId) {
           }
         });
         
+        // Ajouter les options de retry et timeout pour le nœud Send Email
+        if (node.type === 'n8n-nodes-base.emailSend') {
+          console.log('🔧 [CredentialInjector] Configuration options pour Send Email...');
+          
+          updatedParameters.options = {
+            ...updatedParameters.options,
+            retryOnFail: true,
+            retryTimes: 5,
+            retryDelay: 10000,
+            timeout: 60000,
+            connectionTimeout: 30000,
+            greetingTimeout: 15000,
+            socketTimeout: 30000,
+            pool: true,
+            maxConnections: 5,
+            maxMessages: 100,
+            rateDelta: 1000,
+            rateLimit: 5
+          };
+          
+          console.log('✅ [CredentialInjector] Options Send Email configurées');
+        }
+        
         updatedNode.parameters = updatedParameters;
       }
       
@@ -136,9 +172,9 @@ async function createImapCredential(userCredentials, userId) {
     type: 'imap',
     data: {
       user: userCredentials.email,
-      password: userCredentials.smtpPassword, // Utiliser le mot de passe SMTP (qui est le bon)
+      password: userCredentials.imapPassword, // Utiliser le mot de passe IMAP
       host: userCredentials.imapServer,
-      port: parseInt(userCredentials.imapPort) || 993,
+      port: 993, // Port en number
       secure: true
     }
   };
@@ -153,38 +189,105 @@ async function createImapCredential(userCredentials, userId) {
     passwordPreview: credentialData.data.password ? credentialData.data.password.substring(0, 2) + '***' : 'UNDEFINED'
   });
   
-  return await createCredentialInN8n(credentialData);
+  // Créer le credential IMAP via le proxy backend
+  try {
+    console.log('🔧 [CredentialInjector] Création credential IMAP via proxy...');
+    
+    const response = await fetch('http://localhost:3004/api/n8n/credentials', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentialData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Erreur création credential IMAP: ${response.status} - ${errorText}`);
+    }
+
+    const credential = await response.json();
+    console.log('✅ [CredentialInjector] Credential IMAP créé via proxy:', credential.id);
+    
+    return credential;
+  } catch (error) {
+    console.error('❌ [CredentialInjector] Erreur création credential IMAP via proxy:', error);
+    throw error;
+  }
 }
 
 /**
- * Crée un credential SMTP pour l'utilisateur
+ * Crée un credential SMTP pour l'utilisateur avec SSL/TLS natif
  * @param {Object} userCredentials - Credentials de l'utilisateur
  * @param {string} userId - ID de l'utilisateur
  * @returns {Object} Credential créé
  */
 async function createSmtpCredential(userCredentials, userId) {
-  // Corriger le serveur SMTP si nécessaire
-  let smtpHost = userCredentials.smtpServer;
-  if (smtpHost === 'mail.heleam.com') {
-    smtpHost = 'mail.cygne.o2switch.net'; // Utiliser le serveur avec le bon certificat
-    console.log('🔧 [CredentialInjector] Serveur SMTP corrigé:', smtpHost);
-  }
-  
-  const credentialData = {
-    name: `SMTP-${userId}-${Date.now()}`,
-    type: 'smtp',
-    data: {
-      user: userCredentials.smtpEmail || userCredentials.email,
-      password: userCredentials.smtpPassword,
-      host: smtpHost,
-      port: userCredentials.smtpPort || 587,
-      secure: false, // STARTTLS
-      disableStartTls: false // Champ requis par n8n
+  try {
+    console.log('🚨🚨🚨 [CredentialInjector] ========================================== 🚨🚨🚨');
+    console.log('🚨🚨🚨 [CredentialInjector] CRÉATION CREDENTIAL SMTP DÉMARRÉE 🚨🚨🚨');
+    console.log('🚨🚨🚨 [CredentialInjector] ========================================== 🚨🚨🚨');
+    console.log('🔧 [CredentialInjector] Création credential SMTP natif avec SSL/TLS...');
+    console.log('🔧 [CredentialInjector] User credentials reçus:', {
+      smtpPort: userCredentials.smtpPort,
+      smtpPortType: typeof userCredentials.smtpPort,
+      smtpServer: userCredentials.smtpServer,
+      smtpEmail: userCredentials.smtpEmail
+    });
+    
+    // Payload exact pour garantir le bouton SSL/TLS activé
+    const smtpCredentialData = {
+      name: `SMTP-${userId}`,
+      type: "smtp",
+      data: {
+        host: userCredentials.smtpServer || userCredentials.IMAP_SERVER?.replace('imap', 'smtp'),
+        user: userCredentials.smtpEmail || userCredentials.email,
+        password: userCredentials.smtpPassword,
+        port: Number(userCredentials.smtpPort) || 465, // Utiliser le port utilisateur ou 465 par défaut
+        secure: Number(userCredentials.smtpPort) === 465 || Number(userCredentials.smtpPort) === 587 // SSL si port 465, TLS si 587
+      }
+    };
+
+    console.log('📤 [CredentialInjector] Payload SMTP natif:', JSON.stringify(smtpCredentialData, null, 2));
+    console.log('🔍 [CredentialInjector] DEBUG - Port type:', typeof smtpCredentialData.data.port);
+    console.log('🔍 [CredentialInjector] DEBUG - Port value:', smtpCredentialData.data.port);
+    console.log('🔍 [CredentialInjector] DEBUG - User credentials smtpPort:', userCredentials.smtpPort);
+    console.log('🔍 [CredentialInjector] DEBUG - User credentials smtpPort type:', typeof userCredentials.smtpPort);
+    console.log('🔍 [CredentialInjector] DEBUG - Number conversion result:', Number(userCredentials.smtpPort));
+    console.log('🔍 [CredentialInjector] DEBUG - Number conversion type:', typeof Number(userCredentials.smtpPort));
+    console.log('🔍 [CredentialInjector] DEBUG - isNaN check:', isNaN(Number(userCredentials.smtpPort)));
+    console.log('🔍 [CredentialInjector] DEBUG - Final port value:', Number(userCredentials.smtpPort) || 465);
+
+    console.log('🔧 [CredentialInjector] Envoi de la requête à n8n...');
+    const response = await fetch('http://localhost:3004/api/n8n/credentials', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(smtpCredentialData),
+    });
+
+    console.log('📋 [CredentialInjector] Réponse n8n:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('❌ [CredentialInjector] Erreur détaillée:', errorText);
+      throw new Error(`Erreur création credential SMTP: ${response.status} - ${errorText}`);
     }
-  };
-  
-  console.log('🔧 [CredentialInjector] Création credential SMTP:', credentialData.name);
-  return await createCredentialInN8n(credentialData);
+
+    const credential = await response.json();
+    console.log('✅ [CredentialInjector] Credential SMTP natif créé:', credential.id);
+    console.log('📋 [CredentialInjector] Détails credential créé:', {
+      id: credential.id,
+      name: credential.name,
+      type: credential.type
+    });
+    
+    return credential;
+  } catch (error) {
+    console.error('❌ [CredentialInjector] Erreur création credential SMTP natif:', error);
+    throw error;
+  }
 }
 
 /**

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Play, Pause, Trash2, Edit, Clock, Mail, Loader2 } from 'lucide-react';
+import { Plus, Play, Pause, Trash2, Edit, Clock, Mail, Loader2, FileText, Grid3X3 } from 'lucide-react';
 import { userWorkflowService, UserWorkflow } from '../services/userWorkflowService';
 import { useAuth } from '../contexts/AuthContext';
 import { CreateAutomationModal } from './CreateAutomationModal';
 import { EditAutomationModal } from './EditAutomationModal';
+import { TemplateCatalog } from './TemplateCatalog';
+import SmartDeployModal from './SmartDeployModal';
+import PDFFormModal from './PDFFormModal';
 
 export function UserAutomations() {
   const { user, loading: authLoading } = useAuth();
@@ -13,6 +16,10 @@ export function UserAutomations() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<UserWorkflow | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showPDFModal, setShowPDFModal] = useState(false);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<UserWorkflow | null>(null);
+  const [activeTab, setActiveTab] = useState<'automations' | 'catalog'>('automations');
+  const [showSmartDeploy, setShowSmartDeploy] = useState(false);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -101,6 +108,11 @@ export function UserAutomations() {
     loadWorkflows(); // Recharger les workflows après édition
   };
 
+  const handlePDFForm = (workflow: UserWorkflow) => {
+    setSelectedWorkflow(workflow);
+    setShowPDFModal(true);
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -113,114 +125,168 @@ export function UserAutomations() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">My Automations</h2>
+          <h2 className="text-2xl font-bold text-slate-900">User Dashboard</h2>
           <p className="text-slate-600 mt-1">
-            Manage your email analysis workflows
+            Manage your automations and browse templates
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Create Automation</span>
-        </button>
-      </div>
-
-      {workflows.length === 0 ? (
-        <div className="text-center py-12 bg-slate-50 rounded-lg">
-          <Mail className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-slate-900 mb-2">No Automations Yet</h3>
-          <p className="text-slate-600 mb-4">
-            Create your first email analysis automation to get started
-          </p>
+        {activeTab === 'automations' && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center space-x-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition"
           >
-            Create Your First Automation
+            <Plus className="w-5 h-5" />
+            <span>Create Automation</span>
           </button>
+        )}
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="border-b border-slate-200">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab('automations')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
+                activeTab === 'automations'
+                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Mail className="w-5 h-5" />
+              My Automations
+            </button>
+            <button
+              onClick={() => setActiveTab('catalog')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
+                activeTab === 'catalog'
+                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Grid3X3 className="w-5 h-5" />
+              Template Catalog
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="grid gap-4">
+
+        <div className="p-6">
+          {activeTab === 'automations' && (
+            <div className="space-y-6">
+
+              {workflows.length === 0 ? (
+                <div className="text-center py-12 bg-slate-50 rounded-lg">
+                  <Mail className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No Automations Yet</h3>
+                  <p className="text-slate-600 mb-4">
+                    Create your first email analysis automation to get started
+                  </p>
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition"
+                  >
+                    Create Your First Automation
+                  </button>
+                </div>
+              ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {workflows.map((workflow) => (
             <div
               key={workflow.id}
-              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition"
+              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-green-300"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-slate-900">
-                      {workflow.name}
-                    </h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      workflow.is_active 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {workflow.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  
-                  {workflow.description && (
-                    <p className="text-slate-600 mb-3">{workflow.description}</p>
-                  )}
-                  
-                  <div className="flex items-center space-x-4 text-sm text-slate-500">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>Runs at {workflow.schedule}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Mail className="w-4 h-4" />
-                      <span>Email Analysis</span>
-                    </div>
-                  </div>
-                </div>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="text-lg font-semibold text-slate-900">
+                              {workflow.name}
+                            </h3>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              workflow.is_active 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {workflow.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          
+                          {workflow.description && (
+                            <p className="text-slate-600 mb-3">{workflow.description}</p>
+                          )}
+                          
+                          <div className="flex items-center space-x-4 text-sm text-slate-500">
+                            <div className="flex items-center space-x-1">
+                              <Clock className="w-4 h-4" />
+                              <span>Runs at {workflow.schedule}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Mail className="w-4 h-4" />
+                              <span>Email Analysis</span>
+                            </div>
+                          </div>
+                        </div>
 
-                <div className="flex items-center space-x-2 ml-4">
-                  <button
-                    onClick={() => handleToggle(workflow.id, workflow.is_active)}
-                    disabled={actionLoading === workflow.id}
-                    className={`p-2 rounded-lg transition disabled:opacity-50 ${
-                      workflow.is_active
-                        ? 'text-orange-600 hover:bg-orange-50'
-                        : 'text-green-600 hover:bg-green-50'
-                    }`}
-                    title={workflow.is_active ? 'Pause automation' : 'Start automation'}
-                  >
-                    {actionLoading === workflow.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : workflow.is_active ? (
-                      <Pause className="w-5 h-5" />
-                    ) : (
-                      <Play className="w-5 h-5" />
-                    )}
-                  </button>
-                  
-                  <button
-                    onClick={() => handleEdit(workflow.id)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                    title="Edit automation"
-                  >
-                    <Edit className="w-5 h-5" />
-                  </button>
-                  
-                  <button
-                    onClick={() => handleDelete(workflow.id)}
-                    disabled={actionLoading === workflow.id}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                    title="Delete automation"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                        <div className="flex items-center space-x-2 ml-4">
+                          {/* Bouton PDF Form - uniquement pour PDF Analysis Complete */}
+                          {workflow.name.includes('PDF Analysis Complete') && (
+                            <button
+                              onClick={() => handlePDFForm(workflow)}
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                              title="Lancer le formulaire PDF"
+                            >
+                              <FileText className="w-5 h-5" />
+                            </button>
+                          )}
+                          
+                          <button
+                            onClick={() => handleToggle(workflow.id, workflow.is_active)}
+                            disabled={actionLoading === workflow.id}
+                            className={`p-2 rounded-lg transition disabled:opacity-50 ${
+                              workflow.is_active
+                                ? 'text-orange-600 hover:bg-orange-50'
+                                : 'text-green-600 hover:bg-green-50'
+                            }`}
+                            title={workflow.is_active ? 'Pause automation' : 'Start automation'}
+                          >
+                            {actionLoading === workflow.id ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : workflow.is_active ? (
+                              <Pause className="w-5 h-5" />
+                            ) : (
+                              <Play className="w-5 h-5" />
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleEdit(workflow.id)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Edit automation"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDelete(workflow.id)}
+                            disabled={actionLoading === workflow.id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                            title="Delete automation"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
-          ))}
+          )}
+
+          {activeTab === 'catalog' && (
+            <TemplateCatalog />
+          )}
         </div>
-      )}
+      </div>
 
       {showCreateModal && (
         <CreateAutomationModal
@@ -243,6 +309,43 @@ export function UserAutomations() {
           workflow={editingWorkflow}
         />
       )}
+
+      {showPDFModal && selectedWorkflow && (
+        <PDFFormModal
+          workflowId={selectedWorkflow.id}
+          workflowName={selectedWorkflow.name}
+          isOpen={showPDFModal}
+          onClose={() => {
+            setShowPDFModal(false);
+            setSelectedWorkflow(null);
+          }}
+        />
+      )}
+
+      {/* Bouton flottant + pour Smart Deploy */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => {
+            console.log('🔧 [UserAutomations] Bouton SmartDeploy cliqué');
+            setShowSmartDeploy(true);
+          }}
+          className="bg-green-700 text-white p-4 rounded-full shadow-lg hover:bg-green-800 transition-colors border-2 border-white"
+          title="Déployer un workflow intelligent"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Modal Smart Deploy */}
+      <SmartDeployModal
+        isOpen={showSmartDeploy}
+        onClose={() => setShowSmartDeploy(false)}
+        onSuccess={(workflow) => {
+          console.log('Workflow déployé avec succès:', workflow);
+          // Rafraîchir la liste des automations
+          loadWorkflows();
+        }}
+      />
     </div>
   );
 }

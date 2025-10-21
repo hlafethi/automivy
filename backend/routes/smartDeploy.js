@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const fetch = require('node-fetch');
 const { authenticateToken } = require('../middleware/auth');
 const { analyzeWorkflowCredentials, generateDynamicForm } = require('../services/workflowAnalyzer');
 const { injectUserCredentials } = require('../services/credentialInjector');
@@ -134,9 +135,31 @@ router.post('/analyze', authenticateToken, async (req, res) => {
  * POST /api/smart-deploy/deploy
  */
 router.post('/deploy', authenticateToken, async (req, res) => {
+  console.log('🚨🚨🚨 [DEBUG] Route /deploy appelée ! 🚨🚨🚨');
+  console.log('🚨🚨🚨 [DEBUG] ========================================== 🚨🚨🚨');
+  console.log('🚨🚨🚨 [DEBUG] DÉPLOIEMENT WORKFLOW DÉMARRÉ 🚨🚨🚨');
+  console.log('🚨🚨🚨 [DEBUG] ========================================== 🚨🚨🚨');
+  console.log('🚨🚨🚨 [DEBUG] TIMESTAMP:', new Date().toISOString());
+  console.log('🚨🚨🚨 [DEBUG] USER ID:', req.user?.id);
+  console.log('🚨🚨🚨 [DEBUG] USER EMAIL:', req.user?.email);
+  
+  // Écrire dans un fichier pour être sûr de voir les logs
+  const fs = require('fs');
+  const logMessage = `[${new Date().toISOString()}] Route /deploy appelée - User: ${req.user?.email} - ID: ${req.user?.id}\n`;
+  fs.appendFileSync('backend-logs.txt', logMessage);
+  
+  // Logs détaillés dans le fichier
+  fs.appendFileSync('backend-logs.txt', `[${new Date().toISOString()}] Body reçu: ${JSON.stringify(req.body, null, 2)}\n`);
+  fs.appendFileSync('backend-logs.txt', `[${new Date().toISOString()}] Headers: ${JSON.stringify(req.headers, null, 2)}\n`);
+  console.log('🚨 [DEBUG] Headers:', req.headers);
+  console.log('🚨 [DEBUG] Body:', req.body);
+  console.log('🚨 [DEBUG] User:', req.user);
+  console.log('🚨 [DEBUG] Timestamp:', new Date().toISOString());
+  
   try {
     console.log('🚀 [SmartDeploy] Déploiement intelligent demandé');
     console.log('🚀 [SmartDeploy] User:', req.user.email);
+    console.log('🚀 [SmartDeploy] Body:', JSON.stringify(req.body, null, 2));
     
     const { workflowId, credentials } = req.body;
     
@@ -158,21 +181,38 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     console.log('🔧 [SmartDeploy] Credentials reçus:', Object.keys(credentials));
     console.log('🔧 [SmartDeploy] Détails credentials:', {
       email: credentials.email,
-      imapServer: credentials.imapServer,
-      imapPort: credentials.imapPort,
+      smtpEmail: credentials.smtpEmail,
       smtpServer: credentials.smtpServer,
       smtpPort: credentials.smtpPort,
-      passwordLength: credentials.imapPassword?.length
+      smtpPasswordLength: credentials.smtpPassword?.length
     });
+    console.log('🔧 [SmartDeploy] Type smtpPort:', typeof credentials.smtpPort);
+    console.log('🔧 [SmartDeploy] Valeur smtpPort:', credentials.smtpPort);
+    console.log('🔧 [SmartDeploy] Number conversion:', Number(credentials.smtpPort));
+    console.log('🔧 [SmartDeploy] Number type:', typeof Number(credentials.smtpPort));
+    console.log('🔧 [SmartDeploy] isNaN check:', isNaN(Number(credentials.smtpPort)));
     
-    const injectedWorkflow = await injectUserCredentials(workflowJson, credentials, req.user.id);
+    let injectedWorkflow;
+    try {
+      console.log('🔧 [SmartDeploy] Appel injectUserCredentials...');
+      injectedWorkflow = await injectUserCredentials(workflowJson, credentials, req.user.id);
+      console.log('✅ [SmartDeploy] Injection réussie');
+      console.log('🔧 [SmartDeploy] Workflow injecté - nodes:', injectedWorkflow.nodes?.length);
+    } catch (injectionError) {
+      console.error('❌ [SmartDeploy] Erreur injection:', injectionError.message);
+      console.error('❌ [SmartDeploy] Stack:', injectionError.stack);
+      throw injectionError;
+    }
     
     // Créer un nouveau workflow dans n8n avec les credentials injectés
     console.log('🔧 [SmartDeploy] Création du workflow dans n8n...');
+    const config = require('../config');
+    const n8nUrl = config.n8n.url;
+    const n8nApiKey = config.n8n.apiKey;
+    
     const deployResponse = await fetch('http://localhost:3004/api/n8n/workflows', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${req.headers.authorization.split(' ')[1]}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -190,6 +230,57 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     
     const deployedWorkflow = await deployResponse.json();
     
+    // Vérifier si le workflow a un nœud de déclenchement avant activation
+    console.log('🔧 [SmartDeploy] Vérification des nœuds de déclenchement...');
+    const hasTriggerNode = injectedWorkflow.nodes?.some(node => {
+      const triggerTypes = [
+        'n8n-nodes-base.webhook',
+        'n8n-nodes-base.scheduleTrigger', 
+        'n8n-nodes-base.schedule',
+        'n8n-nodes-base.manualTrigger',
+        'n8n-nodes-base.files'
+      ];
+      return triggerTypes.includes(node.type);
+    });
+    
+    console.log('🔧 [SmartDeploy] Nœuds de déclenchement trouvés:', hasTriggerNode);
+    
+    if (hasTriggerNode) {
+      // ACTIVATION AUTOMATIQUE du workflow dans n8n
+      console.log('🔧 [SmartDeploy] Activation automatique du workflow...');
+      console.log('🔧 [SmartDeploy] Workflow ID à activer:', deployedWorkflow.id);
+      try {
+        // Utiliser l'URL n8n directe au lieu du proxy local
+        const n8nUrl = config.n8n.url;
+        const n8nApiKey = config.n8n.apiKey;
+        const activateResponse = await fetch(`${n8nUrl}/api/v1/workflows/${deployedWorkflow.id}/activate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-N8N-API-KEY': n8nApiKey
+          }
+        });
+        
+        console.log('🔧 [SmartDeploy] Réponse activation:', activateResponse.status, activateResponse.statusText);
+        
+        if (activateResponse.ok) {
+          const activateResult = await activateResponse.json();
+          console.log('✅ [SmartDeploy] Workflow activé automatiquement dans n8n:', activateResult);
+        } else {
+          const errorText = await activateResponse.text();
+          console.log('⚠️ [SmartDeploy] Impossible d\'activer automatiquement le workflow:', errorText);
+          console.log('⚠️ [SmartDeploy] Status:', activateResponse.status);
+          console.log('⚠️ [SmartDeploy] Headers:', activateResponse.headers);
+        }
+      } catch (activateError) {
+        console.log('⚠️ [SmartDeploy] Erreur activation automatique:', activateError.message);
+        console.log('⚠️ [SmartDeploy] Stack:', activateError.stack);
+      }
+    } else {
+      console.log('⚠️ [SmartDeploy] Workflow sans nœud de déclenchement - activation manuelle requise');
+      console.log('⚠️ [SmartDeploy] Types de nœuds trouvés:', injectedWorkflow.nodes?.map(n => n.type));
+    }
+    
     // Enregistrer le workflow déployé dans la base de données
     const userWorkflow = await db.createUserWorkflow({
       userId: req.user.id,
@@ -200,7 +291,7 @@ router.post('/deploy', authenticateToken, async (req, res) => {
       isActive: true
     });
     
-    console.log('✅ [SmartDeploy] Workflow déployé avec succès:', deployedWorkflow.id);
+    console.log('✅ [SmartDeploy] Workflow déployé et activé avec succès:', deployedWorkflow.id);
     
     res.json({
       success: true,
@@ -215,6 +306,12 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     
   } catch (error) {
     console.error('❌ [SmartDeploy] Erreur déploiement:', error);
+    
+    // Écrire l'erreur dans le fichier de logs
+    const fs = require('fs');
+    fs.appendFileSync('backend-logs.txt', `[${new Date().toISOString()}] ERREUR: ${error.message}\n`);
+    fs.appendFileSync('backend-logs.txt', `[${new Date().toISOString()}] Stack: ${error.stack}\n`);
+    
     res.status(500).json({ 
       error: 'Erreur lors du déploiement du workflow',
       details: error.message 

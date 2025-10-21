@@ -70,12 +70,12 @@ export function AIWorkflowGenerator() {
           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
           disabled={loading}
         >
-          <option value="openrouter">OpenRouter (Recommended)</option>
+          <option value="openrouter">OpenRouter (Claude 3.5 Sonnet - Best)</option>
           <option value="openai">OpenAI (GPT-4)</option>
           <option value="anthropic">Anthropic (Claude)</option>
         </select>
         <p className="text-xs text-slate-500 mt-1">
-          Select which AI model to use for workflow generation
+          OpenRouter utilise Claude 3.5 Sonnet (le meilleur LLM) avec les credentials admin
         </p>
       </div>
 
@@ -87,12 +87,12 @@ export function AIWorkflowGenerator() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-          placeholder="Example: Create a workflow that sends a Slack notification when a new email arrives in Gmail..."
+          placeholder="Example: Create an email summary workflow that analyzes daily emails and sends a priority report..."
           rows={4}
           disabled={loading}
         />
         <p className="text-xs text-slate-500 mt-2">
-          Describe your automation idea in natural language. The AI will generate a complete n8n workflow.
+          L'IA génère des workflows n8n complets avec OpenRouter (admin) et credentials utilisateur (IMAP/SMTP)
         </p>
       </div>
 

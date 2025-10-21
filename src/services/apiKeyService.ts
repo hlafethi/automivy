@@ -15,9 +15,10 @@ export class ApiKeyService {
   }
 
   // Méthodes de compatibilité
-  async getApiKey(key: string): Promise<string> {
+  async getApiKey(service: string): Promise<string> {
     const keys = await this.getApiKeys();
-    const apiKey = keys.find(k => k.key === key);
+    // Chercher par service ou par nom
+    const apiKey = keys.find(k => k.service === service || k.name === service);
     return apiKey?.key || '';
   }
 

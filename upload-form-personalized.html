@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse de Devis d'Assurance - Formulaire Personnalisé</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .form-container {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        input[type="file"], input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="file"]:focus, input[type="text"]:focus, input[type="email"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .file-upload-area {
+            border: 3px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .file-upload-area:hover {
+            background: #e6f3ff;
+            border-color: #0056b3;
+        }
+        
+        .file-upload-area.dragover {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+        
+        .file-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .remove-file {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.3s;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .submit-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .instructions h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Analyse de Devis d'Assurance</h1>
+            <p>Formulaire personnalisé - Analyse IA</p>
+        </div>
+        
+        <div class="form-container">
+            <div class="instructions">
+                <h3>📌 Instructions</h3>
+                <ul>
+                    <li>Vous pouvez uploader <strong>jusqu'à 3 devis PDF</strong></li>
+                    <li>Les fichiers doivent être au format PDF</li>
+                    <li>L'analyse sera effectuée par notre IA spécialisée</li>
+                    <li>Vous recevrez le devoir de conseil par email</li>
+                </ul>
+            </div>
+            
+            <form id="devisForm">
+                <div class="form-group">
+                    <label for="clientName">👤 Nom du client :</label>
+                    <input type="text" id="clientName" placeholder="Ex: Jean Dupont" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="clientEmail">📧 Email du client :</label>
+                    <input type="email" id="clientEmail" placeholder="client@exemple.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>📄 Devis à analyser (max 3) :</label>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <div class="upload-icon">📁</div>
+                        <p><strong>Glissez-déposez vos PDF ici</strong></p>
+                        <p>ou cliquez pour sélectionner</p>
+                        <input type="file" id="pdfFiles" multiple accept=".pdf" style="display: none;">
+                    </div>
+                    <div class="file-info" id="fileInfo"></div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    🚀 Analyser mes devis
+                </button>
+            </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>⏳ Analyse en cours... Veuillez patienter.</p>
+                <p>L'IA analyse vos devis et génère le devoir de conseil...</p>
+            </div>
+            
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Récupérer les paramètres URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const template = urlParams.get('template');
+        
+        if (!token || !template) {
+            document.getElementById('result').className = 'result error';
+            document.getElementById('result').innerHTML = '<h3>❌ Lien invalide</h3><p>Ce lien n\'est pas valide ou a expiré.</p>';
+            document.getElementById('result').style.display = 'block';
+        }
+        
+        let selectedFiles = [];
+        
+        // Gestion du drag & drop
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('pdfFiles');
+        const fileInfo = document.getElementById('fileInfo');
+        
+        fileUploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+        
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('dragover');
+        });
+        
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            // Vérifier le nombre de fichiers
+            if (selectedFiles.length + files.length > 3) {
+                alert('Maximum 3 devis autorisés');
+                return;
+            }
+            
+            // Vérifier le type de fichier
+            for (let file of files) {
+                if (file.type !== 'application/pdf') {
+                    alert('Seuls les fichiers PDF sont acceptés');
+                    return;
+                }
+                selectedFiles.push(file);
+            }
+            
+            updateFileDisplay();
+        }
+        
+        function updateFileDisplay() {
+            if (selectedFiles.length === 0) {
+                fileInfo.style.display = 'none';
+                return;
+            }
+            
+            fileInfo.style.display = 'block';
+            fileInfo.innerHTML = selectedFiles.map((file, index) => `
+                <div class="file-item">
+                    <span>📄 ${file.name}</span>
+                    <button type="button" class="remove-file" onclick="removeFile(${index})">❌</button>
+                </div>
+            `).join('');
+        }
+        
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileDisplay();
+        }
+        
+        // Soumission du formulaire
+        document.getElementById('devisForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (selectedFiles.length === 0) {
+                alert('Veuillez sélectionner au moins un devis');
+                return;
+            }
+            
+            const form = document.getElementById('devisForm');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            // Afficher le loading
+            form.style.display = 'none';
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            try {
+                // Convertir les fichiers en base64
+                const filesData = await Promise.all(selectedFiles.map(fileToBase64));
+                
+                // Préparer les données
+                const formData = {
+                    token: token,
+                    template: template,
+                    clientName: document.getElementById('clientName').value,
+                    clientEmail: document.getElementById('clientEmail').value,
+                    files: filesData
+                };
+                
+                // Envoyer via l'API backend (proxy vers n8n)
+                const response = await fetch('http://localhost:3004/api/process-pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h3>✅ Analyse terminée !</h3>
+                        <p>Vos <strong>${selectedFiles.length} devis</strong> ont été analysés avec succès.</p>
+                        <p>Le devoir de conseil a été envoyé à <strong>${formData.clientEmail}</strong></p>
+                        <p>Vous devriez recevoir l'email dans quelques minutes.</p>
+                    `;
+                } else {
+                    throw new Error('Erreur lors de l\'analyse');
+                }
+                
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `
+                    <h3>❌ Erreur</h3>
+                    <p>Une erreur s'est produite : ${error.message}</p>
+                    <p>Vérifiez que vos PDF sont valides et réessayez.</p>
+                `;
+            }
+            
+            // Afficher le résultat
+            loading.style.display = 'none';
+            result.style.display = 'block';
+            form.style.display = 'block';
+            submitBtn.disabled = false;
+        });
+        
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve({
+                        fileName: file.name,
+                        fileData: base64,
+                        fileSize: file.size
+                    });
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+    </script>
+</body>
+</html>

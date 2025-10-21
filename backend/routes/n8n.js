@@ -340,11 +340,63 @@ router.delete('/rest/workflows/:id', async (req, res) => {
 // Route pour les credentials n8n
 router.post('/credentials', async (req, res) => {
   try {
+    console.log('🚨🚨🚨 [N8N Proxy] ========================================== 🚨🚨🚨');
+    console.log('🚨🚨🚨 [N8N Proxy] PROXY CREDENTIALS DÉMARRÉ 🚨🚨🚨');
+    console.log('🚨🚨🚨 [N8N Proxy] ========================================== 🚨🚨🚨');
+    
     const n8nUrl = config.n8n.url;
     const n8nApiKey = config.n8n.apiKey;
     
     const fullUrl = `${n8nUrl}/api/v1/credentials`;
-    console.log(`Proxying POST ${fullUrl}`);
+    console.log(`🔧 [N8N Proxy] Proxying POST ${fullUrl}`);
+    console.log('🔧 [N8N Proxy] Body reçu:', JSON.stringify(req.body, null, 2));
+    
+    // Transformer la structure pour n8n
+    let transformedBody = req.body;
+    
+    // Si la structure contient un wrapper 'data', l'aplatir correctement
+    if (req.body.data && typeof req.body.data === 'object') {
+      console.log('🔧 [N8N Proxy] Transformation de la structure pour n8n...');
+      transformedBody = {
+        name: req.body.name,
+        type: req.body.type,
+        data: req.body.data // Garder la structure data pour n8n
+      };
+      console.log('📤 [N8N Proxy] Structure transformée:', JSON.stringify(transformedBody, null, 2));
+      
+      // Logs détaillés pour le port
+      if (transformedBody.data && transformedBody.data.port !== undefined) {
+        console.log('🔍 [N8N Proxy] DEBUG - Port dans data:', transformedBody.data.port);
+        console.log('🔍 [N8N Proxy] DEBUG - Port type:', typeof transformedBody.data.port);
+        console.log('🔍 [N8N Proxy] DEBUG - Port value:', transformedBody.data.port);
+        
+        // Forcer la conversion en number si c'est une string
+        if (typeof transformedBody.data.port === 'string') {
+          transformedBody.data.port = Number(transformedBody.data.port);
+          console.log('🔧 [N8N Proxy] Port converti en number:', transformedBody.data.port);
+        }
+        
+        // Double vérification : forcer en number même si c'est déjà un number
+        if (transformedBody.data.port !== undefined) {
+          transformedBody.data.port = Number(transformedBody.data.port);
+          console.log('🔧 [N8N Proxy] Port forcé en number:', transformedBody.data.port, typeof transformedBody.data.port);
+        }
+      }
+    
+    // Forcer TOUS les ports en number
+    if (transformedBody.data && typeof transformedBody.data === 'object') {
+      Object.keys(transformedBody.data).forEach(key => {
+        if (key === 'port' && typeof transformedBody.data[key] !== 'number') {
+          transformedBody.data[key] = Number(transformedBody.data[key]);
+          console.log(`🔧 [N8N Proxy] Port ${key} forcé en number:`, transformedBody.data[key], typeof transformedBody.data[key]);
+        }
+      });
+    }
+    }
+    
+    console.log('🔧 [N8N Proxy] Envoi à n8n:', JSON.stringify(transformedBody, null, 2));
+    console.log('🔧 [N8N Proxy] Port final type:', typeof transformedBody.data?.port);
+    console.log('🔧 [N8N Proxy] Port final value:', transformedBody.data?.port);
     
     const response = await fetch(fullUrl, {
       method: 'POST',
@@ -352,12 +404,15 @@ router.post('/credentials', async (req, res) => {
         'Content-Type': 'application/json',
         'X-N8N-API-KEY': n8nApiKey,
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(transformedBody),
     });
+    
+    console.log('📋 [N8N Proxy] Réponse n8n:', response.status, response.statusText);
     
     if (!response.ok) {
       const data = await response.json();
-      console.error(`n8n credentials API error: ${response.status}`, data);
+      console.error(`❌ [N8N Proxy] n8n credentials API error: ${response.status}`, data);
+      console.error(`❌ [N8N Proxy] Erreur détaillée:`, JSON.stringify(data, null, 2));
       return res.status(response.status).json(data);
     }
     

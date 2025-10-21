@@ -21,6 +21,9 @@ class ApiClient {
 
   private async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
+    console.log('🔧 [ApiClient] URL appelée:', url);
+    console.log('🔧 [ApiClient] Endpoint:', endpoint);
+    console.log('🔧 [ApiClient] Base URL:', this.baseUrl);
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,

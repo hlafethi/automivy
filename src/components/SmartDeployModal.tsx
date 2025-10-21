@@ -147,8 +147,8 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
             value={formData[field.name] || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             placeholder={field.placeholder}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              hasError ? 'border-red-500' : 'border-gray-300'
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ${
+              hasError ? 'border-red-400 bg-red-50' : 'border-slate-300 hover:border-slate-400'
             }`}
           />
         ) : field.type === 'number' ? (
@@ -157,8 +157,8 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
             value={formData[field.name] || field.defaultValue || ''}
             onChange={(e) => handleInputChange(field.name, parseInt(e.target.value) || 0)}
             placeholder={field.placeholder}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              hasError ? 'border-red-500' : 'border-gray-300'
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ${
+              hasError ? 'border-red-400 bg-red-50' : 'border-slate-300 hover:border-slate-400'
             }`}
           />
         ) : (
@@ -167,8 +167,8 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
             value={formData[field.name] || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             placeholder={field.placeholder}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              hasError ? 'border-red-500' : 'border-gray-300'
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ${
+              hasError ? 'border-red-400 bg-red-50' : 'border-slate-300 hover:border-slate-400'
             }`}
           />
         )}
@@ -182,57 +182,94 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {step === 'select' && 'Sélectionner un workflow'}
-            {step === 'configure' && 'Configuration des credentials'}
-            {step === 'deploying' && 'Déploiement en cours...'}
-            {step === 'success' && 'Déploiement réussi !'}
-          </h2>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+        {/* Header avec gradient */}
+        <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <span className="text-2xl font-bold">A</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">
+                  {step === 'select' && '🚀 Smart Deploy'}
+                  {step === 'configure' && '⚙️ Configuration'}
+                  {step === 'deploying' && '⏳ Déploiement'}
+                  {step === 'success' && '✅ Succès'}
+                </h2>
+                <p className="text-green-100 text-sm mt-1">
+                  {step === 'select' && 'Sélectionnez un workflow à déployer'}
+                  {step === 'configure' && 'Configurez vos credentials'}
+                  {step === 'deploying' && 'Déploiement en cours...'}
+                  {step === 'success' && 'Workflow déployé avec succès !'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="text-white/80 hover:text-white hover:bg-white/20 rounded-xl p-2 transition-all duration-200"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-8 overflow-y-auto max-h-[calc(95vh-200px)]">
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-              <span className="text-red-700">{error}</span>
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg flex items-center shadow-sm">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-3" />
+              <span className="text-red-700 font-medium">{error}</span>
             </div>
           )}
 
           {step === 'select' && (
             <div>
-              <p className="text-gray-600 mb-4">
-                Sélectionnez un workflow à déployer. Le système analysera automatiquement 
-                les credentials requis et générera un formulaire personnalisé.
-              </p>
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🚀</span>
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">Choisissez votre workflow</h3>
+                <p className="text-slate-600 max-w-2xl mx-auto">
+                  Sélectionnez un workflow à déployer. Le système analysera automatiquement 
+                  les credentials requis et générera un formulaire personnalisé.
+                </p>
+              </div>
               
               {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mb-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                  </div>
+                  <p className="text-slate-600 font-medium">Chargement des workflows...</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {workflows.map((workflow) => (
                     <div
                       key={workflow.id}
                       onClick={() => handleWorkflowSelect(workflow)}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-colors"
+                      className="group p-6 border border-slate-200 rounded-xl hover:border-green-300 hover:bg-gradient-to-br hover:from-green-50 hover:to-white cursor-pointer transition-all duration-300 hover:shadow-lg"
                     >
-                      <h3 className="font-medium text-gray-900">{workflow.name}</h3>
-                      {workflow.description && (
-                        <p className="text-sm text-gray-600 mt-1">{workflow.description}</p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        Créé le {new Date(workflow.created_at).toLocaleDateString()}
-                      </p>
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center group-hover:from-green-200 group-hover:to-green-300 transition-all duration-300">
+                          <span className="text-lg">⚡</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-slate-900 group-hover:text-green-700 transition-colors">{workflow.name}</h3>
+                          {workflow.description && (
+                            <p className="text-sm text-slate-600 mt-2 line-clamp-2">{workflow.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-3">
+                            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                              {new Date(workflow.created_at).toLocaleDateString()}
+                            </span>
+                            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                              Prêt à déployer
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -242,43 +279,53 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
 
           {step === 'configure' && formConfig && (
             <div>
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-900">{formConfig.title}</h3>
-                <p className="text-gray-600 mt-1">{formConfig.description}</p>
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⚙️</span>
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">{formConfig.title}</h3>
+                <p className="text-slate-600 max-w-2xl mx-auto">{formConfig.description}</p>
               </div>
 
               {formConfig.sections.map((section, sectionIndex) => (
-                <div key={sectionIndex} className="mb-6">
-                  <h4 className="text-md font-medium text-gray-800 mb-3">{section.title}</h4>
+                <div key={sectionIndex} className="mb-8 bg-slate-50 rounded-xl p-6 border border-slate-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center">
+                      <span className="text-sm font-bold text-green-700">{sectionIndex + 1}</span>
+                    </div>
+                    <h4 className="text-lg font-semibold text-slate-800">{section.title}</h4>
+                  </div>
                   {section.description && (
-                    <p className="text-sm text-gray-600 mb-4">{section.description}</p>
+                    <p className="text-sm text-slate-600 mb-6 pl-11">{section.description}</p>
                   )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {section.fields.map(renderField)}
                   </div>
                 </div>
               ))}
 
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-200">
                 <button
                   onClick={() => setStep('select')}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="px-6 py-3 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all duration-200 font-medium"
                 >
-                  Retour
+                  ← Retour
                 </button>
                 <button
                   onClick={handleDeploy}
                   disabled={loading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2 inline" />
+                      <Loader2 className="w-5 h-5 animate-spin mr-2 inline" />
                       Déploiement...
                     </>
                   ) : (
-                    formConfig.submitText
+                    <>
+                      🚀 {formConfig.submitText}
+                    </>
                   )}
                 </button>
               </div>
@@ -286,24 +333,40 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
           )}
 
           {step === 'deploying' && (
-            <div className="text-center py-8">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Déploiement en cours...</h3>
-              <p className="text-gray-600">
+            <div className="text-center py-12">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Loader2 className="w-10 h-10 animate-spin text-green-600" />
+              </div>
+              <h3 className="text-2xl font-semibold text-slate-800 mb-3">Déploiement en cours...</h3>
+              <p className="text-slate-600 text-lg max-w-md mx-auto">
                 Création des credentials et déploiement du workflow...
               </p>
+              <div className="mt-6 bg-slate-50 rounded-xl p-4 max-w-md mx-auto">
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>Configuration des credentials...</span>
+                </div>
+              </div>
             </div>
           )}
 
           {step === 'success' && deployedWorkflow && (
-            <div className="text-center py-8">
-              <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Workflow déployé avec succès !</h3>
-              <p className="text-gray-600 mb-4">
+            <div className="text-center py-12">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-semibold text-slate-800 mb-3">Workflow déployé avec succès !</h3>
+              <p className="text-slate-600 text-lg mb-6 max-w-md mx-auto">
                 Le workflow "{deployedWorkflow.name}" a été déployé et est maintenant actif.
               </p>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-800">
+              <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-6 max-w-md mx-auto shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-green-200 rounded-lg flex items-center justify-center">
+                    <span className="text-sm">🎉</span>
+                  </div>
+                  <h4 className="font-semibold text-green-800">Déploiement réussi</h4>
+                </div>
+                <p className="text-sm text-green-700">
                   <strong>ID du workflow :</strong> {deployedWorkflow.n8n_workflow_id}
                 </p>
               </div>

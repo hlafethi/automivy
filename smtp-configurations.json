@@ -1,0 +1,190 @@
+{
+  "smtpConfigurations": {
+    "gmail": {
+      "name": "Gmail SMTP",
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "your-email@gmail.com",
+        "pass": "your-app-password"
+      },
+      "tls": {
+        "rejectUnauthorized": false
+      },
+      "options": {
+        "retryOnFail": true,
+        "retryTimes": 5,
+        "retryDelay": 10000,
+        "timeout": 60000,
+        "secure": false,
+        "requireTLS": true,
+        "connectionTimeout": 30000,
+        "greetingTimeout": 15000,
+        "socketTimeout": 30000
+      }
+    },
+    "outlook": {
+      "name": "Outlook SMTP",
+      "host": "smtp-mail.outlook.com",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "your-email@outlook.com",
+        "pass": "your-password"
+      },
+      "tls": {
+        "rejectUnauthorized": false
+      },
+      "options": {
+        "retryOnFail": true,
+        "retryTimes": 3,
+        "retryDelay": 5000,
+        "timeout": 30000,
+        "secure": false,
+        "requireTLS": true,
+        "connectionTimeout": 15000,
+        "greetingTimeout": 10000,
+        "socketTimeout": 15000
+      }
+    },
+    "yahoo": {
+      "name": "Yahoo SMTP",
+      "host": "smtp.mail.yahoo.com",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "your-email@yahoo.com",
+        "pass": "your-app-password"
+      },
+      "tls": {
+        "rejectUnauthorized": false
+      },
+      "options": {
+        "retryOnFail": true,
+        "retryTimes": 3,
+        "retryDelay": 5000,
+        "timeout": 30000,
+        "secure": false,
+        "requireTLS": true,
+        "connectionTimeout": 15000,
+        "greetingTimeout": 10000,
+        "socketTimeout": 15000
+      }
+    },
+    "sendgrid": {
+      "name": "SendGrid SMTP",
+      "host": "smtp.sendgrid.net",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "apikey",
+        "pass": "your-sendgrid-api-key"
+      },
+      "tls": {
+        "rejectUnauthorized": false
+      },
+      "options": {
+        "retryOnFail": true,
+        "retryTimes": 5,
+        "retryDelay": 10000,
+        "timeout": 60000,
+        "secure": false,
+        "requireTLS": true,
+        "connectionTimeout": 30000,
+        "greetingTimeout": 15000,
+        "socketTimeout": 30000
+      }
+    },
+    "mailgun": {
+      "name": "Mailgun SMTP",
+      "host": "smtp.mailgun.org",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "your-mailgun-smtp-user",
+        "pass": "your-mailgun-smtp-password"
+      },
+      "tls": {
+        "rejectUnauthorized": false
+      },
+      "options": {
+        "retryOnFail": true,
+        "retryTimes": 5,
+        "retryDelay": 10000,
+        "timeout": 60000,
+        "secure": false,
+        "requireTLS": true,
+        "connectionTimeout": 30000,
+        "greetingTimeout": 15000,
+        "socketTimeout": 30000
+      }
+    }
+  },
+  "troubleshooting": {
+    "commonIssues": {
+      "ETIMEDOUT": {
+        "description": "Connection timeout - server not responding",
+        "solutions": [
+          "Vérifiez votre connexion internet",
+          "Vérifiez les paramètres de firewall",
+          "Augmentez les timeouts (connectionTimeout, greetingTimeout, socketTimeout)",
+          "Essayez un port différent (465 au lieu de 587)",
+          "Utilisez un serveur SMTP différent"
+        ]
+      },
+      "EAUTH": {
+        "description": "Authentication failed",
+        "solutions": [
+          "Vérifiez votre email et mot de passe",
+          "Activez l'authentification à 2 facteurs",
+          "Utilisez un mot de passe d'application",
+          "Vérifiez que l'authentification est activée"
+        ]
+      },
+      "ECONNREFUSED": {
+        "description": "Connection refused by server",
+        "solutions": [
+          "Vérifiez l'host et le port",
+          "Vérifiez que le serveur SMTP est accessible",
+          "Essayez un port différent",
+          "Vérifiez les paramètres de proxy"
+        ]
+      },
+      "Greeting never received": {
+        "description": "Server didn't send greeting message",
+        "solutions": [
+          "Augmentez le greetingTimeout",
+          "Vérifiez que le serveur SMTP est correct",
+          "Essayez avec secure: false et requireTLS: true",
+          "Vérifiez les paramètres de TLS"
+        ]
+      }
+    },
+    "recommendedSettings": {
+      "forTimeoutIssues": {
+        "connectionTimeout": 30000,
+        "greetingTimeout": 15000,
+        "socketTimeout": 30000,
+        "timeout": 60000,
+        "retryOnFail": true,
+        "retryTimes": 5,
+        "retryDelay": 10000
+      },
+      "forSecurityIssues": {
+        "secure": false,
+        "requireTLS": true,
+        "tls": {
+          "rejectUnauthorized": false
+        }
+      },
+      "forReliabilityIssues": {
+        "pool": true,
+        "maxConnections": 5,
+        "maxMessages": 100,
+        "rateDelta": 1000,
+        "rateLimit": 5
+      }
+    }
+  }
+}

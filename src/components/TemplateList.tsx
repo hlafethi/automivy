@@ -104,74 +104,92 @@ export function TemplateList() {
         </h3>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {templates.map((template) => (
           <div
             key={template.id}
-            className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition"
+            className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-green-300"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <h4 className="font-semibold text-slate-900 mb-1">
-                  {template.name}
-                </h4>
-                <p className="text-sm text-slate-600 mb-3">
-                  {template.description}
-                </p>
-                <div className="flex items-center gap-4 text-xs text-slate-500">
-                  <span>
-                    Created: {new Date(template.created_at).toLocaleDateString()}
-                  </span>
-                  <span>
-                    Nodes: {template.json?.nodes?.length || 0}
-                  </span>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
+                  <FileJson className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 text-lg mb-1">
+                    {template.name}
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Template ID: {template.id.slice(0, 8)}...
+                  </p>
                 </div>
               </div>
+            </div>
 
+            <div className="mb-4">
+              <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                {template.description || 'No description available'}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-xs text-slate-500">
+                Created: {new Date(template.created_at).toLocaleDateString()}
+              </div>
+              <div className="text-xs text-slate-500">
+                Nodes: {template.json?.nodes?.length || 0}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedTemplate(template)}
                   className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition"
                   title="View JSON"
                 >
-                  <Eye className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => {
-                    console.log('Deploy button clicked in TemplateList for:', template.name);
-                    setDeployTemplate(template);
-                  }}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                  title="Deploy to n8n"
-                >
-                  <Rocket className="w-5 h-5" />
+                  <Eye className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleEdit(template)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                  className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
                   title="Edit template"
                 >
-                  <Edit className="w-5 h-5" />
+                  <Edit className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleToggleVisibility(template.id, template.visible)}
                   className={`p-2 rounded-lg transition ${
-                    template.visible 
-                      ? 'text-green-600 hover:bg-green-50' 
-                      : 'text-orange-600 hover:bg-orange-50'
+                    template.visible
+                      ? 'text-green-600 hover:bg-green-50'
+                      : 'text-slate-400 hover:bg-slate-50'
                   }`}
                   title={template.visible ? 'Hide from users' : 'Show to users'}
                 >
-                  {template.visible ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                  {template.visible ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <EyeOff className="w-4 h-4" />
+                  )}
                 </button>
                 <button
                   onClick={() => handleDelete(template.id)}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                  title="Delete"
+                  title="Delete template"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+              <button
+                onClick={() => {
+                  console.log('Deploy button clicked in TemplateList for:', template.name);
+                  setDeployTemplate(template);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:shadow-md"
+                title="Deploy to n8n"
+              >
+                <Rocket className="w-5 h-5" />
+              </button>
             </div>
           </div>
         ))}

@@ -38,6 +38,12 @@ function analyzeWorkflowCredentials(workflow) {
         } else if (typeof credValue === 'object' && credValue.id && credValue.id.includes('USER_')) {
           console.log(`  ✅ Credential utilisateur détecté: ${credValue.id}`);
           credentialTypes.add(credType);
+        } else if (typeof credValue === 'object' && credValue.id === 'USER_SMTP_CREDENTIAL_ID') {
+          console.log(`  ✅ Credential SMTP utilisateur détecté: ${credValue.id}`);
+          credentialTypes.add('smtp');
+        } else if (typeof credValue === 'object' && credValue.id === 'USER_IMAP_CREDENTIAL_ID') {
+          console.log(`  ✅ Credential IMAP utilisateur détecté: ${credValue.id}`);
+          credentialTypes.add('imap');
         }
       });
     }
