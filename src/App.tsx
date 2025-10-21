@@ -6,6 +6,9 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { UserAutomations } from './components/UserAutomations';
 import { LandingPage } from './pages/LandingPage';
 import { LandingAdmin } from './components/LandingAdmin';
+import { SupportPage } from './pages/SupportPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 
 function App() {
   const { user, loading, isAdmin } = useAuth();
@@ -24,8 +27,11 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Route publique - Landing Page */}
+        {/* Routes publiques */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         
         {/* Routes d'authentification */}
         <Route 

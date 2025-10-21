@@ -5,9 +5,22 @@ import { AIWorkflowGenerator } from './AIWorkflowGenerator';
 import { TemplateList } from './TemplateList';
 import { ApiKeysManager } from './ApiKeysManager';
 import { AllWorkflows } from './AllWorkflows';
+import { ManagementTabs } from './admin/ManagementTabs';
+import { 
+  AnalyticsSection, 
+  TicketsSection, 
+  CommunitySection, 
+  UsersSection, 
+  NotificationsSection, 
+  DatabaseSection, 
+  ActivitySection, 
+  AlertsSection, 
+  PerformanceSection, 
+  LogsSection 
+} from './admin/ManagementSections';
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'list' | 'upload' | 'ai' | 'apikeys' | 'workflows' | 'landing'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'upload' | 'ai' | 'apikeys' | 'workflows' | 'landing' | 'analytics' | 'tickets' | 'community' | 'users' | 'notifications' | 'database' | 'activity' | 'alerts' | 'performance' | 'logs'>('list');
 
   return (
     <div>
@@ -20,6 +33,7 @@ export function AdminDashboard() {
 
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
         <div className="border-b border-slate-200">
+          {/* Première ligne - Sections principales */}
           <div className="flex">
             <button
               onClick={() => setActiveTab('list')}
@@ -84,6 +98,9 @@ export function AdminDashboard() {
               Landing Page
             </button>
           </div>
+          
+          {/* Deuxième ligne - Sections de gestion */}
+          <ManagementTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
         <div className="p-6">
@@ -92,6 +109,18 @@ export function AdminDashboard() {
           {activeTab === 'ai' && <AIWorkflowGenerator />}
           {activeTab === 'apikeys' && <ApiKeysManager />}
           {activeTab === 'workflows' && <AllWorkflows />}
+          
+          {/* Nouvelles sections de gestion */}
+          {activeTab === 'analytics' && <AnalyticsSection />}
+          {activeTab === 'tickets' && <TicketsSection />}
+          {activeTab === 'community' && <CommunitySection />}
+          {activeTab === 'users' && <UsersSection />}
+          {activeTab === 'notifications' && <NotificationsSection />}
+          {activeTab === 'database' && <DatabaseSection />}
+          {activeTab === 'activity' && <ActivitySection />}
+          {activeTab === 'alerts' && <AlertsSection />}
+          {activeTab === 'performance' && <PerformanceSection />}
+          {activeTab === 'logs' && <LogsSection />}
         </div>
       </div>
     </div>

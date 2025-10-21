@@ -3,6 +3,8 @@ import { Save, Eye, ArrowLeft, Settings, FileText, DollarSign, Users, Mail, Glob
 import { LandingService, LandingContent, LandingStats } from '../services/landingService';
 import { MediaField } from './MediaField';
 import { IconSelect } from './IconSelect';
+import { RichTextEditor } from './RichTextEditor';
+import { ColorPicker } from './ColorPicker';
 
 interface LandingAdminProps {
   onBack: () => void;
@@ -60,6 +62,34 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
           ...prev,
           video_demo: videoDemoContent
         }));
+      } else if (activeSection === 'pricing') {
+        const pricingContent = { ...content.pricing, ...tempContent };
+        await LandingService.updateSection('pricing', pricingContent);
+        setContent(prev => ({
+          ...prev,
+          pricing: pricingContent
+        }));
+      } else if (activeSection === 'about') {
+        const aboutContent = { ...content.about, ...tempContent };
+        await LandingService.updateSection('about', aboutContent);
+        setContent(prev => ({
+          ...prev,
+          about: aboutContent
+        }));
+      } else if (activeSection === 'contact') {
+        const contactContent = { ...content.contact, ...tempContent };
+        await LandingService.updateSection('contact', contactContent);
+        setContent(prev => ({
+          ...prev,
+          contact: contactContent
+        }));
+      } else if (activeSection === 'footer') {
+        const footerContent = { ...content.footer, ...tempContent };
+        await LandingService.updateSection('footer', footerContent);
+        setContent(prev => ({
+          ...prev,
+          footer: footerContent
+        }));
       } else {
         await LandingService.updateSection(activeSection, tempContent);
         setContent(prev => ({
@@ -93,6 +123,34 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
           ...prev,
           video_demo: videoDemoContent
         }));
+      } else if (activeSection === 'pricing') {
+        const pricingContent = { ...content.pricing, ...contentToSave };
+        await LandingService.updateSection('pricing', pricingContent);
+        setContent(prev => ({
+          ...prev,
+          pricing: pricingContent
+        }));
+      } else if (activeSection === 'about') {
+        const aboutContent = { ...content.about, ...contentToSave };
+        await LandingService.updateSection('about', aboutContent);
+        setContent(prev => ({
+          ...prev,
+          about: aboutContent
+        }));
+      } else if (activeSection === 'contact') {
+        const contactContent = { ...content.contact, ...contentToSave };
+        await LandingService.updateSection('contact', contactContent);
+        setContent(prev => ({
+          ...prev,
+          contact: contactContent
+        }));
+      } else if (activeSection === 'footer') {
+        const footerContent = { ...content.footer, ...contentToSave };
+        await LandingService.updateSection('footer', footerContent);
+        setContent(prev => ({
+          ...prev,
+          footer: footerContent
+        }));
       } else {
         await LandingService.updateSection(activeSection, contentToSave);
         setContent(prev => ({
@@ -122,7 +180,7 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
     });
 
     // Sauvegarde automatique pour le toggle de la configuration générale
-    if (field === 'enabled' && activeSection === 'video_demo') {
+    if (field === 'enabled' && (activeSection === 'video_demo' || activeSection === 'pricing' || activeSection === 'about' || activeSection === 'contact' || activeSection === 'footer')) {
       // Sauvegarde immédiate avec le nouveau contenu
       const newContent = { ...tempContent, [field]: value };
       setTimeout(() => {
@@ -169,6 +227,83 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
         { field: 'title', value: sectionContent.title || '', label: 'Titre de la section', isMedia: false },
         { field: 'subtitle', value: sectionContent.subtitle || '', label: 'Sous-titre', isMedia: false },
         { field: 'layout', value: sectionContent.layout || '2', label: 'Nombre de colonnes (2 ou 3)', isMedia: false }
+      ];
+    }
+    
+    // Pour la section pricing, on affiche les champs de configuration générale
+    if (section === 'pricing') {
+      return [
+        { field: 'enabled', value: sectionContent.enabled || 'false', label: 'Afficher la section pricing', isMedia: false },
+        { field: 'title', value: sectionContent.title || '', label: 'Titre de la section', isMedia: false },
+        { field: 'subtitle', value: sectionContent.subtitle || '', label: 'Sous-titre', isMedia: false },
+        { field: 'description', value: sectionContent.description || '', label: 'Description', isMedia: false }
+      ];
+    }
+    
+    // Pour la section about, on affiche les champs de configuration générale
+    if (section === 'about') {
+      return [
+        { field: 'enabled', value: sectionContent.enabled || 'false', label: 'Afficher la section about', isMedia: false },
+        { field: 'title', value: sectionContent.title || '', label: 'Titre de la section', isMedia: false },
+        { field: 'subtitle', value: sectionContent.subtitle || '', label: 'Sous-titre', isMedia: false },
+        { field: 'description', value: sectionContent.description || '', label: 'Description', isMedia: false },
+        { field: 'mission', value: sectionContent.mission || '', label: 'Mission', isMedia: false },
+        { field: 'vision', value: sectionContent.vision || '', label: 'Vision', isMedia: false },
+        { field: 'image', value: sectionContent.image || '', label: 'Image', isMedia: true }
+      ];
+    }
+    
+    // Pour la section contact, on affiche les champs de configuration générale
+    if (section === 'contact') {
+      return [
+        { field: 'enabled', value: sectionContent.enabled || 'false', label: 'Afficher la section contact', isMedia: false },
+        { field: 'title', value: sectionContent.title || '', label: 'Titre de la section', isMedia: false },
+        { field: 'subtitle', value: sectionContent.subtitle || '', label: 'Sous-titre', isMedia: false },
+        { field: 'description', value: sectionContent.description || '', label: 'Description', isMedia: false },
+        { field: 'email', value: sectionContent.email || '', label: 'Email', isMedia: false },
+        { field: 'phone', value: sectionContent.phone || '', label: 'Téléphone', isMedia: false },
+        { field: 'address', value: sectionContent.address || '', label: 'Adresse', isMedia: false }
+      ];
+    }
+    
+    // Pour la section footer, on affiche les champs de configuration générale
+    if (section === 'footer') {
+      return [
+        { field: 'enabled', value: sectionContent.enabled || 'false', label: 'Afficher la section footer', isMedia: false },
+        { field: 'company_name', value: sectionContent.company_name || '', label: 'Nom de l\'entreprise', isMedia: false },
+        { field: 'tagline', value: sectionContent.tagline || '', label: 'Tagline', isMedia: false },
+        { field: 'description', value: sectionContent.description || '', label: 'Description', isMedia: false },
+        { field: 'support_text', value: sectionContent.support_text || '', label: 'Texte Support', isMedia: false },
+        { field: 'support_link', value: sectionContent.support_link || '', label: 'URL Support', isMedia: false },
+        { field: 'privacy_text', value: sectionContent.privacy_text || '', label: 'Texte Privacy', isMedia: false },
+        { field: 'privacy_link', value: sectionContent.privacy_link || '', label: 'URL Privacy', isMedia: false },
+        { field: 'terms_text', value: sectionContent.terms_text || '', label: 'Texte Terms', isMedia: false },
+        { field: 'terms_link', value: sectionContent.terms_link || '', label: 'URL Terms', isMedia: false },
+        { field: 'copyright', value: sectionContent.copyright || '', label: 'Copyright', isMedia: false },
+        // Champs de contenu des pages Support
+        { field: 'support_content', value: sectionContent.support_content || '', label: 'Contenu Page Support', isRichText: true },
+        { field: 'support_bg_color', value: sectionContent.support_bg_color || '#f8fafc', label: 'Couleur de fond Support', isColor: true },
+        { field: 'support_text_color', value: sectionContent.support_text_color || '#1e293b', label: 'Couleur du texte Support', isColor: true },
+        { field: 'support_title', value: sectionContent.support_title || 'Centre d\'aide', label: 'Titre Page Support', isMedia: false },
+        { field: 'support_subtitle', value: sectionContent.support_subtitle || 'Comment pouvons-nous vous aider ?', label: 'Sous-titre Page Support', isMedia: false },
+        { field: 'support_email', value: sectionContent.support_email || 'support@automivy.com', label: 'Email Support', isMedia: false },
+        { field: 'support_phone', value: sectionContent.support_phone || '+33 1 23 45 67 89', label: 'Téléphone Support', isMedia: false },
+        { field: 'support_chat_text', value: sectionContent.support_chat_text || 'Démarrer le chat', label: 'Texte Chat Support', isMedia: false },
+        { field: 'support_faq_content', value: sectionContent.support_faq_content || '', label: 'Contenu FAQ Support', isRichText: true },
+        
+        // Champs de contenu des pages Privacy
+        { field: 'privacy_content', value: sectionContent.privacy_content || '', label: 'Contenu Page Privacy', isRichText: true },
+        { field: 'privacy_bg_color', value: sectionContent.privacy_bg_color || '#f8fafc', label: 'Couleur de fond Privacy', isColor: true },
+        { field: 'privacy_text_color', value: sectionContent.privacy_text_color || '#1e293b', label: 'Couleur du texte Privacy', isColor: true },
+        { field: 'privacy_title', value: sectionContent.privacy_title || 'Politique de Confidentialité', label: 'Titre Page Privacy', isMedia: false },
+        { field: 'privacy_subtitle', value: sectionContent.privacy_subtitle || 'Dernière mise à jour : 1er janvier 2024', label: 'Sous-titre Page Privacy', isMedia: false },
+        
+        // Champs de contenu des pages Terms
+        { field: 'terms_content', value: sectionContent.terms_content || '', label: 'Contenu Page Terms', isRichText: true },
+        { field: 'terms_bg_color', value: sectionContent.terms_bg_color || '#f8fafc', label: 'Couleur de fond Terms', isColor: true },
+        { field: 'terms_text_color', value: sectionContent.terms_text_color || '#1e293b', label: 'Couleur du texte Terms', isColor: true },
+        { field: 'terms_title', value: sectionContent.terms_title || 'Conditions d\'Utilisation', label: 'Titre Page Terms', isMedia: false },
+        { field: 'terms_subtitle', value: sectionContent.terms_subtitle || 'Dernière mise à jour : 1er janvier 2024', label: 'Sous-titre Page Terms', isMedia: false }
       ];
     }
     
@@ -593,6 +728,650 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+                ) : activeSection === 'pricing' ? (
+                  <div className="space-y-6">
+                    {/* Configuration générale */}
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">Configuration générale</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {getSectionFields(activeSection).map(({ field, value, label, isMedia }) => (
+                          <div key={field} className={isMedia ? 'md:col-span-2' : ''}>
+                            {isMedia ? (
+                              <MediaField
+                                label={label}
+                                value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                onChange={(newValue) => handleFieldChange(field, newValue)}
+                                type={getMediaType(field)}
+                              />
+                            ) : (
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-700">
+                                  {label}
+                                </label>
+                                {field === 'enabled' ? (
+                                  <div className="flex items-center space-x-3">
+                                    <button
+                                      onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
+                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                          value === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                      />
+                                    </button>
+                                    <span className="text-sm text-slate-600">
+                                      {value === 'true' ? 'Activé' : 'Désactivé'}
+                                    </span>
+                                  </div>
+                                ) : field.includes('description') || field.includes('content') ? (
+                                  <textarea
+                                    value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                                    rows={4}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Enter ${label.toLowerCase()}...`}
+                                  />
+                                ) : (
+                                  <input
+                                    type="text"
+                                    value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Enter ${label.toLowerCase()}...`}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Plans tarifaires */}
+                    <div className="bg-white rounded-lg border border-slate-200 p-6">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-4">Plans tarifaires</h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        {[1, 2, 3].map(planNumber => {
+                          const planContent = content.pricing || {};
+                          return (
+                            <div key={planNumber} className="bg-slate-50 rounded-lg p-4">
+                              <h4 className="text-md font-semibold text-slate-900 mb-3">Plan {planNumber}</h4>
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                                    Nom du plan
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={tempContent[`plan_${planNumber}_name`] !== undefined ? tempContent[`plan_${planNumber}_name`] : planContent[`plan_${planNumber}_name`] || ''}
+                                    onChange={(e) => handleFieldChange(`plan_${planNumber}_name`, e.target.value)}
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Plan ${planNumber}`}
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                                    Prix
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={tempContent[`plan_${planNumber}_price`] !== undefined ? tempContent[`plan_${planNumber}_price`] : planContent[`plan_${planNumber}_price`] || ''}
+                                    onChange={(e) => handleFieldChange(`plan_${planNumber}_price`, e.target.value)}
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder="$29"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                                    Période
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={tempContent[`plan_${planNumber}_period`] !== undefined ? tempContent[`plan_${planNumber}_period`] : planContent[`plan_${planNumber}_period`] || ''}
+                                    onChange={(e) => handleFieldChange(`plan_${planNumber}_period`, e.target.value)}
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder="/mois"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                                    Description
+                                  </label>
+                                  <textarea
+                                    value={tempContent[`plan_${planNumber}_description`] !== undefined ? tempContent[`plan_${planNumber}_description`] : planContent[`plan_${planNumber}_description`] || ''}
+                                    onChange={(e) => handleFieldChange(`plan_${planNumber}_description`, e.target.value)}
+                                    rows={2}
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder="Description du plan..."
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                                    Features (une par ligne)
+                                  </label>
+                                  <textarea
+                                    value={[
+                                      tempContent[`plan_${planNumber}_feature_1`] !== undefined ? tempContent[`plan_${planNumber}_feature_1`] : planContent[`plan_${planNumber}_feature_1`] || '',
+                                      tempContent[`plan_${planNumber}_feature_2`] !== undefined ? tempContent[`plan_${planNumber}_feature_2`] : planContent[`plan_${planNumber}_feature_2`] || '',
+                                      tempContent[`plan_${planNumber}_feature_3`] !== undefined ? tempContent[`plan_${planNumber}_feature_3`] : planContent[`plan_${planNumber}_feature_3`] || '',
+                                      tempContent[`plan_${planNumber}_feature_4`] !== undefined ? tempContent[`plan_${planNumber}_feature_4`] : planContent[`plan_${planNumber}_feature_4`] || '',
+                                      tempContent[`plan_${planNumber}_feature_5`] !== undefined ? tempContent[`plan_${planNumber}_feature_5`] : planContent[`plan_${planNumber}_feature_5`] || '',
+                                      tempContent[`plan_${planNumber}_feature_6`] !== undefined ? tempContent[`plan_${planNumber}_feature_6`] : planContent[`plan_${planNumber}_feature_6`] || ''
+                                    ].filter(Boolean).join('\n')}
+                                    onChange={(e) => {
+                                      const features = e.target.value.split('\n').filter(Boolean);
+                                      features.forEach((feature, index) => {
+                                        handleFieldChange(`plan_${planNumber}_feature_${index + 1}`, feature);
+                                      });
+                                      // Clear remaining features
+                                      for (let i = features.length; i < 6; i++) {
+                                        handleFieldChange(`plan_${planNumber}_feature_${i + 1}`, '');
+                                      }
+                                    }}
+                                    rows={4}
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : activeSection === 'about' ? (
+                  <div className="space-y-6">
+                    {/* Configuration générale */}
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">Configuration générale</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {getSectionFields(activeSection).map(({ field, value, label, isMedia }) => (
+                          <div key={field} className={isMedia ? 'md:col-span-2' : ''}>
+                            {isMedia ? (
+                              <MediaField
+                                label={label}
+                                value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                onChange={(newValue) => handleFieldChange(field, newValue)}
+                                type={getMediaType(field)}
+                              />
+                            ) : (
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-700">
+                                  {label}
+                                </label>
+                                {field === 'enabled' ? (
+                                  <div className="flex items-center space-x-3">
+                                    <button
+                                      onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
+                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                          value === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                      />
+                                    </button>
+                                    <span className="text-sm text-slate-600">
+                                      {value === 'true' ? 'Activé' : 'Désactivé'}
+                                    </span>
+                                  </div>
+                                ) : field.includes('description') || field.includes('content') || field.includes('mission') || field.includes('vision') ? (
+                                  <textarea
+                                    value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                                    rows={4}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Enter ${label.toLowerCase()}...`}
+                                  />
+                                ) : (
+                                  <input
+                                    type="text"
+                                    value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Enter ${label.toLowerCase()}...`}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : activeSection === 'contact' ? (
+                  <div className="space-y-6">
+                    {/* Configuration générale */}
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">Configuration générale</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {getSectionFields(activeSection).map(({ field, value, label, isMedia }) => (
+                          <div key={field} className={isMedia ? 'md:col-span-2' : ''}>
+                            {isMedia ? (
+                              <MediaField
+                                label={label}
+                                value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                onChange={(newValue) => handleFieldChange(field, newValue)}
+                                type={getMediaType(field)}
+                              />
+                            ) : (
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-700">
+                                  {label}
+                                </label>
+                                {field === 'enabled' ? (
+                                  <div className="flex items-center space-x-3">
+                                    <button
+                                      onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
+                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                          value === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                      />
+                                    </button>
+                                    <span className="text-sm text-slate-600">
+                                      {value === 'true' ? 'Activé' : 'Désactivé'}
+                                    </span>
+                                  </div>
+                                ) : field.includes('description') || field.includes('content') ? (
+                                  <textarea
+                                    value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                                    rows={4}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Enter ${label.toLowerCase()}...`}
+                                  />
+                                ) : (
+                                  <input
+                                    type="text"
+                                    value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Enter ${label.toLowerCase()}...`}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : activeSection === 'footer' ? (
+                  <div className="space-y-6">
+                    {/* Configuration générale */}
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">Configuration générale</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {getSectionFields(activeSection).filter(({ field }) => 
+                          !field.startsWith('support_') && !field.startsWith('privacy_') && !field.startsWith('terms_')
+                        ).map(({ field, value, label, isMedia, isRichText, isColor }: any) => (
+                          <div key={field} className={isMedia || isRichText ? 'md:col-span-2' : ''}>
+                            {isMedia ? (
+                              <MediaField
+                                label={label}
+                                value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                onChange={(newValue) => handleFieldChange(field, newValue)}
+                                type={getMediaType(field)}
+                              />
+                            ) : isRichText ? (
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-700">
+                                  {label}
+                                </label>
+                                <RichTextEditor
+                                  value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                  onChange={(newValue) => handleFieldChange(field, newValue)}
+                                  placeholder={`Saisissez le contenu pour ${label.toLowerCase()}...`}
+                                  height={200}
+                                />
+                              </div>
+                            ) : isColor ? (
+                              <ColorPicker
+                                value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                onChange={(newValue) => handleFieldChange(field, newValue)}
+                                label={label}
+                              />
+                            ) : (
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-700">
+                                  {label}
+                                </label>
+                                {field === 'enabled' ? (
+                                  <div className="flex items-center space-x-3">
+                                    <button
+                                      onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
+                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                          value === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                      />
+                                    </button>
+                                    <span className="text-sm text-slate-600">
+                                      {value === 'true' ? 'Activé' : 'Désactivé'}
+                                    </span>
+                                  </div>
+                                ) : field.includes('description') || field.includes('content') ? (
+                                  <textarea
+                                    value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                                    rows={4}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Enter ${label.toLowerCase()}...`}
+                                  />
+                                ) : (
+                                  <input
+                                    type="text"
+                                    value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    placeholder={`Enter ${label.toLowerCase()}...`}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Configuration des liens Footer */}
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">Configuration des liens Footer</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {['support', 'privacy', 'terms'].map((linkType) => (
+                          <div key={linkType} className="bg-white border border-slate-200 rounded-lg p-4">
+                            <h4 className="text-base font-semibold text-slate-900 mb-3 capitalize">{linkType}</h4>
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                  Texte {linkType}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={tempContent[`${linkType}_text`] !== undefined ? tempContent[`${linkType}_text`] : (content.footer?.[`${linkType}_text`] || '')}
+                                  onChange={(e) => handleFieldChange(`${linkType}_text`, e.target.value)}
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                  placeholder={`Texte pour ${linkType}...`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                  URL {linkType}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={tempContent[`${linkType}_link`] !== undefined ? tempContent[`${linkType}_link`] : (content.footer?.[`${linkType}_link`] || '')}
+                                  onChange={(e) => handleFieldChange(`${linkType}_link`, e.target.value)}
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                  placeholder={`URL pour ${linkType}...`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Cases dédiées pour chaque page */}
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-semibold text-slate-900">Configuration des pages</h3>
+                      
+                      {/* Page Support */}
+                      <div className="bg-white border border-slate-200 rounded-lg p-6">
+                        <div className="flex items-center mb-4">
+                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-green-600 font-semibold">S</span>
+                          </div>
+                          <h4 className="text-lg font-semibold text-slate-900">Page Support</h4>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Titre de la page
+                              </label>
+                              <input
+                                type="text"
+                                value={tempContent.support_title !== undefined ? tempContent.support_title : (content.footer?.support_title || '')}
+                                onChange={(e) => handleFieldChange('support_title', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="Titre de la page support..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Sous-titre
+                              </label>
+                              <input
+                                type="text"
+                                value={tempContent.support_subtitle !== undefined ? tempContent.support_subtitle : (content.footer?.support_subtitle || '')}
+                                onChange={(e) => handleFieldChange('support_subtitle', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="Sous-titre de la page support..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Email de contact
+                              </label>
+                              <input
+                                type="email"
+                                value={tempContent.support_email !== undefined ? tempContent.support_email : (content.footer?.support_email || '')}
+                                onChange={(e) => handleFieldChange('support_email', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="support@example.com"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Téléphone
+                              </label>
+                              <input
+                                type="tel"
+                                value={tempContent.support_phone !== undefined ? tempContent.support_phone : (content.footer?.support_phone || '')}
+                                onChange={(e) => handleFieldChange('support_phone', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="+33 1 23 45 67 89"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Texte du bouton chat
+                              </label>
+                              <input
+                                type="text"
+                                value={tempContent.support_chat_text !== undefined ? tempContent.support_chat_text : (content.footer?.support_chat_text || '')}
+                                onChange={(e) => handleFieldChange('support_chat_text', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="Démarrer le chat"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Contenu principal
+                              </label>
+                              <RichTextEditor
+                                value={tempContent.support_content !== undefined ? tempContent.support_content : (content.footer?.support_content || '')}
+                                onChange={(content) => handleFieldChange('support_content', content)}
+                                placeholder="Saisissez le contenu principal de la page support..."
+                                height={200}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Contenu FAQ
+                              </label>
+                              <RichTextEditor
+                                value={tempContent.support_faq_content !== undefined ? tempContent.support_faq_content : (content.footer?.support_faq_content || '')}
+                                onChange={(content) => handleFieldChange('support_faq_content', content)}
+                                placeholder="Saisissez le contenu de la FAQ..."
+                                height={200}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <ColorPicker
+                                value={tempContent.support_bg_color !== undefined ? tempContent.support_bg_color : (content.footer?.support_bg_color || '#f8fafc')}
+                                onChange={(color) => handleFieldChange('support_bg_color', color)}
+                                label="Couleur fond"
+                              />
+                              <ColorPicker
+                                value={tempContent.support_text_color !== undefined ? tempContent.support_text_color : (content.footer?.support_text_color || '#1e293b')}
+                                onChange={(color) => handleFieldChange('support_text_color', color)}
+                                label="Couleur texte"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Page Privacy */}
+                      <div className="bg-white border border-slate-200 rounded-lg p-6">
+                        <div className="flex items-center mb-4">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-blue-600 font-semibold">P</span>
+                          </div>
+                          <h4 className="text-lg font-semibold text-slate-900">Page Privacy</h4>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Titre de la page
+                              </label>
+                              <input
+                                type="text"
+                                value={tempContent.privacy_title !== undefined ? tempContent.privacy_title : (content.footer?.privacy_title || '')}
+                                onChange={(e) => handleFieldChange('privacy_title', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="Titre de la page privacy..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Sous-titre
+                              </label>
+                              <input
+                                type="text"
+                                value={tempContent.privacy_subtitle !== undefined ? tempContent.privacy_subtitle : (content.footer?.privacy_subtitle || '')}
+                                onChange={(e) => handleFieldChange('privacy_subtitle', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="Sous-titre de la page privacy..."
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Contenu de la page
+                              </label>
+                              <RichTextEditor
+                                value={tempContent.privacy_content !== undefined ? tempContent.privacy_content : (content.footer?.privacy_content || '')}
+                                onChange={(content) => handleFieldChange('privacy_content', content)}
+                                placeholder="Saisissez le contenu de la page privacy..."
+                                height={200}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <ColorPicker
+                                value={tempContent.privacy_bg_color !== undefined ? tempContent.privacy_bg_color : (content.footer?.privacy_bg_color || '#f8fafc')}
+                                onChange={(color) => handleFieldChange('privacy_bg_color', color)}
+                                label="Couleur fond"
+                              />
+                              <ColorPicker
+                                value={tempContent.privacy_text_color !== undefined ? tempContent.privacy_text_color : (content.footer?.privacy_text_color || '#1e293b')}
+                                onChange={(color) => handleFieldChange('privacy_text_color', color)}
+                                label="Couleur texte"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Page Terms */}
+                      <div className="bg-white border border-slate-200 rounded-lg p-6">
+                        <div className="flex items-center mb-4">
+                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-purple-600 font-semibold">T</span>
+                          </div>
+                          <h4 className="text-lg font-semibold text-slate-900">Page Terms</h4>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Titre de la page
+                              </label>
+                              <input
+                                type="text"
+                                value={tempContent.terms_title !== undefined ? tempContent.terms_title : (content.footer?.terms_title || '')}
+                                onChange={(e) => handleFieldChange('terms_title', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="Titre de la page terms..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Sous-titre
+                              </label>
+                              <input
+                                type="text"
+                                value={tempContent.terms_subtitle !== undefined ? tempContent.terms_subtitle : (content.footer?.terms_subtitle || '')}
+                                onChange={(e) => handleFieldChange('terms_subtitle', e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                placeholder="Sous-titre de la page terms..."
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Contenu de la page
+                              </label>
+                              <RichTextEditor
+                                value={tempContent.terms_content !== undefined ? tempContent.terms_content : (content.footer?.terms_content || '')}
+                                onChange={(content) => handleFieldChange('terms_content', content)}
+                                placeholder="Saisissez le contenu de la page terms..."
+                                height={200}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <ColorPicker
+                                value={tempContent.terms_bg_color !== undefined ? tempContent.terms_bg_color : (content.footer?.terms_bg_color || '#f8fafc')}
+                                onChange={(color) => handleFieldChange('terms_bg_color', color)}
+                                label="Couleur fond"
+                              />
+                              <ColorPicker
+                                value={tempContent.terms_text_color !== undefined ? tempContent.terms_text_color : (content.footer?.terms_text_color || '#1e293b')}
+                                onChange={(color) => handleFieldChange('terms_text_color', color)}
+                                label="Couleur texte"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : getSectionFields(activeSection).length === 0 ? (

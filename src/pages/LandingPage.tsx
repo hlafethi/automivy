@@ -379,6 +379,7 @@ export function LandingPage() {
       </section>
 
       {/* About Section */}
+      {about.enabled === 'true' && (
       <section id="about" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -424,8 +425,10 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Contact Section */}
+      {contact.enabled === 'true' && (
       <section id="contact" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -465,8 +468,10 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Footer */}
+      {footer.enabled === 'true' && (
       <footer className="bg-slate-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -504,14 +509,14 @@ export function LandingPage() {
               <ul className="space-y-2">
                 <li><a href="#about" className="text-slate-300 hover:text-green-400 transition-colors">About</a></li>
                 <li><a href="#contact" className="text-slate-300 hover:text-green-400 transition-colors">Contact</a></li>
-                <li><a href={footer.support_link || '/support'} className="text-slate-300 hover:text-green-400 transition-colors">Support</a></li>
+                <li><a href={footer.support_link || '/support'} className="text-slate-300 hover:text-green-400 transition-colors">{footer.support_text || 'Support'}</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-4">Legal</h4>
               <ul className="space-y-2">
-                <li><a href={footer.privacy_link || '/privacy'} className="text-slate-300 hover:text-green-400 transition-colors">Privacy</a></li>
-                <li><a href={footer.terms_link || '/terms'} className="text-slate-300 hover:text-green-400 transition-colors">Terms</a></li>
+                <li><a href={footer.privacy_link || '/privacy'} className="text-slate-300 hover:text-green-400 transition-colors">{footer.privacy_text || 'Privacy'}</a></li>
+                <li><a href={footer.terms_link || '/terms'} className="text-slate-300 hover:text-green-400 transition-colors">{footer.terms_text || 'Terms'}</a></li>
               </ul>
             </div>
           </div>
@@ -522,6 +527,7 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 }
