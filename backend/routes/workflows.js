@@ -7,11 +7,20 @@ const router = express.Router();
 // Tous les endpoints nécessitent une authentification
 router.use(authenticateToken);
 
-// Récupérer tous les workflows de l'utilisateur
+// Récupérer tous les workflows (admin) ou workflows de l'utilisateur
 router.get('/', async (req, res) => {
   try {
-    const workflows = await db.getWorkflows(req.user.id);
-    res.json(workflows);
+    // Si l'utilisateur est admin, récupérer tous les workflows
+    if (req.user.role === 'admin') {
+      console.log('🔍 [Workflows] Récupération de tous les workflows (admin)');
+      const workflows = await db.getAllWorkflows();
+      res.json(workflows);
+    } else {
+      // Sinon, récupérer seulement les workflows de l'utilisateur
+      console.log('🔍 [Workflows] Récupération des workflows utilisateur');
+      const workflows = await db.getWorkflows(req.user.id);
+      res.json(workflows);
+    }
   } catch (error) {
     console.error('Get workflows error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -100,11 +109,25 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   console.log('🔍 [Backend] DELETE /workflows/:id appelé avec ID:', req.params.id);
   console.log('🔍 [Backend] User ID:', req.user.id);
+  console.log('🔍 [Backend] User role:', req.user.role);
   
   try {
     // Récupérer le workflow avant suppression pour obtenir l'ID n8n
     console.log('🔍 [Backend] Récupération du workflow avant suppression...');
-    const workflow = await db.getWorkflowById(req.params.id, req.user.id);
+    let workflow;
+    
+    if (req.user.role === 'admin') {
+      // Pour l'admin, récupérer le workflow sans vérifier l'utilisateur
+      console.log('🔍 [Backend] Récupération en mode admin...');
+      const result = await db.query('SELECT * FROM user_workflows WHERE id = $1', [req.params.id]);
+      workflow = result.rows[0];
+    } else {
+      // Pour les utilisateurs normaux, vérifier que le workflow leur appartient
+      console.log('🔍 [Backend] Récupération en mode utilisateur...');
+      const result = await db.query('SELECT * FROM user_workflows WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+      workflow = result.rows[0];
+    }
+    
     if (!workflow) {
       console.log('❌ [Backend] Workflow non trouvé');
       return res.status(404).json({ error: 'Workflow not found' });
@@ -117,7 +140,13 @@ router.delete('/:id', async (req, res) => {
 
     // Supprimer de la base de données
     console.log('🔍 [Backend] Suppression de la base de données...');
-    await db.deleteWorkflow(req.params.id, req.user.id);
+    if (req.user.role === 'admin') {
+      // Pour l'admin, supprimer sans vérifier l'utilisateur
+      await db.query('DELETE FROM user_workflows WHERE id = $1', [req.params.id]);
+    } else {
+      // Pour les utilisateurs normaux, vérifier que le workflow leur appartient
+      await db.query('DELETE FROM user_workflows WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    }
     console.log('✅ [Backend] Workflow supprimé de la base de données');
 
     // Supprimer aussi de n8n si l'ID n8n existe (comme hier)

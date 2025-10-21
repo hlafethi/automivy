@@ -22,8 +22,10 @@ export interface Workflow {
   description?: string;
   workflow_data: any;
   n8n_workflow_id?: string;
+  active: boolean;
   created_at: string;
   updated_at: string;
+  params?: any;
 }
 
 export interface UserWorkflow {

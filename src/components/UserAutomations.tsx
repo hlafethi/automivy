@@ -4,6 +4,8 @@ import { userWorkflowService, UserWorkflow } from '../services/userWorkflowServi
 import { useAuth } from '../contexts/AuthContext';
 import { CreateAutomationModal } from './CreateAutomationModal';
 import { EditAutomationModal } from './EditAutomationModal';
+import { EditPDFWorkflowModal } from './EditPDFWorkflowModal';
+import { EditEmailWorkflowModal } from './EditEmailWorkflowModal';
 import { TemplateCatalog } from './TemplateCatalog';
 import SmartDeployModal from './SmartDeployModal';
 import PDFFormModal from './PDFFormModal';
@@ -14,6 +16,8 @@ export function UserAutomations() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showPDFEditModal, setShowPDFEditModal] = useState(false);
+  const [showEmailEditModal, setShowEmailEditModal] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<UserWorkflow | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showPDFModal, setShowPDFModal] = useState(false);
@@ -82,7 +86,17 @@ export function UserAutomations() {
         hasN8nWorkflowId: !!workflow.n8nWorkflowId
       });
       setEditingWorkflow(workflow);
-      setShowEditModal(true);
+      
+      // Utiliser le bon modal selon le type de workflow
+      if (workflow.name.includes('PDF Analysis Complete')) {
+        setShowEditModal(false); // Fermer le modal générique
+        setShowPDFEditModal(true); // Ouvrir le modal PDF
+      } else if (workflow.name.includes('v2 Template fonctionnel resume email')) {
+        setShowEditModal(false); // Fermer le modal générique
+        setShowEmailEditModal(true); // Ouvrir le modal Email
+      } else {
+        setShowEditModal(true); // Utiliser le modal générique pour les autres
+      }
     }
   };
 
@@ -319,6 +333,30 @@ export function UserAutomations() {
             setShowPDFModal(false);
             setSelectedWorkflow(null);
           }}
+        />
+      )}
+
+      {showPDFEditModal && editingWorkflow && (
+        <EditPDFWorkflowModal
+          isOpen={showPDFEditModal}
+          onClose={() => {
+            setShowPDFEditModal(false);
+            setEditingWorkflow(null);
+          }}
+          onSuccess={handleEditSuccess}
+          workflow={editingWorkflow}
+        />
+      )}
+
+      {showEmailEditModal && editingWorkflow && (
+        <EditEmailWorkflowModal
+          isOpen={showEmailEditModal}
+          onClose={() => {
+            setShowEmailEditModal(false);
+            setEditingWorkflow(null);
+          }}
+          onSuccess={handleEditSuccess}
+          workflow={editingWorkflow}
         />
       )}
 

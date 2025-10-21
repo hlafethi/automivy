@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
-import { FileCode, Plus, Loader2 } from 'lucide-react';
+import { FileCode, Loader2 } from 'lucide-react';
 import { Template } from '../types';
 import { templateService } from '../services';
-import { WorkflowDeployModal } from './WorkflowDeployModal';
 import { useAuth } from '../contexts/AuthContext';
 
 export function TemplateCatalog() {
   const { user, loading: authLoading } = useAuth();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -61,7 +59,7 @@ export function TemplateCatalog() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-900">Template Catalog</h2>
         <p className="text-slate-600 mt-1">
-          Choose a template to deploy your automation workflow
+          Browse available workflow templates
         </p>
       </div>
 
@@ -104,36 +102,10 @@ export function TemplateCatalog() {
                 <div className="text-xs text-slate-500">
                   Created: {new Date(template.created_at).toLocaleDateString()}
                 </div>
-                <button
-                  onClick={() => {
-                    console.log('Deploy button clicked for template:', template.name);
-                    console.log('Template object:', template);
-                    setSelectedTemplate(template);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  Deploy
-                </button>
               </div>
             </div>
           ))}
         </div>
-      )}
-
-      {selectedTemplate && (
-        <>
-          {console.log('Rendering WorkflowDeployModal, selectedTemplate:', selectedTemplate.name)}
-          <WorkflowDeployModal
-            template={selectedTemplate}
-            onClose={() => setSelectedTemplate(null)}
-            onSuccess={() => {
-              setSelectedTemplate(null);
-              // Rediriger vers My Automations après création
-              window.location.href = '/user-dashboard';
-            }}
-          />
-        </>
       )}
     </div>
   );

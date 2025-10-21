@@ -144,10 +144,45 @@ class Database {
   }
 
   async getWorkflows(userId) {
-    const result = await this.query(
-      'SELECT * FROM workflows WHERE user_id = $1 ORDER BY created_at DESC',
-      [userId]
-    );
+    const result = await this.query(`
+      SELECT 
+        id,
+        user_id,
+        name,
+        n8n_workflow_id,
+        template_id,
+        params,
+        is_active as active,
+        created_at,
+        updated_at
+      FROM workflows 
+      WHERE user_id = $1 
+      ORDER BY created_at DESC
+    `, [userId]);
+    return result.rows;
+  }
+
+  async getAllWorkflows() {
+    const result = await this.query(`
+      SELECT 
+        uw.id,
+        uw.user_id,
+        uw.name,
+        uw.n8n_workflow_id,
+        uw.template_id,
+        uw.description,
+        uw.schedule,
+        uw.is_active as active,
+        uw.created_at,
+        uw.updated_at,
+        u.email as user_email,
+        u.role as user_role,
+        t.name as template_name
+      FROM user_workflows uw
+      LEFT JOIN users u ON uw.user_id = u.id
+      LEFT JOIN templates t ON uw.template_id = t.id
+      ORDER BY uw.created_at DESC
+    `);
     return result.rows;
   }
 
