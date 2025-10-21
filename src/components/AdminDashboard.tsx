@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, Sparkles, List, Key, Activity } from 'lucide-react';
+import { Upload, Sparkles, List, Key, Activity, Globe } from 'lucide-react';
 import { TemplateUpload } from './TemplateUpload';
 import { AIWorkflowGenerator } from './AIWorkflowGenerator';
 import { TemplateList } from './TemplateList';
@@ -7,7 +7,7 @@ import { ApiKeysManager } from './ApiKeysManager';
 import { AllWorkflows } from './AllWorkflows';
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'list' | 'upload' | 'ai' | 'apikeys' | 'workflows'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'upload' | 'ai' | 'apikeys' | 'workflows' | 'landing'>('list');
 
   return (
     <div>
@@ -75,6 +75,13 @@ export function AdminDashboard() {
             >
               <Activity className="w-5 h-5" />
               All Workflows
+            </button>
+            <button
+              onClick={() => window.location.href = '/admin/landing'}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition text-slate-600 hover:bg-slate-50"
+            >
+              <Globe className="w-5 h-5" />
+              Landing Page
             </button>
           </div>
         </div>

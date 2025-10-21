@@ -1,7 +1,0 @@
-{
-  "workflowVariables": {
-    "pdfCoApiKey": "votre-clé-api-pdf-co",
-    "senderEmail": "votre-email@exemple.com",
-    "recipientEmail": "client@exemple.com"
-  }
-}

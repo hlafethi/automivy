@@ -15,15 +15,31 @@ const emailCredentialRoutes = require('./routes/emailCredentials');
 const n8nRoutes = require('./routes/n8n');
 const smartDeployRoutes = require('./routes/smartDeploy');
 const scheduleRoutes = require('./routes/schedule');
+const landingRoutes = require('./routes/landing');
+const mediaRoutes = require('./routes/media');
 
 const app = express();
 
-// Middleware
+// Middleware CORS avec logs détaillés
 app.use(cors({
   origin: config.server.corsOrigin,
   credentials: true
 }));
-app.use(express.json({ limit: '50mb' }));
+
+// Middleware de logging CORS
+app.use((req, res, next) => {
+  console.log('🌐 [CORS] Requête reçue:', req.method, req.url);
+  console.log('🌐 [CORS] Origin:', req.headers.origin);
+  console.log('🌐 [CORS] CORS Origin configuré:', config.server.corsOrigin);
+  next();
+});
+// Middleware JSON - exclure les routes d'upload
+app.use((req, res, next) => {
+  if (req.path.includes('/media/upload')) {
+    return next(); // Skip JSON parsing for upload routes
+  }
+  express.json({ limit: '50mb' })(req, res, next);
+});
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Middleware de logging global
@@ -37,6 +53,9 @@ app.use((req, res, next) => {
 // Servir les fichiers statiques depuis le répertoire parent
 app.use(express.static('../'));
 
+// Servir les fichiers uploads
+app.use('/uploads', express.static('public/uploads'));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/templates', templateRoutes);
@@ -49,6 +68,8 @@ app.use('/api/email-credentials', emailCredentialRoutes);
 app.use('/api/n8n', n8nRoutes);
 app.use('/api/smart-deploy', smartDeployRoutes);
 app.use('/api', scheduleRoutes);
+app.use('/api/landing', landingRoutes);
+app.use('/api/media', mediaRoutes);
 
 // Route de test
 app.get('/api/health', (req, res) => {

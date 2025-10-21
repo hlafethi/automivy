@@ -29,9 +29,16 @@ const authenticateToken = (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
+  console.log('🔐 [Auth] Middleware requireAdmin appelé');
+  console.log('🔐 [Auth] User role:', req.user?.role);
+  console.log('🔐 [Auth] User email:', req.user?.email);
+  
   if (req.user.role !== 'admin') {
+    console.log('❌ [Auth] Accès refusé - rôle non admin:', req.user?.role);
     return res.status(403).json({ error: 'Admin access required' });
   }
+  
+  console.log('✅ [Auth] Accès admin autorisé');
   next();
 };
 

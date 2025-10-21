@@ -1,8 +1,11 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { AuthForm } from './components/AuthForm';
 import { Header } from './components/Header';
 import { AdminDashboard } from './components/AdminDashboard';
 import { UserAutomations } from './components/UserAutomations';
+import { LandingPage } from './pages/LandingPage';
+import { LandingAdmin } from './components/LandingAdmin';
 
 function App() {
   const { user, loading, isAdmin } = useAuth();
@@ -18,17 +21,70 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <AuthForm />;
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isAdmin ? <AdminDashboard /> : <UserAutomations />}
-      </main>
-    </div>
+    <Router>
+      <Routes>
+        {/* Route publique - Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+        
+        {/* Routes d'authentification */}
+        <Route 
+          path="/login" 
+          element={!user ? <AuthForm /> : <Navigate to={isAdmin ? "/admin" : "/dashboard"} replace />} 
+        />
+        
+        {/* Routes protégées */}
+        <Route
+          path="/dashboard"
+          element={
+            user ? (
+              <div className="min-h-screen bg-slate-50">
+                <Header />
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <UserAutomations />
+                </main>
+              </div>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        
+        <Route
+          path="/admin"
+          element={
+            user && isAdmin ? (
+              <div className="min-h-screen bg-slate-50">
+                <Header />
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <AdminDashboard />
+                </main>
+              </div>
+            ) : user ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        
+        <Route
+          path="/admin/landing"
+          element={
+            user && isAdmin ? (
+              <LandingAdmin onBack={() => window.history.back()} />
+            ) : user ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        
+        {/* Redirection par défaut */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 }
 

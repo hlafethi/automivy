@@ -21,36 +21,69 @@ class ApiClient {
 
   private async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
-    console.log('🔧 [ApiClient] URL appelée:', url);
-    console.log('🔧 [ApiClient] Endpoint:', endpoint);
-    console.log('🔧 [ApiClient] Base URL:', this.baseUrl);
+    console.log('🚨🚨🚨 [ApiClient] ===== DÉBUT REQUEST =====');
+    console.log('🚨🚨🚨 [ApiClient] URL appelée:', url);
+    console.log('🚨🚨🚨 [ApiClient] Endpoint:', endpoint);
+    console.log('🚨🚨🚨 [ApiClient] Base URL:', this.baseUrl);
+    console.log('🚨🚨🚨 [ApiClient] Method:', options.method || 'GET');
+    console.log('🚨🚨🚨 [ApiClient] Body type:', typeof options.body);
+    console.log('🚨🚨🚨 [ApiClient] Body instanceof FormData:', options.body instanceof FormData);
+    console.log('🚨🚨🚨 [ApiClient] Body content:', options.body);
+    
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
       ...options.headers,
     };
 
+    // Ne pas définir Content-Type pour FormData - le navigateur le fait automatiquement
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     if (this.token) {
       (headers as any).Authorization = `Bearer ${this.token}`;
+      console.log('🚨🚨🚨 [ApiClient] Token ajouté:', this.token.substring(0, 20) + '...');
+    } else {
+      console.log('🚨🚨🚨 [ApiClient] Aucun token présent');
     }
 
     // Sérialiser le body en JSON si c'est un objet
     let body = options.body;
     if (body && typeof body === 'object' && !(body instanceof FormData)) {
       body = JSON.stringify(body);
+      console.log('🚨🚨🚨 [ApiClient] Body sérialisé en JSON:', body);
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      body,
-    });
+    console.log('🚨🚨🚨 [ApiClient] Headers finaux:', headers);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(error.error || 'Request failed');
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        body,
+      });
+
+      console.log('🚨🚨🚨 [ApiClient] Response status:', response.status);
+      console.log('🚨🚨🚨 [ApiClient] Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Network error' }));
+        console.error('❌ [ApiClient] Erreur API:', response.status, error);
+        if (response.status === 401 || response.status === 403) {
+          AuthService.logout();
+        }
+        console.log('🚨🚨🚨 [ApiClient] ===== FIN REQUEST (ERREUR) =====');
+        throw new Error(error.error || 'Request failed');
+      }
+
+      const result = await response.json();
+      console.log('🚨🚨🚨 [ApiClient] Response body:', result);
+      console.log('🚨🚨🚨 [ApiClient] ===== FIN REQUEST (SUCCÈS) =====');
+      return result;
+    } catch (error) {
+      console.error('❌ [ApiClient] Erreur fetch:', error);
+      console.log('🚨🚨🚨 [ApiClient] ===== FIN REQUEST (EXCEPTION) =====');
+      throw error;
     }
-
-    return response.json();
   }
 
   // Auth endpoints
