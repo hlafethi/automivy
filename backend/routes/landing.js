@@ -17,18 +17,15 @@ router.get('/', async (req, res) => {
     console.log('🔍 [Landing] Récupération du contenu de la landing page');
     
     const result = await db.query(`
-      SELECT section, field, content 
-      FROM landing_content 
-      ORDER BY section, field
+      SELECT section, content 
+      FROM landing_sections 
+      ORDER BY section
     `);
     
     // Organiser le contenu par section
     const content = {};
     result.rows.forEach(row => {
-      if (!content[row.section]) {
-        content[row.section] = {};
-      }
-      content[row.section][row.field] = row.content;
+      content[row.section] = row.content;
     });
     
     console.log('✅ [Landing] Contenu récupéré avec succès');
@@ -46,16 +43,16 @@ router.get('/section/:section', async (req, res) => {
     console.log(`🔍 [Landing] Récupération de la section: ${section}`);
     
     const result = await db.query(`
-      SELECT field, content 
-      FROM landing_content 
+      SELECT content 
+      FROM landing_sections 
       WHERE section = $1
-      ORDER BY field
     `, [section]);
     
-    const sectionContent = {};
-    result.rows.forEach(row => {
-      sectionContent[row.field] = row.content;
-    });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Section not found' });
+    }
+    
+    const sectionContent = result.rows[0].content;
     
     console.log(`✅ [Landing] Section ${section} récupérée avec succès`);
     res.json(sectionContent);
