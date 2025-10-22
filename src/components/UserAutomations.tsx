@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Play, Pause, Trash2, Edit, Clock, Mail, Loader2, FileText, Grid3X3 } from 'lucide-react';
+import { Plus, Play, Pause, Trash2, Edit, Clock, Mail, Loader2, FileText, Grid3X3, Ticket as TicketIcon } from 'lucide-react';
 import { userWorkflowService, UserWorkflow } from '../services/userWorkflowService';
 import { useAuth } from '../contexts/AuthContext';
 import { CreateAutomationModal } from './CreateAutomationModal';
@@ -9,6 +9,7 @@ import { EditEmailWorkflowModal } from './EditEmailWorkflowModal';
 import { TemplateCatalog } from './TemplateCatalog';
 import SmartDeployModal from './SmartDeployModal';
 import PDFFormModal from './PDFFormModal';
+import { UserTickets } from './UserTickets';
 
 export function UserAutomations() {
   const { user, loading: authLoading } = useAuth();
@@ -22,7 +23,7 @@ export function UserAutomations() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<UserWorkflow | null>(null);
-  const [activeTab, setActiveTab] = useState<'automations' | 'catalog'>('automations');
+  const [activeTab, setActiveTab] = useState<'automations' | 'catalog' | 'tickets'>('automations');
   const [showSmartDeploy, setShowSmartDeploy] = useState(false);
 
   useEffect(() => {
@@ -153,6 +154,15 @@ export function UserAutomations() {
             <span>Create Automation</span>
           </button>
         )}
+        {activeTab === 'catalog' && (
+          <button
+            onClick={() => setShowSmartDeploy(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Smart Deploy</span>
+          </button>
+        )}
       </div>
 
       {/* Navigation Tabs */}
@@ -180,6 +190,17 @@ export function UserAutomations() {
             >
               <Grid3X3 className="w-5 h-5" />
               Template Catalog
+            </button>
+            <button
+              onClick={() => setActiveTab('tickets')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
+                activeTab === 'tickets'
+                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <TicketIcon className="w-5 h-5" />
+              Support Tickets
             </button>
           </div>
         </div>
@@ -299,6 +320,10 @@ export function UserAutomations() {
           {activeTab === 'catalog' && (
             <TemplateCatalog />
           )}
+
+          {activeTab === 'tickets' && (
+            <UserTickets />
+          )}
         </div>
       </div>
 
@@ -361,18 +386,20 @@ export function UserAutomations() {
       )}
 
       {/* Bouton flottant + pour Smart Deploy */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button
-          onClick={() => {
-            console.log('🔧 [UserAutomations] Bouton SmartDeploy cliqué');
-            setShowSmartDeploy(true);
-          }}
-          className="bg-green-700 text-white p-4 rounded-full shadow-lg hover:bg-green-800 transition-colors border-2 border-white"
-          title="Déployer un workflow intelligent"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      </div>
+      {activeTab !== 'tickets' && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => {
+              console.log('🔧 [UserAutomations] Bouton SmartDeploy cliqué');
+              setShowSmartDeploy(true);
+            }}
+            className="bg-green-700 text-white p-4 rounded-full shadow-lg hover:bg-green-800 transition-colors border-2 border-white"
+            title="Déployer un workflow intelligent"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
+      )}
 
       {/* Modal Smart Deploy */}
       <SmartDeployModal

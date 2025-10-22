@@ -17,6 +17,9 @@ const smartDeployRoutes = require('./routes/smartDeploy');
 const scheduleRoutes = require('./routes/schedule');
 const landingRoutes = require('./routes/landing');
 const mediaRoutes = require('./routes/media');
+const analyticsRoutes = require('./routes/analytics');
+const userManagementRoutes = require('./routes/userManagement');
+const ticketsRoutes = require('./routes/tickets');
 
 const app = express();
 
@@ -26,11 +29,12 @@ app.use(cors({
   credentials: true
 }));
 
-// Middleware de logging CORS
+// Middleware de logging CORS (réduit)
 app.use((req, res, next) => {
-  console.log('🌐 [CORS] Requête reçue:', req.method, req.url);
-  console.log('🌐 [CORS] Origin:', req.headers.origin);
-  console.log('🌐 [CORS] CORS Origin configuré:', config.server.corsOrigin);
+  // Ne logger CORS que pour les requêtes API importantes
+  if (req.url.startsWith('/api/') && !req.url.includes('/static/')) {
+    console.log('🌐 [CORS] Requête API:', req.method, req.url);
+  }
   next();
 });
 // Middleware JSON - exclure les routes d'upload
@@ -42,11 +46,12 @@ app.use((req, res, next) => {
 });
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Middleware de logging global
+// Middleware de logging global (réduit)
 app.use((req, res, next) => {
-  console.log('🚨🚨🚨 [GLOBAL] Requête reçue:', req.method, req.url);
-  console.log('🚨🚨🚨 [GLOBAL] Headers:', req.headers);
-  console.log('🚨🚨🚨 [GLOBAL] Body:', req.body);
+  // Ne logger que les requêtes importantes, pas les assets statiques
+  if (!req.url.includes('/static/') && !req.url.includes('/uploads/') && !req.url.includes('/favicon')) {
+    console.log('🚨🚨🚨 [GLOBAL] Requête reçue:', req.method, req.url);
+  }
   next();
 });
 
@@ -70,6 +75,9 @@ app.use('/api/smart-deploy', smartDeployRoutes);
 app.use('/api', scheduleRoutes);
 app.use('/api/landing', landingRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/user-management', userManagementRoutes);
+app.use('/api/tickets', ticketsRoutes);
 
 // Route de test
 app.get('/api/health', (req, res) => {
