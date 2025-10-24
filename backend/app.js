@@ -20,6 +20,13 @@ const mediaRoutes = require('./routes/media');
 const analyticsRoutes = require('./routes/analytics');
 const userManagementRoutes = require('./routes/userManagement');
 const ticketsRoutes = require('./routes/tickets');
+const logsRoutes = require('./routes/logs');
+const alertsRoutes = require('./routes/alerts');
+const activityRoutes = require('./routes/activity');
+const databaseRoutes = require('./routes/database');
+const communityRoutes = require('./routes/community');
+// const databaseMonitoringService = require('./services/databaseMonitoringService');
+const { logApiRequest } = require('./middleware/logging');
 
 const app = express();
 
@@ -62,22 +69,32 @@ app.use(express.static('../'));
 app.use('/uploads', express.static('public/uploads'));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/templates', templateRoutes);
-app.use('/api/workflows', workflowRoutes);
-app.use('/api/user-workflows', userWorkflowRoutes);
-app.use('/api/setup', setupRoutes);
-app.use('/api/api-keys', apiKeyRoutes);
-app.use('/api/oauth', oauthRoutes);
-app.use('/api/email-credentials', emailCredentialRoutes);
-app.use('/api/n8n', n8nRoutes);
-app.use('/api/smart-deploy', smartDeployRoutes);
-app.use('/api', scheduleRoutes);
-app.use('/api/landing', landingRoutes);
-app.use('/api/media', mediaRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/user-management', userManagementRoutes);
-app.use('/api/tickets', ticketsRoutes);
+app.use('/api/auth', logApiRequest, authRoutes);
+app.use('/api/templates', logApiRequest, templateRoutes);
+app.use('/api/workflows', logApiRequest, workflowRoutes);
+app.use('/api/user-workflows', logApiRequest, userWorkflowRoutes);
+app.use('/api/setup', logApiRequest, setupRoutes);
+app.use('/api/api-keys', logApiRequest, apiKeyRoutes);
+app.use('/api/oauth', logApiRequest, oauthRoutes);
+app.use('/api/email-credentials', logApiRequest, emailCredentialRoutes);
+app.use('/api/n8n', logApiRequest, n8nRoutes);
+app.use('/api/smart-deploy', logApiRequest, smartDeployRoutes);
+app.use('/api', logApiRequest, scheduleRoutes);
+app.use('/api/landing', logApiRequest, landingRoutes);
+app.use('/api/media', logApiRequest, mediaRoutes);
+app.use('/api/analytics', logApiRequest, analyticsRoutes);
+app.use('/api/user-management', logApiRequest, userManagementRoutes);
+app.use('/api/tickets', logApiRequest, ticketsRoutes);
+app.use('/api/logs', logApiRequest, logsRoutes);
+app.use('/api/alerts', logApiRequest, alertsRoutes);
+app.use('/api/activity', logApiRequest, activityRoutes);
+app.use('/api/database', logApiRequest, databaseRoutes);
+app.use('/api/community', logApiRequest, communityRoutes);
+
+// Démarrer le monitoring de base de données
+// databaseMonitoringService.startMonitoring();
+
+console.log('🚀 Serveur backend démarré sur le port 3004');
 
 // Route de test
 app.get('/api/health', (req, res) => {
