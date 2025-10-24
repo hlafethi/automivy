@@ -1,227 +1,257 @@
-import { TicketNotification } from './ticketsService';
+// Service de gestion des notifications
+export interface Notification {
+  id: string;
+  type: 'email' | 'push' | 'webhook';
+  title: string;
+  message: string;
+  user_id: string;
+  data?: any;
+  sent_at?: string;
+  status: 'pending' | 'sent' | 'failed';
+}
 
-export interface NotificationListener {
-  onNewNotification: (notification: TicketNotification) => void;
-  onNotificationRead: (notificationId: string) => void;
+export interface NotificationPreferences {
+  email_enabled: boolean;
+  push_enabled: boolean;
+  webhook_enabled: boolean;
+  webhook_url?: string;
 }
 
 class NotificationService {
-  private listeners: NotificationListener[] = [];
-  private pollInterval: NodeJS.Timeout | null = null;
-  private lastCheckTime: Date = new Date();
-  private isPolling = false;
-  private isChecking = false; // Éviter les appels multiples simultanés
-  private pollingEnabled = true; // Option pour désactiver le polling
-  
-  // Contrôles de robustesse
-  private consecutiveErrors = 0;
-  private maxConsecutiveErrors = 3;
-  private baseInterval = 60000; // 1 minute de base (plus fréquent pour les tests)
-  private currentInterval = 60000; // Intervalle actuel (dynamique)
-  private maxInterval = 300000; // 5 minutes maximum
-  private lastSuccessfulCheck: Date | null = null;
-  private isHealthy = true;
+  private apiClient: any;
 
-  // Ajouter un listener pour les notifications
-  addListener(listener: NotificationListener) {
-    this.listeners.push(listener);
-    
-    // Démarrer le polling seulement si c'est le premier listener et que le système est sain
-    if (this.listeners.length === 1 && this.pollingEnabled && this.isHealthy) {
-      this.startPolling();
-    }
+  constructor() {
+    // Initialiser l'API client
+    this.apiClient = null; // Sera injecté
   }
 
-  // Retirer un listener
-  removeListener(listener: NotificationListener) {
-    this.listeners = this.listeners.filter(l => l !== listener);
-    
-    // Arrêter le polling si plus de listeners
-    if (this.listeners.length === 0) {
-      this.stopPolling();
-    }
-  }
-
-  // Démarrer le polling des notifications avec système adaptatif
-  private startPolling() {
-    if (this.isPolling || !this.pollingEnabled || !this.isHealthy) return;
-    
-    console.log(`🔔 [NotificationService] Démarrage du polling avec intervalle: ${this.currentInterval}ms`);
-    this.isPolling = true;
-    
-    const poll = async () => {
-      if (!this.isPolling) return;
-      
-      try {
-        await this.checkForNewNotifications();
-        this.onPollingSuccess();
-      } catch (error) {
-        this.onPollingError(error);
-      }
-      
-      // Programmer le prochain polling avec l'intervalle actuel
-      if (this.isPolling && this.isHealthy) {
-        this.pollInterval = setTimeout(poll, this.currentInterval);
-      }
-    };
-    
-    // Démarrer le premier polling
-    this.pollInterval = setTimeout(poll, this.currentInterval);
-  }
-
-  // Désactiver le polling (pour résoudre les problèmes de boucle)
-  disablePolling() {
-    this.pollingEnabled = false;
-    this.stopPolling();
-  }
-
-  // Réactiver le polling
-  enablePolling() {
-    this.pollingEnabled = true;
-    if (this.listeners.length > 0) {
-      this.startPolling();
-    }
-  }
-
-  // Gestion du succès du polling
-  private onPollingSuccess() {
-    this.consecutiveErrors = 0;
-    this.lastSuccessfulCheck = new Date();
-    this.isHealthy = true;
-    
-    // Réduire progressivement l'intervalle si tout va bien
-    if (this.currentInterval > this.baseInterval) {
-      this.currentInterval = Math.max(this.baseInterval, this.currentInterval * 0.8);
-      console.log(`🔔 [NotificationService] Intervalle réduit à: ${this.currentInterval}ms`);
-    }
-  }
-
-  // Gestion des erreurs du polling
-  private onPollingError(error: any) {
-    this.consecutiveErrors++;
-    console.error(`🔔 [NotificationService] Erreur ${this.consecutiveErrors}/${this.maxConsecutiveErrors}:`, error);
-    
-    // Augmenter l'intervalle en cas d'erreur (backoff exponentiel)
-    this.currentInterval = Math.min(this.maxInterval, this.currentInterval * 1.5);
-    console.log(`🔔 [NotificationService] Intervalle augmenté à: ${this.currentInterval}ms`);
-    
-    // Arrêter le polling si trop d'erreurs consécutives
-    if (this.consecutiveErrors >= this.maxConsecutiveErrors) {
-      console.error('🔔 [NotificationService] Trop d\'erreurs consécutives, arrêt du polling');
-      this.isHealthy = false;
-      this.stopPolling();
-    }
-  }
-
-  // Arrêter le polling
-  private stopPolling() {
-    if (this.pollInterval) {
-      clearTimeout(this.pollInterval);
-      this.pollInterval = null;
-    }
-    this.isPolling = false;
-    console.log('🔔 [NotificationService] Polling arrêté');
-  }
-
-  // Vérifier les nouvelles notifications avec contrôles robustes
-  private async checkForNewNotifications() {
-    // Éviter les appels multiples simultanés
-    if (this.isChecking) {
-      console.log('🔔 [NotificationService] Vérification déjà en cours, ignorée');
-      return;
-    }
-
-    // Vérifier la santé du système
-    if (!this.isHealthy) {
-      console.log('🔔 [NotificationService] Système non sain, vérification ignorée');
-      return;
-    }
-
-    this.isChecking = true;
-    
+  // Envoyer une notification
+  async sendNotification(notification: Omit<Notification, 'id' | 'sent_at' | 'status'>): Promise<Notification> {
     try {
-      console.log('🔔 [NotificationService] Vérification des nouvelles notifications...');
-      
-      // Importer dynamiquement pour éviter les dépendances circulaires
-      const { TicketsService } = await import('./ticketsService');
-      const notifications = await TicketsService.getUnreadNotifications();
-      
-      // Filtrer les notifications récentes (depuis la dernière vérification)
-      // Pour le test, on prend toutes les notifications non lues
-      const newNotifications = notifications.filter(notification => {
-        const notificationTime = new Date(notification.created_at);
-        const isRecent = notificationTime > this.lastCheckTime;
-        const isUnread = !notification.is_read;
-        // Log détaillé pour debug (peut être supprimé en production)
-        return isRecent || isUnread; // Prendre les notifications récentes OU non lues
+      const response = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify(notification)
       });
 
-      console.log(`🔔 [NotificationService] ${newNotifications.length} nouvelles notifications trouvées`);
-
-      // Notifier les listeners des nouvelles notifications
-      if (newNotifications.length > 0) {
-        newNotifications.forEach(notification => {
-          this.listeners.forEach(listener => {
-            try {
-              listener.onNewNotification(notification);
-            } catch (listenerError) {
-              console.error('🔔 [NotificationService] Erreur dans un listener:', listenerError);
-            }
-          });
-        });
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'envoi de la notification');
       }
 
-      // Mettre à jour le temps de dernière vérification
-      this.lastCheckTime = new Date();
-      
+      return await response.json();
     } catch (error) {
-      console.error('🔔 [NotificationService] Erreur lors de la récupération des notifications:', error);
-      throw error; // Re-throw pour que onPollingError soit appelé
-    } finally {
-      this.isChecking = false;
+      console.error('Erreur notification:', error);
+      throw error;
     }
   }
 
-  // Notifier qu'une notification a été lue
-  notifyNotificationRead(notificationId: string) {
-    this.listeners.forEach(listener => {
-      listener.onNotificationRead(notificationId);
+  // Envoyer notification par email
+  async sendEmailNotification(userId: string, subject: string, message: string, data?: any): Promise<void> {
+    await this.sendNotification({
+      type: 'email',
+      title: subject,
+      message,
+      user_id: userId,
+      data
     });
   }
 
-  // Méthodes de diagnostic et de récupération
-  getSystemHealth() {
-    return {
-      isHealthy: this.isHealthy,
-      isPolling: this.isPolling,
-      consecutiveErrors: this.consecutiveErrors,
-      currentInterval: this.currentInterval,
-      lastSuccessfulCheck: this.lastSuccessfulCheck,
-      listenersCount: this.listeners.length
-    };
+  // Envoyer notification push
+  async sendPushNotification(userId: string, title: string, message: string, data?: any): Promise<void> {
+    await this.sendNotification({
+      type: 'push',
+      title,
+      message,
+      user_id: userId,
+      data
+    });
   }
 
-  // Forcer la récupération du système
-  recover() {
-    console.log('🔔 [NotificationService] Tentative de récupération du système...');
-    this.consecutiveErrors = 0;
-    this.isHealthy = true;
-    this.currentInterval = this.baseInterval;
-    
-    if (this.listeners.length > 0 && this.pollingEnabled) {
-      this.startPolling();
+  // Envoyer webhook
+  async sendWebhookNotification(userId: string, title: string, message: string, data?: any): Promise<void> {
+    await this.sendNotification({
+      type: 'webhook',
+      title,
+      message,
+      user_id: userId,
+      data
+    });
+  }
+
+  // Demander permission pour les notifications push
+  async requestPushPermission(): Promise<boolean> {
+    if (!('Notification' in window)) {
+      console.warn('Ce navigateur ne supporte pas les notifications');
+      return false;
+    }
+
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+
+    if (Notification.permission === 'denied') {
+      return false;
+    }
+
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  }
+
+  // Afficher notification push du navigateur
+  async showBrowserNotification(title: string, options?: NotificationOptions): Promise<void> {
+    if (Notification.permission === 'granted') {
+      new Notification(title, {
+        icon: '/automivy-favicon.svg',
+        badge: '/automivy-favicon.svg',
+        ...options
+      });
     }
   }
 
-  // Nettoyer les ressources
-  cleanup() {
-    this.stopPolling();
-    this.listeners = [];
-    this.consecutiveErrors = 0;
-    this.isHealthy = true;
-    this.currentInterval = this.baseInterval;
+  // Récupérer les préférences de notification d'un utilisateur
+  async getUserNotificationPreferences(userId: string): Promise<NotificationPreferences> {
+    try {
+      const response = await fetch(`/api/notifications/preferences/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des préférences');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur préférences:', error);
+      throw error;
+    }
+  }
+
+  // Mettre à jour les préférences
+  async updateNotificationPreferences(userId: string, preferences: Partial<NotificationPreferences>): Promise<void> {
+    try {
+      const response = await fetch(`/api/notifications/preferences/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify(preferences)
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour des préférences');
+      }
+    } catch (error) {
+      console.error('Erreur mise à jour préférences:', error);
+      throw error;
+    }
+  }
+
+  // Écouter les notifications en temps réel (WebSocket)
+  connectToNotifications(callback: (notification: Notification) => void): () => void {
+    // TODO: Implémenter WebSocket ou Server-Sent Events
+    console.log('Connexion aux notifications en temps réel...');
+    
+    // Pour l'instant, simulation avec polling
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('http://localhost:3004/api/notifications/user', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            data.data.forEach((notification: any) => {
+              callback(notification);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Erreur polling notifications:', error);
+      }
+    }, 5000);
+
+    // Retourner fonction de déconnexion
+    return () => clearInterval(interval);
+  }
+
+  // Admin: Get notification settings
+  async getAdminSettings(): Promise<any> {
+    try {
+      const response = await fetch('http://localhost:3004/api/notifications/admin/settings', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération des paramètres admin');
+      }
+
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error('Erreur getAdminSettings:', error);
+      throw error;
+    }
+  }
+
+  // Admin: Update notification settings
+  async updateAdminSettings(settings: any): Promise<any> {
+    try {
+      const response = await fetch('http://localhost:3004/api/notifications/admin/settings', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour des paramètres admin');
+      }
+
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error('Erreur updateAdminSettings:', error);
+      throw error;
+    }
+  }
+
+  // Admin: Test SMTP connection
+  async testSmtpConnection(): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetch('http://localhost:3004/api/notifications/admin/test-smtp', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du test SMTP');
+      }
+
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error('Erreur testSmtpConnection:', error);
+      throw error;
+    }
   }
 }
 
-// Instance singleton
 export const notificationService = new NotificationService();

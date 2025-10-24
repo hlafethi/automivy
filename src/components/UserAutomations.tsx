@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Play, Pause, Trash2, Edit, Clock, Mail, Loader2, FileText, Grid3X3, Ticket as TicketIcon } from 'lucide-react';
+import { Plus, Play, Pause, Trash2, Edit, Clock, Mail, Loader2, FileText, Grid3X3, Ticket as TicketIcon, Users2, User } from 'lucide-react';
 import { userWorkflowService, UserWorkflow } from '../services/userWorkflowService';
 import { useAuth } from '../contexts/AuthContext';
 import { CreateAutomationModal } from './CreateAutomationModal';
@@ -10,6 +10,8 @@ import { TemplateCatalog } from './TemplateCatalog';
 import SmartDeployModal from './SmartDeployModal';
 import PDFFormModal from './PDFFormModal';
 import { UserTickets } from './UserTickets';
+import { UserCommunityView } from './user/UserCommunityComponents';
+import { UserProfileView } from './user/UserProfileComponents';
 
 export function UserAutomations() {
   const { user, loading: authLoading } = useAuth();
@@ -23,7 +25,7 @@ export function UserAutomations() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<UserWorkflow | null>(null);
-  const [activeTab, setActiveTab] = useState<'automations' | 'catalog' | 'tickets'>('automations');
+  const [activeTab, setActiveTab] = useState<'automations' | 'catalog' | 'tickets' | 'community' | 'profile'>('automations');
   const [showSmartDeploy, setShowSmartDeploy] = useState(false);
 
   useEffect(() => {
@@ -202,6 +204,28 @@ export function UserAutomations() {
               <TicketIcon className="w-5 h-5" />
               Support Tickets
             </button>
+            <button
+              onClick={() => setActiveTab('community')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
+                activeTab === 'community'
+                  ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Users2 className="w-5 h-5" />
+              Communauté
+            </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
+                activeTab === 'profile'
+                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <User className="w-5 h-5" />
+              Mon Profil
+            </button>
           </div>
         </div>
 
@@ -324,6 +348,14 @@ export function UserAutomations() {
           {activeTab === 'tickets' && (
             <UserTickets />
           )}
+
+          {activeTab === 'community' && (
+            <UserCommunityView />
+          )}
+
+          {activeTab === 'profile' && (
+            <UserProfileView />
+          )}
         </div>
       </div>
 
@@ -386,7 +418,7 @@ export function UserAutomations() {
       )}
 
       {/* Bouton flottant + pour Smart Deploy */}
-      {activeTab !== 'tickets' && (
+      {activeTab === 'automations' && (
         <div className="fixed bottom-6 right-6 z-50">
           <button
             onClick={() => {

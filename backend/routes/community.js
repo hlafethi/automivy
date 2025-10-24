@@ -2,6 +2,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const config = require('../config');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const BadgeAutoAssignment = require('../services/badgeAutoAssignment');
 
 const router = express.Router();
 const pool = new Pool({
@@ -275,6 +276,14 @@ router.post('/discussions', async (req, res) => {
       }
     }
     
+    // Vérifier et attribuer automatiquement les badges
+    try {
+      await BadgeAutoAssignment.checkAndAssignBadges(req.user.id);
+    } catch (error) {
+      console.error('Erreur lors de la vérification des badges:', error);
+      // Ne pas faire échouer la création de discussion si l'attribution de badge échoue
+    }
+    
     res.status(201).json({
       success: true,
       data: discussion
@@ -402,6 +411,13 @@ router.post('/discussions/:id/like', async (req, res) => {
       'INSERT INTO discussion_likes (discussion_id, user_id) VALUES ($1, $2)',
       [id, userId]
     );
+    
+    // Vérifier et attribuer automatiquement les badges
+    try {
+      await BadgeAutoAssignment.checkAndAssignBadges(userId);
+    } catch (error) {
+      console.error('Erreur lors de la vérification des badges:', error);
+    }
     
     res.json({
       success: true,
@@ -962,6 +978,13 @@ router.post('/events/:id/participate', async (req, res) => {
       'INSERT INTO event_participants (event_id, user_id, registered_at) VALUES ($1, $2, NOW())',
       [id, userId]
     );
+
+    // Vérifier et attribuer automatiquement les badges
+    try {
+      await BadgeAutoAssignment.checkAndAssignBadges(userId);
+    } catch (error) {
+      console.error('Erreur lors de la vérification des badges:', error);
+    }
 
     res.json({
       success: true,

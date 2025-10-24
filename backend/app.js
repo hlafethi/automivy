@@ -25,6 +25,8 @@ const alertsRoutes = require('./routes/alerts');
 const activityRoutes = require('./routes/activity');
 const databaseRoutes = require('./routes/database');
 const communityRoutes = require('./routes/community');
+const userProfileRoutes = require('./routes/userProfile');
+const notificationRoutes = require('./routes/notifications');
 // const databaseMonitoringService = require('./services/databaseMonitoringService');
 const { logApiRequest } = require('./middleware/logging');
 
@@ -90,6 +92,8 @@ app.use('/api/alerts', logApiRequest, alertsRoutes);
 app.use('/api/activity', logApiRequest, activityRoutes);
 app.use('/api/database', logApiRequest, databaseRoutes);
 app.use('/api/community', logApiRequest, communityRoutes);
+app.use('/api/user-profile', logApiRequest, userProfileRoutes);
+app.use('/api/notifications', logApiRequest, notificationRoutes);
 
 // Démarrer le monitoring de base de données
 // databaseMonitoringService.startMonitoring();

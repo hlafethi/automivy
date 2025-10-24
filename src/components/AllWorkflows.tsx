@@ -413,8 +413,8 @@ export function AllWorkflows() {
                       workflow.active ? 'text-green-600' : 'text-gray-500'
                     }`} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-slate-900 text-lg mb-1 truncate">
+                  <div className="flex-1 min-w-0 max-w-[200px]">
+                    <h4 className="font-semibold text-slate-900 text-sm mb-1 truncate" title={workflow.name}>
                       {workflow.name}
                     </h4>
                     <p className="text-xs text-slate-500 truncate">
@@ -434,7 +434,7 @@ export function AllWorkflows() {
               {/* Informations du workflow */}
               <div className="mb-4 space-y-3">
                 <div className="flex items-center gap-4 text-sm text-slate-600">
-                  <div className="flex items-center gap-1 min-w-0">
+                  <div className="flex items-center gap-1 min-w-0 max-w-[150px]">
                     <User className="w-4 h-4 flex-shrink-0" />
                     <span className="truncate" title={workflow.user_id}>
                       {workflow.user_id}
@@ -449,7 +449,7 @@ export function AllWorkflows() {
                 {workflow.n8n_workflow_id && (
                   <div className="flex items-center gap-1 text-sm text-slate-600">
                     <Activity className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate" title={workflow.n8n_workflow_id}>
+                    <span className="truncate max-w-[200px]" title={workflow.n8n_workflow_id}>
                       n8n: {workflow.n8n_workflow_id.slice(0, 12)}...
                     </span>
                   </div>

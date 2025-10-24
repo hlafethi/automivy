@@ -11,16 +11,15 @@ import {
   TicketsSection, 
   CommunitySection, 
   UsersSection, 
-  NotificationsSection, 
   DatabaseSection, 
   ActivitySection, 
   AlertsSection, 
-  PerformanceSection, 
+  NotificationSection,
   LogsSection 
 } from './admin/ManagementSections';
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'list' | 'upload' | 'ai' | 'apikeys' | 'workflows' | 'landing' | 'analytics' | 'tickets' | 'community' | 'users' | 'notifications' | 'database' | 'activity' | 'alerts' | 'performance' | 'logs'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'upload' | 'ai' | 'apikeys' | 'workflows' | 'landing' | 'analytics' | 'tickets' | 'community' | 'users' | 'database' | 'activity' | 'alerts' | 'notifications' | 'logs'>('list');
 
   return (
     <div>
@@ -115,11 +114,10 @@ export function AdminDashboard() {
           {activeTab === 'tickets' && <TicketsSection />}
           {activeTab === 'community' && <CommunitySection />}
           {activeTab === 'users' && <UsersSection />}
-          {activeTab === 'notifications' && <NotificationsSection />}
           {activeTab === 'database' && <DatabaseSection />}
           {activeTab === 'activity' && <ActivitySection />}
           {activeTab === 'alerts' && <AlertsSection />}
-          {activeTab === 'performance' && <PerformanceSection />}
+          {activeTab === 'notifications' && <NotificationSection />}
           {activeTab === 'logs' && <LogsSection />}
         </div>
       </div>

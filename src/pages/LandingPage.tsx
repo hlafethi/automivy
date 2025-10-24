@@ -47,7 +47,7 @@ export function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-6">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               {/* Logo */}
@@ -122,7 +122,7 @@ export function LandingPage() {
         
         <div className="absolute inset-0 bg-black bg-opacity-20"></div>
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative max-w-full mx-auto px-2 sm:px-4 lg:px-6">
           <div className="text-center">
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
               {hero.title || 'AUTOMIVY'}
@@ -156,7 +156,7 @@ export function LandingPage() {
       {/* Video Demo Section */}
       {content.video_demo?.enabled === 'true' && (
         <section className="py-20 bg-slate-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-6">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-slate-900 mb-4">
                 {content.video_demo?.title || 'Découvrez AUTOMIVY en action'}
@@ -228,7 +228,7 @@ export function LandingPage() {
 
       {/* Features Section */}
       <section id="features" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
               {features.title || 'Powerful Features'}
@@ -277,7 +277,7 @@ export function LandingPage() {
 
       {/* Pricing Section */}
       <section id="pricing" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
               {pricing.title || 'Simple Pricing'}
@@ -381,7 +381,7 @@ export function LandingPage() {
       {/* About Section */}
       {about.enabled === 'true' && (
       <section id="about" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
               {about.title || 'About AUTOMIVY'}
@@ -430,7 +430,7 @@ export function LandingPage() {
       {/* Contact Section */}
       {contact.enabled === 'true' && (
       <section id="contact" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
               {contact.title || 'Get in Touch'}
@@ -473,7 +473,7 @@ export function LandingPage() {
       {/* Footer */}
       {footer.enabled === 'true' && (
       <footer className="bg-slate-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-3 mb-4">

@@ -46,7 +46,7 @@ function App() {
             user ? (
               <div className="min-h-screen bg-slate-50">
                 <Header />
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main className="max-w-full mx-auto px-2 sm:px-4 lg:px-6 py-8">
                   <UserAutomations />
                 </main>
               </div>
@@ -62,7 +62,7 @@ function App() {
             user && isAdmin ? (
               <div className="min-h-screen bg-slate-50">
                 <Header />
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main className="max-w-full mx-auto px-2 sm:px-4 lg:px-6 py-8">
                   <AdminDashboard />
                 </main>
               </div>

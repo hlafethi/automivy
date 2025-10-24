@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TicketNotification } from '../services/ticketsService';
 import { TicketsService } from '../services/ticketsService';
-import { notificationService, NotificationListener } from '../services/notificationService';
 import { NotificationPopup } from './NotificationPopup';
 
 interface NotificationManagerProps {
@@ -25,28 +24,8 @@ export function NotificationManager({ onViewTicket, onNotificationRead, isAdmin 
     onNotificationReadRef.current = onNotificationRead;
   }, [onViewTicket, onNotificationRead]);
 
-  // Listener pour les nouvelles notifications - stable
-  const notificationListener = useRef<NotificationListener>({
-    onNewNotification: (notification: TicketNotification) => {
-      console.log('🔔 [NotificationManager] Nouvelle notification reçue:', notification);
-      
-      // Ajouter à la queue si aucune notification active
-      setActiveNotification(prev => {
-        if (!prev) {
-          return notification;
-        } else {
-          setNotificationQueue(prevQueue => [...prevQueue, notification]);
-          return prev;
-        }
-      });
-    },
-
-    onNotificationRead: (notificationId: string) => {
-      console.log('🔔 [NotificationManager] Notification marquée comme lue:', notificationId);
-      // Mettre à jour la liste des notifications
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    }
-  }).current;
+  // Polling pour les nouvelles notifications
+  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     console.log('🔔 [NotificationManager] Initialisation du gestionnaire de notifications');
@@ -54,16 +33,19 @@ export function NotificationManager({ onViewTicket, onNotificationRead, isAdmin 
     // Charger les notifications existantes
     loadNotifications();
 
-    // S'abonner au service de notifications
-    notificationService.addListener(notificationListener);
-    console.log('🔔 [NotificationManager] Abonné au service de notifications');
+    // Démarrer le polling pour les nouvelles notifications
+    pollingInterval.current = setInterval(() => {
+      loadNotifications();
+    }, 30000); // Vérifier toutes les 30 secondes
 
     return () => {
-      // Se désabonner du service
-      notificationService.removeListener(notificationListener);
-      console.log('🔔 [NotificationManager] Désabonné du service de notifications');
+      // Arrêter le polling
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+        pollingInterval.current = null;
+      }
     };
-  }, []); // Supprimer notificationListener des dépendances
+  }, []);
 
   const loadNotifications = async () => {
     try {
@@ -96,7 +78,6 @@ export function NotificationManager({ onViewTicket, onNotificationRead, isAdmin 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await TicketsService.markNotificationAsRead(notificationId);
-      notificationService.notifyNotificationRead(notificationId);
       
       // Mettre à jour l'état local
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
