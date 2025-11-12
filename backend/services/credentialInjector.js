@@ -145,11 +145,12 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
       // Pour Gmail OAuth2, on vérifie si l'utilisateur a déjà un credential OAuth stocké
       const db = require('../database');
       console.log('🔍 [CredentialInjector] Recherche du credential Gmail OAuth2 pour user:', userId);
+      console.log('🔍 [CredentialInjector] userCredentials.gmailOAuth2:', userCredentials.gmailOAuth2);
       
       // Toujours vérifier si l'utilisateur a un credential OAuth dans la base de données
       // Même si le champ gmailOAuth2 n'est pas 'connected', on peut utiliser un credential existant
       const oauthCreds = await db.getOAuthCredentials(userId, 'gmail');
-      console.log('🔍 [CredentialInjector] Credentials OAuth trouvés:', oauthCreds?.length || 0);
+      console.log('🔍 [CredentialInjector] Credentials OAuth trouvés dans la BDD:', oauthCreds?.length || 0);
       
       if (oauthCreds && oauthCreds.length > 0) {
         // Prendre le credential le plus récent (premier de la liste car trié par created_at DESC)
@@ -167,16 +168,37 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
             id: latestCred.n8n_credential_id,
             name: latestCred.email || 'Gmail OAuth2'
           };
-          console.log('✅ [CredentialInjector] Credential Gmail OAuth2 existant trouvé et utilisé:', createdCredentials.gmailOAuth2.id);
+          console.log('✅ [CredentialInjector] Credential Gmail OAuth2 existant trouvé et utilisé:');
+          console.log(`  - ID n8n: ${createdCredentials.gmailOAuth2.id}`);
+          console.log(`  - Name: ${createdCredentials.gmailOAuth2.name}`);
         } else {
           console.error('❌ [CredentialInjector] Credential OAuth trouvé mais n8n_credential_id manquant!');
           console.error('❌ [CredentialInjector] Credential OAuth:', JSON.stringify(latestCred, null, 2));
         }
       } else if (userCredentials.gmailOAuth2 === 'connected') {
-        // Si l'utilisateur a indiqué qu'il s'est connecté mais aucun credential n'est trouvé
-        console.error('❌ [CredentialInjector] Aucun credential OAuth trouvé dans la base de données pour user:', userId);
-        console.error('❌ [CredentialInjector] L\'utilisateur a indiqué qu\'il s\'est connecté mais aucun credential n\'est stocké.');
-        console.error('❌ [CredentialInjector] Vérifiez que le callback OAuth a bien créé le credential dans la base de données.');
+        // Si l'utilisateur vient de se connecter (gmailOAuth2 === 'connected')
+        // Attendre un peu et réessayer de récupérer le credential (il vient d'être créé)
+        console.log('⏳ [CredentialInjector] Utilisateur vient de se connecter, attente de la création du credential...');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 1 seconde
+        
+        // Réessayer de récupérer le credential
+        const retryOauthCreds = await db.getOAuthCredentials(userId, 'gmail');
+        console.log('🔍 [CredentialInjector] Nouvelle tentative - Credentials OAuth trouvés:', retryOauthCreds?.length || 0);
+        
+        if (retryOauthCreds && retryOauthCreds.length > 0 && retryOauthCreds[0].n8n_credential_id) {
+          const latestCred = retryOauthCreds[0];
+          createdCredentials.gmailOAuth2 = {
+            id: latestCred.n8n_credential_id,
+            name: latestCred.email || 'Gmail OAuth2'
+          };
+          console.log('✅ [CredentialInjector] Credential Gmail OAuth2 récupéré après connexion:');
+          console.log(`  - ID n8n: ${createdCredentials.gmailOAuth2.id}`);
+          console.log(`  - Name: ${createdCredentials.gmailOAuth2.name}`);
+        } else {
+          console.error('❌ [CredentialInjector] Aucun credential OAuth trouvé dans la base de données pour user:', userId);
+          console.error('❌ [CredentialInjector] L\'utilisateur a indiqué qu\'il s\'est connecté mais aucun credential n\'est stocké.');
+          console.error('❌ [CredentialInjector] Vérifiez que le callback OAuth a bien créé le credential dans la base de données.');
+        }
       } else if (userCredentials.gmailOAuth2CredentialId) {
         // Si l'utilisateur a fourni un credential ID directement (depuis le formulaire)
         createdCredentials.gmailOAuth2 = {
@@ -185,11 +207,13 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         };
         console.log('✅ [CredentialInjector] Credential Gmail OAuth2 fourni directement par l\'utilisateur:', createdCredentials.gmailOAuth2.id);
       } else {
-        // Si aucun credential OAuth n'est disponible, on garde celui du template (si présent)
-        // L'utilisateur devra se connecter manuellement via OAuth dans n8n
-        console.log('⚠️ [CredentialInjector] Aucun credential Gmail OAuth2 trouvé. Le credential du template sera conservé.');
-        console.log('⚠️ [CredentialInjector] userCredentials.gmailOAuth2:', userCredentials.gmailOAuth2);
-        console.log('⚠️ [CredentialInjector] L\'utilisateur devra se connecter via OAuth dans n8n après le déploiement.');
+        // Si aucun credential OAuth n'est disponible, NE PAS conserver celui du template
+        // Le credential du template n'appartient pas à l'utilisateur et ne fonctionnera pas
+        console.error('❌ [CredentialInjector] CRITIQUE: Aucun credential Gmail OAuth2 trouvé pour l\'utilisateur!');
+        console.error('❌ [CredentialInjector] userCredentials.gmailOAuth2:', userCredentials.gmailOAuth2);
+        console.error('❌ [CredentialInjector] L\'utilisateur doit se connecter via OAuth AVANT de déployer ce workflow.');
+        console.error('❌ [CredentialInjector] Le credential du template NE SERA PAS conservé car il ne fonctionnera pas.');
+        // Ne pas créer createdCredentials.gmailOAuth2 - cela forcera la suppression du credential template
       }
     }
     
@@ -240,6 +264,36 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         typeVersion: node.typeVersion || 1,
         position: node.position || [0, 0],
       };
+      
+      // ⚠️ IMPORTANT: Pour les nœuds Gmail, on doit TOUJOURS remplacer le credential du template
+      // Vérifier d'abord si c'est un nœud Gmail avant de traiter les autres credentials
+      const isGmailNode = node.type === 'n8n-nodes-base.gmail';
+      if (isGmailNode && node.credentials?.gmailOAuth2) {
+        const templateCredId = node.credentials.gmailOAuth2.id;
+        console.log(`🔍 [CredentialInjector] Nœud Gmail détecté: ${node.name} avec credential template: ${templateCredId}`);
+        
+        // ⚠️ CRITIQUE: Remplacer IMMÉDIATEMENT le credential template par le credential utilisateur
+        // Même si c'est un nœud de lecture qui nécessite IMAP, on doit d'abord remplacer le credential Gmail
+        // car le nœud reste de type n8n-nodes-base.gmail dans le workflow
+        if (createdCredentials.gmailOAuth2) {
+          cleanedNode.credentials = {
+            gmailOAuth2: {
+              id: createdCredentials.gmailOAuth2.id,
+              name: createdCredentials.gmailOAuth2.name
+            }
+          };
+          console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 remplacé IMMÉDIATEMENT pour ${node.name}:`);
+          console.log(`  - Ancien (template): ${templateCredId}`);
+          console.log(`  - Nouveau (utilisateur): ${createdCredentials.gmailOAuth2.id}`);
+        } else {
+          console.error(`❌ [CredentialInjector] Pas de credential utilisateur disponible pour ${node.name}`);
+          // Supprimer le credential template
+          if (cleanedNode.credentials) {
+            delete cleanedNode.credentials.gmailOAuth2;
+            console.log(`⚠️ [CredentialInjector] Credential template supprimé de ${node.name}`);
+          }
+        }
+      }
       
       // S'assurer que webhookId est préservé si présent
       if (node.webhookId) {
@@ -315,25 +369,41 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
           console.log(`✅ [CredentialInjector] Credential SMTP admin assigné automatiquement à ${node.name}: ${adminCreds.SMTP_ID}`);
         }
       } else if (node.type === 'n8n-nodes-base.gmail') {
-        // Nœud Gmail - utiliser Gmail OAuth2 si disponible, sinon conserver celui du template
-        if (createdCredentials.gmailOAuth2) {
-          cleanedNode.credentials = {
-            gmailOAuth2: {
-              id: createdCredentials.gmailOAuth2.id,
-              name: createdCredentials.gmailOAuth2.name
-            }
-          };
-          console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 assigné à ${node.name}: ${createdCredentials.gmailOAuth2.id}`);
-        } else {
-          // Conserver le credential du template si présent
-          if (node.credentials && node.credentials.gmailOAuth2) {
-            console.log(`⚠️ [CredentialInjector] Credential Gmail OAuth2 du template conservé pour ${node.name}`);
+        // Nœud Gmail - TOUJOURS remplacer le credential du template par celui de l'utilisateur
+        // ⚠️ IMPORTANT: Si le credential a déjà été remplacé plus tôt (ligne 278), ne pas le réécraser
+        if (!cleanedNode.credentials?.gmailOAuth2 || 
+            cleanedNode.credentials.gmailOAuth2.id === node.credentials?.gmailOAuth2?.id) {
+          // Le credential n'a pas encore été remplacé, le remplacer maintenant
+          if (createdCredentials.gmailOAuth2) {
+            // Utiliser le credential utilisateur (TOUJOURS remplacer celui du template)
             cleanedNode.credentials = {
-              gmailOAuth2: node.credentials.gmailOAuth2
+              gmailOAuth2: {
+                id: createdCredentials.gmailOAuth2.id,
+                name: createdCredentials.gmailOAuth2.name
+              }
             };
+            const oldCredId = node.credentials?.gmailOAuth2?.id || 'aucun';
+            console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 utilisateur assigné à ${node.name} (branche else if):`);
+            console.log(`  - ID utilisateur: ${createdCredentials.gmailOAuth2.id}`);
+            console.log(`  - Name: ${createdCredentials.gmailOAuth2.name}`);
+            console.log(`  - ⚠️ Ancien credential template (${oldCredId}) remplacé`);
           } else {
-            console.error(`❌ [CredentialInjector] Aucun credential disponible pour ${node.name} (type: ${node.type})`);
+            // Si aucun credential utilisateur n'est disponible, supprimer celui du template
+            // Le credential du template n'appartient pas à l'utilisateur et ne fonctionnera pas
+            const templateCredId = node.credentials?.gmailOAuth2?.id || 'aucun';
+            console.error(`❌ [CredentialInjector] CRITIQUE: Aucun credential Gmail OAuth2 utilisateur disponible pour ${node.name}`);
+            console.error(`❌ [CredentialInjector] Le credential du template (${templateCredId}) sera supprimé car il n'appartient pas à l'utilisateur`);
+            console.error(`❌ [CredentialInjector] createdCredentials.gmailOAuth2:`, createdCredentials.gmailOAuth2);
+            // Supprimer le credential du template pour éviter l'erreur "credential does not exist"
+            if (node.credentials) {
+              cleanedNode.credentials = { ...node.credentials };
+              delete cleanedNode.credentials.gmailOAuth2; // Supprimer le credential template invalide
+              console.log(`⚠️ [CredentialInjector] Credential template supprimé de ${node.name} - l'utilisateur devra le configurer dans n8n`);
+            }
           }
+        } else {
+          // Le credential a déjà été remplacé plus tôt, ne rien faire
+          console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 déjà remplacé pour ${node.name} (ignoré dans else if)`);
         }
       } else if (node.type === 'n8n-nodes-imap.imap' ||
                  node.type === 'n8n-nodes-base.emailReadImap') {
@@ -351,48 +421,77 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
           console.error(`❌ [CredentialInjector] createdCredentials.imap:`, createdCredentials.imap);
         }
       } else if (node.credentials && Object.keys(node.credentials).length > 0) {
-        // Pour les autres nœuds, remplacer les placeholders dans les credentials existants
-        const updatedCredentials = {};
-        Object.entries(node.credentials).forEach(([credType, credValue]) => {
-          if (credType === 'gmailOAuth2' && createdCredentials.gmailOAuth2) {
-            updatedCredentials[credType] = {
-              id: createdCredentials.gmailOAuth2.id,
-              name: createdCredentials.gmailOAuth2.name
+        // Pour les autres nœuds, remplacer TOUJOURS les credentials du template par ceux de l'utilisateur
+        // ⚠️ IMPORTANT: Vérifier aussi si c'est un nœud Gmail qui a passé par cette branche
+        const isGmailNodeInElse = node.type === 'n8n-nodes-base.gmail';
+        if (isGmailNodeInElse && node.credentials.gmailOAuth2) {
+          // Si c'est un nœud Gmail qui a des credentials, les remplacer par celui de l'utilisateur
+          if (createdCredentials.gmailOAuth2) {
+            cleanedNode.credentials = {
+              gmailOAuth2: {
+                id: createdCredentials.gmailOAuth2.id,
+                name: createdCredentials.gmailOAuth2.name
+              }
             };
-          } else if (credType === 'imap' && createdCredentials.imap) {
-            updatedCredentials[credType] = {
-              id: createdCredentials.imap.id,
-              name: createdCredentials.imap.name
-            };
-          } else if (credType === 'smtp') {
-            if (createdCredentials.smtp) {
-              updatedCredentials[credType] = {
-                id: createdCredentials.smtp.id,
-                name: createdCredentials.smtp.name
-              };
-            } else if (isReportWorkflow && adminCreds.SMTP_ID) {
-              // Pour les workflows de rapport, utiliser SMTP admin
-              updatedCredentials[credType] = {
-                id: adminCreds.SMTP_ID,
-                name: adminCreds.SMTP_NAME || 'SMTP Admin - admin@heleam.com'
-              };
-            }
-          } else if (credType === 'openRouterApi' && adminCreds.OPENROUTER_ID) {
-            // Si le placeholder a été remplacé dans la string, utiliser la valeur existante
-            // Sinon, assigner le credential admin
-            if (typeof credValue === 'object' && credValue.id && credValue.id !== 'ADMIN_OPENROUTER_CREDENTIAL_ID') {
-              updatedCredentials[credType] = credValue;
-            } else {
-              updatedCredentials[credType] = {
-                id: adminCreds.OPENROUTER_ID,
-                name: adminCreds.OPENROUTER_NAME || 'OpenRouter Admin'
-              };
-            }
+            console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 remplacé dans ${node.name} (branche else): ${node.credentials.gmailOAuth2.id} -> ${createdCredentials.gmailOAuth2.id}`);
           } else {
-            updatedCredentials[credType] = credValue;
+            // Supprimer le credential du template
+            cleanedNode.credentials = { ...node.credentials };
+            delete cleanedNode.credentials.gmailOAuth2;
+            console.error(`❌ [CredentialInjector] Credential Gmail OAuth2 du template (${node.credentials.gmailOAuth2.id}) supprimé de ${node.name} - aucun credential utilisateur disponible`);
           }
-        });
-        cleanedNode.credentials = updatedCredentials;
+        } else {
+          // Pour les autres nœuds (non-Gmail), remplacer les credentials existants
+          const updatedCredentials = {};
+          Object.entries(node.credentials).forEach(([credType, credValue]) => {
+            if (credType === 'gmailOAuth2') {
+              // TOUJOURS remplacer le credential Gmail OAuth2 du template par celui de l'utilisateur
+              if (createdCredentials.gmailOAuth2) {
+                updatedCredentials[credType] = {
+                  id: createdCredentials.gmailOAuth2.id,
+                  name: createdCredentials.gmailOAuth2.name
+                };
+                console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 remplacé dans ${node.name}: ${credValue?.id} -> ${createdCredentials.gmailOAuth2.id}`);
+              } else {
+                // Si pas de credential utilisateur, supprimer celui du template (il ne fonctionnera pas)
+                console.error(`❌ [CredentialInjector] Credential Gmail OAuth2 du template (${credValue?.id}) ignoré pour ${node.name} - aucun credential utilisateur disponible`);
+                // Ne pas ajouter ce credential - il sera invalide
+              }
+            } else if (credType === 'imap' && createdCredentials.imap) {
+              updatedCredentials[credType] = {
+                id: createdCredentials.imap.id,
+                name: createdCredentials.imap.name
+              };
+            } else if (credType === 'smtp') {
+              if (createdCredentials.smtp) {
+                updatedCredentials[credType] = {
+                  id: createdCredentials.smtp.id,
+                  name: createdCredentials.smtp.name
+                };
+              } else if (isReportWorkflow && adminCreds.SMTP_ID) {
+                // Pour les workflows de rapport, utiliser SMTP admin
+                updatedCredentials[credType] = {
+                  id: adminCreds.SMTP_ID,
+                  name: adminCreds.SMTP_NAME || 'SMTP Admin - admin@heleam.com'
+                };
+              }
+            } else if (credType === 'openRouterApi' && adminCreds.OPENROUTER_ID) {
+              // Si le placeholder a été remplacé dans la string, utiliser la valeur existante
+              // Sinon, assigner le credential admin
+              if (typeof credValue === 'object' && credValue.id && credValue.id !== 'ADMIN_OPENROUTER_CREDENTIAL_ID') {
+                updatedCredentials[credType] = credValue;
+              } else {
+                updatedCredentials[credType] = {
+                  id: adminCreds.OPENROUTER_ID,
+                  name: adminCreds.OPENROUTER_NAME || 'OpenRouter Admin'
+                };
+              }
+            } else {
+              updatedCredentials[credType] = credValue;
+            }
+          });
+          cleanedNode.credentials = updatedCredentials;
+        }
       }
       
       // Conserver les autres propriétés du nœud
@@ -438,6 +537,30 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
   const nodesWithoutId = cleanedWorkflow.nodes?.filter(n => !n.id);
   if (nodesWithoutId && nodesWithoutId.length > 0) {
     console.warn('⚠️ [CredentialInjector] Certains nœuds n\'ont pas d\'ID:', nodesWithoutId.map(n => n.name));
+  }
+  
+  // Vérifier les credentials assignés aux nœuds Gmail
+  const gmailNodes = cleanedWorkflow.nodes?.filter(n => n.type === 'n8n-nodes-base.gmail');
+  if (gmailNodes && gmailNodes.length > 0) {
+    console.log('🔍 [CredentialInjector] ===== VÉRIFICATION CRITIQUE DES CREDENTIALS GMAIL =====');
+    console.log(`🔍 [CredentialInjector] ${gmailNodes.length} nœud(s) Gmail trouvé(s)`);
+    console.log(`🔍 [CredentialInjector] createdCredentials.gmailOAuth2:`, createdCredentials.gmailOAuth2);
+    gmailNodes.forEach(node => {
+      if (node.credentials && node.credentials.gmailOAuth2) {
+        const credId = node.credentials.gmailOAuth2.id;
+        const isUserCred = createdCredentials.gmailOAuth2 && credId === createdCredentials.gmailOAuth2.id;
+        if (isUserCred) {
+          console.log(`  ✅ ${node.name}: Credential Gmail OAuth2 utilisateur présent (ID: ${credId})`);
+        } else {
+          console.error(`  ❌ ${node.name}: Credential Gmail OAuth2 template conservé (ID: ${credId}) - DEVRAIT ÊTRE REMPLACÉ!`);
+          console.error(`  ❌ ${node.name}: Credential utilisateur attendu: ${createdCredentials.gmailOAuth2?.id || 'AUCUN'}`);
+        }
+      } else {
+        console.error(`  ❌ ${node.name}: Aucun credential Gmail OAuth2 assigné!`);
+        console.error(`  ❌ ${node.name}: createdCredentials.gmailOAuth2 disponible: ${createdCredentials.gmailOAuth2 ? 'OUI' : 'NON'}`);
+      }
+    });
+    console.log('🔍 [CredentialInjector] ====================================================');
   }
   
   // Retourner le workflow et le webhook path pour stockage en base de données

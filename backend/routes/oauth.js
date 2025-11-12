@@ -286,13 +286,12 @@ router.get('/callback', async (req, res) => {
   }
 });
 
-// Créer un credential Gmail dans n8n
+// Créer un credential Gmail dans n8n avec injection automatique des tokens OAuth
 async function createGmailCredentialInN8n(tokens, email, userId) {
   const n8nUrl = config.n8n.url;
   const n8nApiKey = config.n8n.apiKey;
   
   // Pour Gmail OAuth2, n8n nécessite clientId et clientSecret
-  // Les tokens OAuth sont stockés séparément par n8n après connexion
   const clientId = process.env.GOOGLE_CLIENT_ID || config.google?.clientId;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET || config.google?.clientSecret;
   
@@ -300,8 +299,18 @@ async function createGmailCredentialInN8n(tokens, email, userId) {
     throw new Error('GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET sont requis pour créer le credential n8n');
   }
   
-  // Structure attendue par n8n pour gmailOAuth2
-  // n8n nécessite serverUrl et n'accepte pas allowedDomains
+  // ⚠️ CRITIQUE: Injecter les tokens OAuth DIRECTEMENT lors de la création
+  // n8n accepte les tokens dans le data lors de la création pour les credentials OAuth2
+  console.log('🔄 [OAuth] Création credential avec tokens OAuth injectés directement...');
+  console.log('🔧 [OAuth] Tokens disponibles:', {
+    hasAccessToken: !!tokens.access_token,
+    hasRefreshToken: !!tokens.refresh_token,
+    tokenType: tokens.token_type,
+    expiresIn: tokens.expires_in
+  });
+  
+  // Structure pour la création : n8n n'accepte QUE oauthTokenData, pas les propriétés directes
+  // Les propriétés directes (accessToken, refreshToken) seront ajoutées via PUT après création
   const credentialData = {
     name: `Gmail - ${email} - ${userId.substring(0, 8)}`,
     type: 'gmailOAuth2',
@@ -310,14 +319,27 @@ async function createGmailCredentialInN8n(tokens, email, userId) {
       clientSecret: clientSecret,
       serverUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
       sendAdditionalBodyProperties: false,
-      additionalBodyProperties: ''
-      // ⚠️ allowedDomains n'est pas accepté par n8n
+      additionalBodyProperties: '',
+      // ⚠️ CRITIQUE: n8n n'accepte QUE oauthTokenData lors de la création
+      // Les propriétés directes (accessToken, refreshToken) sont rejetées par n8n
+      oauthTokenData: {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        token_type: tokens.token_type || 'Bearer',
+        expires_in: tokens.expires_in,
+        scope: tokens.scope || 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify',
+        expiry_date: tokens.expires_in ? Date.now() + (tokens.expires_in * 1000) : null
+      }
     }
   };
   
-  console.log('🔧 [OAuth] Création credential n8n avec structure:', JSON.stringify(credentialData, null, 2));
+  console.log('🔧 [OAuth] Création credential n8n avec tokens OAuth injectés:');
+  console.log('  - clientId:', clientId ? 'présent' : 'manquant');
+  console.log('  - clientSecret:', clientSecret ? 'présent' : 'manquant');
+  console.log('  - accessToken:', tokens.access_token ? 'présent' : 'manquant');
+  console.log('  - refreshToken:', tokens.refresh_token ? 'présent' : 'manquant');
   
-  const response = await fetch(`${n8nUrl}/api/v1/credentials`, {
+  const createResponse = await fetch(`${n8nUrl}/api/v1/credentials`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -326,20 +348,120 @@ async function createGmailCredentialInN8n(tokens, email, userId) {
     body: JSON.stringify(credentialData),
   });
   
-  if (!response.ok) {
-    const errorText = await response.text();
+  if (!createResponse.ok) {
+    const errorText = await createResponse.text();
     console.error('❌ [OAuth] Erreur détaillée n8n:', errorText);
-    throw new Error(`Erreur création credential n8n: ${response.status} - ${errorText}`);
+    console.error('❌ [OAuth] Payload envoyé:', JSON.stringify(credentialData, null, 2));
+    throw new Error(`Erreur création credential n8n: ${createResponse.status} - ${errorText}`);
   }
   
-  const credential = await response.json();
+  const credential = await createResponse.json();
   console.log('✅ [OAuth] Credential n8n créé avec succès:', credential.id);
+  console.log('✅ [OAuth] Credential Name:', credential.name);
   
-  // Après création, essayer de mettre à jour avec les tokens OAuth
-  // Note: n8n peut nécessiter une connexion OAuth séparée via son interface
-  // Pour l'instant, on retourne le credential créé
-  // L'utilisateur devra peut-être se reconnecter via n8n pour que les tokens soient valides
+  // Vérifier que les tokens sont bien présents dans le credential créé
+  if (credential.data?.oauthTokenData?.access_token) {
+    console.log('✅ [OAuth] Access token présent dans oauthTokenData après création');
+    console.log('✅ [OAuth] Credential créé avec tokens OAuth et prêt à être utilisé');
+    return credential;
+  } else {
+    console.warn('⚠️ [OAuth] Aucun access token trouvé dans oauthTokenData après création');
+    console.warn('⚠️ [OAuth] Tentative de mise à jour avec PUT pour injecter les tokens...');
+    
+    // Si les tokens ne sont pas présents, essayer de les injecter via PUT
+    try {
+      // Attendre un peu pour que n8n finalise la création
+      console.log('⏳ [OAuth] Attente de 1 seconde pour que n8n finalise la création...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Récupérer le credential pour préserver toutes les propriétés
+      console.log(`🔍 [OAuth] Récupération du credential ${credential.id} depuis n8n...`);
+      const getResponse = await fetch(`${n8nUrl}/api/v1/credentials/${credential.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': n8nApiKey,
+        },
+      });
+      
+      console.log(`🔍 [OAuth] Réponse GET credential: ${getResponse.status} ${getResponse.statusText}`);
+      
+      if (getResponse.ok) {
+        const existingCredential = await getResponse.json();
+        console.log('✅ [OAuth] Credential récupéré, injection des tokens via PUT...');
+        
+        // Construire les données mises à jour avec oauthTokenData
+        const updatedData = {
+          ...existingCredential.data,
+          oauthTokenData: {
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            token_type: tokens.token_type || 'Bearer',
+            expires_in: tokens.expires_in,
+            scope: tokens.scope || 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify',
+            expiry_date: tokens.expires_in ? Date.now() + (tokens.expires_in * 1000) : null
+          }
+        };
+        
+        const updatePayload = {
+          name: existingCredential.name,
+          type: existingCredential.type,
+          data: updatedData
+        };
+        
+        console.log('🔧 [OAuth] Payload PUT:', JSON.stringify({
+          name: updatePayload.name,
+          type: updatePayload.type,
+          data: {
+            ...updatePayload.data,
+            oauthTokenData: {
+              ...updatePayload.data.oauthTokenData,
+              access_token: updatePayload.data.oauthTokenData?.access_token ? '***présent***' : 'manquant',
+              refresh_token: updatePayload.data.oauthTokenData?.refresh_token ? '***présent***' : 'manquant'
+            }
+          }
+        }, null, 2));
+        
+        const updateResponse = await fetch(`${n8nUrl}/api/v1/credentials/${credential.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-N8N-API-KEY': n8nApiKey,
+          },
+          body: JSON.stringify(updatePayload),
+        });
+        
+        console.log(`🔍 [OAuth] Réponse PUT credential: ${updateResponse.status} ${updateResponse.statusText}`);
+        
+        if (updateResponse.ok) {
+          const updatedCredential = await updateResponse.json();
+          console.log('✅ [OAuth] Tokens OAuth injectés via PUT après création');
+          
+          // Vérifier que les tokens sont bien présents
+          if (updatedCredential.data?.oauthTokenData?.access_token) {
+            console.log('✅ [OAuth] Access token confirmé dans oauthTokenData après PUT');
+          } else {
+            console.warn('⚠️ [OAuth] Access token non trouvé dans oauthTokenData après PUT');
+          }
+          
+          return updatedCredential;
+        } else {
+          const errorText = await updateResponse.text();
+          console.error('⚠️ [OAuth] Échec injection tokens via PUT:', errorText);
+          console.error('⚠️ [OAuth] Status:', updateResponse.status);
+          console.error('⚠️ [OAuth] Le credential est créé mais nécessitera une connexion manuelle');
+        }
+      } else {
+        const errorText = await getResponse.text();
+        console.warn('⚠️ [OAuth] Impossible de récupérer le credential pour mise à jour:', getResponse.status, errorText);
+      }
+    } catch (updateError) {
+      console.error('⚠️ [OAuth] Erreur lors de la mise à jour:', updateError.message);
+      console.error('⚠️ [OAuth] Stack:', updateError.stack);
+    }
+  }
   
+  console.log('✅ [OAuth] Credential créé (tokens peuvent nécessiter une connexion manuelle)');
   return credential;
 }
 

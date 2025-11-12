@@ -370,6 +370,37 @@ router.post('/deploy', authenticateToken, async (req, res) => {
           }
         });
       }
+      
+      // Vérifier que les credentials Gmail OAuth2 sont bien injectés
+      const gmailNodes = injectedWorkflow.nodes?.filter(node => 
+        node.type === 'n8n-nodes-base.gmail' && node.credentials?.gmailOAuth2
+      );
+      if (gmailNodes && gmailNodes.length > 0) {
+        console.log('🔧 [SmartDeploy] ===== VÉRIFICATION CRITIQUE DES CREDENTIALS GMAIL =====');
+        console.log(`🔧 [SmartDeploy] ${gmailNodes.length} nœud(s) Gmail trouvé(s)`);
+        gmailNodes.forEach(node => {
+          const credId = node.credentials.gmailOAuth2.id;
+          const credName = node.credentials.gmailOAuth2.name;
+          console.log(`  - ${node.name}: Credential ID: ${credId}, Name: ${credName}`);
+          // Vérifier si c'est le credential template (ne devrait jamais arriver)
+          if (credId === 'L0i4xm1EZLNLQI09' || credId.includes('L0i4xm1EZLNLQI09')) {
+            console.error(`  ❌ [SmartDeploy] ERREUR CRITIQUE: Credential template conservé dans ${node.name}!`);
+            console.error(`  ❌ [SmartDeploy] Le credential utilisateur n'a pas été injecté!`);
+          } else {
+            console.log(`  ✅ [SmartDeploy] Credential utilisateur correctement assigné`);
+          }
+        });
+        console.log('🔧 [SmartDeploy] ====================================================');
+      } else {
+        console.error('❌ [SmartDeploy] ERREUR: Aucun credential Gmail OAuth2 trouvé dans les nœuds Gmail!');
+        const allGmailNodes = injectedWorkflow.nodes?.filter(node => node.type === 'n8n-nodes-base.gmail');
+        if (allGmailNodes && allGmailNodes.length > 0) {
+          console.error(`❌ [SmartDeploy] ${allGmailNodes.length} nœud(s) Gmail trouvé(s) mais sans credentials:`);
+          allGmailNodes.forEach(node => {
+            console.error(`  - ${node.name}: credentials = ${JSON.stringify(node.credentials)}`);
+          });
+        }
+      }
     } catch (injectionError) {
       console.error('❌ [SmartDeploy] Erreur injection:', injectionError.message);
       console.error('❌ [SmartDeploy] Stack:', injectionError.stack);
