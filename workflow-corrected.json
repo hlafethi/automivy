@@ -1,0 +1,209 @@
+{
+  "name": "Email Analyzer with AI",
+  "nodes": [
+    {
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [250, 300],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "imap-email",
+      "name": "IMAP Email",
+      "type": "n8n-nodes-base.emailReadImap",
+      "position": [500, 300],
+      "parameters": {
+        "mailbox": "INBOX",
+        "options": {}
+      },
+      "credentials": {
+        "imap": {
+          "id": "USER_IMAP_CREDENTIAL_ID",
+          "name": "USER_IMAP_CREDENTIAL_NAME"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "openrouter-model",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [750, 500],
+      "parameters": {
+        "model": "openai/gpt-4o-mini"
+      },
+      "credentials": {
+        "openRouterApi": {
+          "id": "ADMIN_OPENROUTER_CREDENTIAL_ID",
+          "name": "ADMIN_OPENROUTER_CREDENTIAL_NAME"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "calculator-tool",
+      "name": "Calculator Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "position": [750, 650],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "buffer-memory",
+      "name": "Buffer Window Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [750, 800],
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "aggregate-emails",
+      "name": "Aggregate Emails",
+      "type": "n8n-nodes-base.aggregate",
+      "position": [750, 300],
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "data",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [1000, 300],
+      "parameters": {
+        "text": "Analyse ces emails et classifie-les en Client, Facture, Support, Publicité, Spam, Personnel, Urgent. Voici les emails : {{ $json.data.toJsonString() }}",
+        "promptType": "define"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-classification",
+      "name": "Email Classification",
+      "type": "n8n-nodes-base.function",
+      "position": [1250, 300],
+      "parameters": {
+        "code": "return {\n  'Client': 'client',\n  'Facture': 'facture',\n  'Support': 'support',\n  'Publicité': 'publicité',\n  'Spam': 'spam',\n  'Personnel': 'personnel',\n  'Urgent': 'urgent'\n}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-move",
+      "name": "Move Email",
+      "type": "n8n-nodes-base.function",
+      "position": [1500, 300],
+      "parameters": {
+        "code": "const category = $['email-classification'].item.json.category;\nconst mailboxPath = `Mailbox/${category}`;\nif (!n8n.nodes.get('imap-email').item.json.mailboxes.includes(mailboxPath)) {\n  n8n.nodes.get('imap-email').createMailbox(mailboxPath);\n}\nreturn n8n.nodes.get('imap-email').moveEmail(mailboxPath, $['imap-email'].item.json.id);"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-send",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [1750, 300],
+      "parameters": {
+        "html": "{{ $('ai-agent').item.json.output }}",
+        "subject": "Email Classified",
+        "toEmail": "user@heleam.com",
+        "fromEmail": "user@heleam.com"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "USER_SMTP_CREDENTIAL_ID",
+          "name": "USER_SMTP_CREDENTIAL_NAME"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {},
+  "versionId": "1",
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "IMAP Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IMAP Email": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Emails": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buffer Window Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -44,6 +44,11 @@ module.exports = {
   },
   app: {
     name: process.env.APP_NAME || 'Automivy',
-    frontendUrl: process.env.FRONTEND_URL || `http://${getLocalIP()}:5173`
+    // Pour OAuth, utiliser localhost au lieu de l'IP privée (Google n'accepte pas les IPs privées)
+    frontendUrl: process.env.FRONTEND_URL || `http://localhost:5173`
+  },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET
   }
 };

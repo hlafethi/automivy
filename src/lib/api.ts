@@ -69,7 +69,10 @@ class ApiClient {
         const error = await response.json().catch(() => ({ error: 'Network error' }));
         console.error('❌ [ApiClient] Erreur API:', response.status, error);
         if (response.status === 401 || response.status === 403) {
-          AuthService.logout();
+          // Token invalide ou expiré - nettoyer le token et rediriger vers login
+          this.clearToken();
+          // Déclencher un événement personnalisé pour que AuthContext puisse réagir
+          window.dispatchEvent(new CustomEvent('auth:token-expired'));
         }
         console.log('🚨🚨🚨 [ApiClient] ===== FIN REQUEST (ERREUR) =====');
         throw new Error(error.error || 'Request failed');

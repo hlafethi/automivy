@@ -27,6 +27,8 @@ const databaseRoutes = require('./routes/database');
 const communityRoutes = require('./routes/community');
 const userProfileRoutes = require('./routes/userProfile');
 const notificationRoutes = require('./routes/notifications');
+const enhancedAIRoutes = require('./routes/enhancedAI');
+const ollamaRoutes = require('./routes/ollama');
 // const databaseMonitoringService = require('./services/databaseMonitoringService');
 const { logApiRequest } = require('./middleware/logging');
 
@@ -94,6 +96,8 @@ app.use('/api/database', logApiRequest, databaseRoutes);
 app.use('/api/community', logApiRequest, communityRoutes);
 app.use('/api/user-profile', logApiRequest, userProfileRoutes);
 app.use('/api/notifications', logApiRequest, notificationRoutes);
+app.use('/api/enhanced-ai', logApiRequest, enhancedAIRoutes);
+app.use('/api/ollama', logApiRequest, ollamaRoutes);
 
 // Démarrer le monitoring de base de données
 // databaseMonitoringService.startMonitoring();

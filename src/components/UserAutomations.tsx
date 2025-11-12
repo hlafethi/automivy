@@ -51,6 +51,18 @@ export function UserAutomations() {
     
     setLoading(true);
     try {
+      // Nettoyer automatiquement les workflows orphelins avant de charger
+      try {
+        console.log('🧹 [UserAutomations] Nettoyage automatique des workflows orphelins...');
+        const cleanupResult = await userWorkflowService.cleanupOrphanedWorkflows();
+        if (cleanupResult.cleanedCount > 0) {
+          console.log(`✅ [UserAutomations] ${cleanupResult.cleanedCount} workflow(s) orphelin(s) supprimé(s)`);
+        }
+      } catch (cleanupError) {
+        console.warn('⚠️ [UserAutomations] Erreur nettoyage workflows orphelins (non bloquant):', cleanupError);
+        // Continuer même si le nettoyage échoue
+      }
+      
       console.log('🔍 [UserAutomations] Chargement des workflows pour user.id:', user.id);
       const userWorkflows = await userWorkflowService.getUserWorkflows(user.id);
       console.log('✅ [UserAutomations] Workflows chargés:', userWorkflows.length);
@@ -352,6 +364,7 @@ export function UserAutomations() {
           {activeTab === 'community' && (
             <UserCommunityView />
           )}
+
 
           {activeTab === 'profile' && (
             <UserProfileView />

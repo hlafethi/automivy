@@ -294,3 +294,1851 @@
   "accept-encoding": "gzip, deflate, br, zstd",
   "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
 }
+[2025-11-03T16:24:53.050Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-03T16:24:53.051Z] Body reçu: {
+  "workflowId": "ec7468f8-3ce1-4be2-8a1c-2dc76f4fd096",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "Fethi@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "Fethi@heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465
+  }
+}
+[2025-11-03T16:24:53.053Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "279",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T11:47:15.021Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T11:47:15.023Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "User@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 467,
+    "smtpPassword": "User@2025"
+  }
+}
+[2025-11-04T11:47:15.023Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T11:47:15.361Z] ERREUR: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data requires property \"disableStartTls\""}
+[2025-11-04T11:47:15.362Z] Stack: Error: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data requires property \"disableStartTls\""}
+    at createSmtpCredential (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:275:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async injectUserCredentials (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:40:24)
+    at async C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:198:26
+[2025-11-04T11:53:19.960Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T11:53:19.961Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "User@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpPort": 465,
+    "smtpPassword": "User@2025"
+  }
+}
+[2025-11-04T11:53:19.961Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T11:53:20.321Z] ERREUR: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+[2025-11-04T11:53:20.321Z] Stack: Error: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+    at createSmtpCredential (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:276:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async injectUserCredentials (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:40:24)
+    at async C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:198:26
+[2025-11-04T11:56:19.982Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T11:56:19.983Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpPort": 465,
+    "imapPort": 465
+  }
+}
+[2025-11-04T11:56:19.984Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T11:56:20.307Z] ERREUR: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+[2025-11-04T11:56:20.308Z] Stack: Error: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+    at createSmtpCredential (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:283:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async injectUserCredentials (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:40:24)
+    at async C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:198:26
+[2025-11-04T11:58:46.298Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T11:58:46.299Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "smtpEmail": "user@heleam.com",
+    "imapPort": 465,
+    "smtpPort": 465,
+    "smtpServer": "mail.heleam.com",
+    "smtpPassword": "user@2025"
+  }
+}
+[2025-11-04T11:58:46.300Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T11:58:46.616Z] ERREUR: Erreur création credential SMTP: 400 - {"message":"request.body.data is not allowed to have the additional property \"ssl\",request.body.data is not allowed to have the additional property \"tls\""}
+[2025-11-04T11:58:46.617Z] Stack: Error: Erreur création credential SMTP: 400 - {"message":"request.body.data is not allowed to have the additional property \"ssl\",request.body.data is not allowed to have the additional property \"tls\""}
+    at createSmtpCredential (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:282:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async injectUserCredentials (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:40:24)
+    at async C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:198:26
+[2025-11-04T12:00:16.708Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T12:00:16.709Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpPassword": "user@2025"
+  }
+}
+[2025-11-04T12:00:16.710Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T12:08:36.281Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T12:08:36.282Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465
+  }
+}
+[2025-11-04T12:08:36.283Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T12:51:33.303Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T12:51:33.304Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "smtpPassword": "user@2025"
+  }
+}
+[2025-11-04T12:51:33.304Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:01:10.514Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:01:10.515Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465
+  }
+}
+[2025-11-04T13:01:10.516Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:05:43.154Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:05:43.155Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapPort": 465,
+    "imapServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "smtpPassword": "user@2025",
+    "smtpServer": "mail.heleam.com"
+  }
+}
+[2025-11-04T13:05:43.156Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:09:21.371Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:09:21.372Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "smtpPassword": "user@2025",
+    "smtpEmail": "user@heleam.com"
+  }
+}
+[2025-11-04T13:09:21.372Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:10:54.547Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:10:54.549Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpPort": 465,
+    "smtpPassword": "user@2025"
+  }
+}
+[2025-11-04T13:10:54.549Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:36:37.521Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:36:37.522Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapPort": 465,
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "smtpPassword": "user@2025"
+  }
+}
+[2025-11-04T13:36:37.523Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:38:22.448Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:38:22.449Z] Body reçu: {
+  "workflowId": "6ff57a3c-c9a0-40ec-88c0-7e25ef031cb0",
+  "credentials": {
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465
+  }
+}
+[2025-11-04T13:38:22.450Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:43:16.583Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:43:16.583Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpServer": "mail.heleam.com",
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpPort": 465
+  }
+}
+[2025-11-04T13:43:16.585Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "277",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:43:16.979Z] ERREUR: Erreur déploiement n8n: {"message":"request/body must have required property 'settings'"}
+[2025-11-04T13:43:16.979Z] Stack: Error: Erreur déploiement n8n: {"message":"request/body must have required property 'settings'"}
+    at C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:242:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2025-11-04T13:45:04.536Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:45:04.537Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpPort": 465,
+    "smtpServer": "mail.heleam.com",
+    "smtpPassword": "user@2025"
+  }
+}
+[2025-11-04T13:45:04.538Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:53:10.395Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:53:10.396Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "smtpPassword": "user@2025",
+    "imapPort": 465
+  }
+}
+[2025-11-04T13:53:10.396Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T13:53:10.805Z] ERREUR: Erreur déploiement n8n: {"message":"request/body/active is read-only"}
+[2025-11-04T13:53:10.806Z] Stack: Error: Erreur déploiement n8n: {"message":"request/body/active is read-only"}
+    at C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:243:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2025-11-04T13:54:38.923Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T13:54:38.924Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpPort": 465,
+    "imapPort": 465
+  }
+}
+[2025-11-04T13:54:38.926Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:00:01.548Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:00:01.549Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@heleam.com",
+    "smtpEmail": "user@heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "smtpPassword": "user@heleam.com",
+    "imapPort": 465,
+    "imapServer": "mail.heleam.com"
+  }
+}
+[2025-11-04T14:00:01.549Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "283",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:05:31.376Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:05:31.377Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465
+  }
+}
+[2025-11-04T14:05:31.378Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:17:54.040Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:17:54.041Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 462
+  }
+}
+[2025-11-04T14:17:54.042Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:17:54.392Z] ERREUR: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data requires property \"disableStartTls\""}
+[2025-11-04T14:17:54.394Z] Stack: Error: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data requires property \"disableStartTls\""}
+    at createSmtpCredential (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:313:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async injectUserCredentials (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:48:24)
+    at async C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:198:26
+[2025-11-04T14:18:42.525Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:18:42.525Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 462
+  }
+}
+[2025-11-04T14:18:42.526Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:23:44.017Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:23:44.018Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpPort": 465
+  }
+}
+[2025-11-04T14:23:44.019Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:23:44.368Z] ERREUR: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+[2025-11-04T14:23:44.369Z] Stack: Error: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+    at createSmtpCredential (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:319:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async injectUserCredentials (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:48:24)
+    at async C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:198:26
+[2025-11-04T14:27:22.212Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:27:22.213Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpPort": 465
+  }
+}
+[2025-11-04T14:27:22.213Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:27:22.620Z] ERREUR: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+[2025-11-04T14:27:22.620Z] Stack: Error: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+    at createSmtpCredential (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:337:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async injectUserCredentials (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:48:24)
+    at async C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:198:26
+[2025-11-04T14:28:14.270Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:28:14.271Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapPort": 465,
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPassword": "user@heleam.com",
+    "smtpPort": 465
+  }
+}
+[2025-11-04T14:28:14.272Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "277",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:28:14.546Z] ERREUR: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+[2025-11-04T14:28:14.547Z] Stack: Error: Erreur création credential SMTP: 400 - {"message":"request.body.data does not match allOf schema [subschema 0] with 2 error[s]:,request.body.data does not match allOf schema [subschema 0] with 1 error[s]:,request.body.data is of prohibited type [object Object]"}
+    at createSmtpCredential (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:337:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async injectUserCredentials (C:\Users\direc\app\automivy\backend\services\credentialInjector.js:48:24)
+    at async C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:198:26
+[2025-11-04T14:29:16.004Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:29:16.004Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapPort": 465,
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPassword": "user@heleam.com",
+    "smtpPort": 465
+  }
+}
+[2025-11-04T14:29:16.005Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "277",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:34:30.498Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:34:30.499Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpPort": 465,
+    "imapPort": 465
+  }
+}
+[2025-11-04T14:34:30.499Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:38:17.481Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:38:17.482Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "smtpEmail": "user@heleam.com",
+    "imapServer": "mail.heleam.com",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465,
+    "smtpPassword": "user@2025",
+    "imapPort": 465
+  }
+}
+[2025-11-04T14:38:17.483Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-04T14:46:24.719Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-04T14:46:24.720Z] Body reçu: {
+  "workflowId": "fad572da-fa45-4acf-afcf-9f6e6dbc4a4e",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465
+  }
+}
+[2025-11-04T14:46:24.720Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "168",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIxODcwMjEsImV4cCI6MTc2MjI3MzQyMX0.cZ3zN1QNP6xrB2JEAr6KGYyFkbjSSQDcg_qElNsUTKI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-05T09:40:10.113Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-05T09:40:10.118Z] Body reçu: {
+  "workflowId": "6d4cd4a5-df7e-4edb-b31e-da3b0bbb329b",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465,
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "user@2025",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465
+  }
+}
+[2025-11-05T09:40:10.119Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "271",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjIyNzUxMTUsImV4cCI6MTc2MjM2MTUxNX0.nFdxGMKIh06t1frllDv9vCE1XVUBIX2xQblRMPO6CDI",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-06T10:58:46.010Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-06T10:58:46.011Z] Body reçu: {
+  "workflowId": "480be608-a3f0-45ef-b1cd-ed6e20a00b90",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465
+  }
+}
+[2025-11-06T10:58:46.012Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "168",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI0MjY2ODgsImV4cCI6MTc2MjUxMzA4OH0.U4iXVD9xy2Epo-INUooiOIu8MBB5ch79Vf2n4bJA7cw",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-06T10:58:47.375Z] ERREUR: Erreur déploiement n8n: {"message":"request/body/settings must NOT have additional properties"}
+[2025-11-06T10:58:47.376Z] Stack: Error: Erreur déploiement n8n: {"message":"request/body/settings must NOT have additional properties"}
+    at C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:244:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2025-11-06T11:00:03.399Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-06T11:00:03.400Z] Body reçu: {
+  "workflowId": "480be608-a3f0-45ef-b1cd-ed6e20a00b90",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465
+  }
+}
+[2025-11-06T11:00:03.401Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "168",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI0MjY2ODgsImV4cCI6MTc2MjUxMzA4OH0.U4iXVD9xy2Epo-INUooiOIu8MBB5ch79Vf2n4bJA7cw",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-06T11:00:04.104Z] ERREUR: Erreur déploiement n8n: {"message":"request/body/settings must NOT have additional properties"}
+[2025-11-06T11:00:04.104Z] Stack: Error: Erreur déploiement n8n: {"message":"request/body/settings must NOT have additional properties"}
+    at C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:275:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2025-11-06T11:01:22.217Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-06T11:01:22.217Z] Body reçu: {
+  "workflowId": "480be608-a3f0-45ef-b1cd-ed6e20a00b90",
+  "credentials": {
+    "email": "user@heleam.com",
+    "imapPassword": "user@2025",
+    "imapServer": "mail.heleam.com",
+    "imapPort": 465
+  }
+}
+[2025-11-06T11:01:22.218Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "168",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI0MjY2ODgsImV4cCI6MTc2MjUxMzA4OH0.U4iXVD9xy2Epo-INUooiOIu8MBB5ch79Vf2n4bJA7cw",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T08:45:29.463Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T08:45:29.466Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "smtpEmail": "user@heleam.com",
+    "smtpPassword": "User@2025*",
+    "smtpServer": "mail.heleam.com",
+    "smtpPort": 465
+  }
+}
+[2025-11-11T08:45:29.466Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "173",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T09:57:34.162Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T09:57:34.163Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T09:57:34.164Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:05:51.742Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:05:51.743Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:05:51.743Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:22:09.795Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:22:09.796Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:22:09.796Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:28:19.789Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:28:19.791Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:28:19.792Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:31:49.738Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:31:49.739Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:31:49.740Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:36:26.785Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:36:26.786Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:36:26.787Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:39:52.616Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:39:52.617Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:39:52.618Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:42:31.626Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:42:31.627Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:42:31.628Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:45:25.859Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:45:25.860Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:45:25.861Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:51:24.372Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:51:24.374Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:51:24.375Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-11T10:56:21.240Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-11T10:56:21.241Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-11T10:56:21.241Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T04:33:39.799Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T04:33:39.800Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T04:33:39.800Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T04:42:51.274Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T04:42:51.275Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T04:42:51.276Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T04:42:51.506Z] ERREUR: injectedWorkflow is not defined
+[2025-11-12T04:42:51.507Z] Stack: ReferenceError: injectedWorkflow is not defined
+    at C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:428:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2025-11-12T04:44:04.804Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T04:44:04.805Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T04:44:04.805Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T04:58:33.455Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T04:58:33.456Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T04:58:33.457Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T05:48:45.227Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T05:48:45.228Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T05:48:45.230Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T05:54:46.130Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T05:54:46.131Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T05:54:46.133Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "95",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T06:09:29.209Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T06:09:29.211Z] Body reçu: {
+  "workflowId": "90ac71d4-d5b8-4995-8ff2-9c8c57e26c9f",
+  "credentials": {
+    "email": "fetline2016@gmail.com",
+    "imapPassword": "Gmail@2016*",
+    "imapServer": "imap.gmail.com",
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T06:09:29.212Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "186",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T06:56:10.784Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T06:56:10.785Z] Body reçu: {
+  "workflowId": "5114f297-e56e-4fec-be2b-1afbb5ea8619",
+  "credentials": {
+    "email": "fetline2016@gmail.com",
+    "imapPassword": "Gmail@2016*",
+    "imapServer": "imap.gmail.com",
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T06:56:10.786Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "186",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T07:08:21.182Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T07:08:21.183Z] Body reçu: {
+  "workflowId": "5114f297-e56e-4fec-be2b-1afbb5ea8619",
+  "credentials": {
+    "email": "fetline2016@gmail.com",
+    "imapPassword": "Gmail@2016*",
+    "imapServer": "imap.gmail.com",
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T07:08:21.184Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "186",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T07:27:00.343Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T07:27:00.344Z] Body reçu: {
+  "workflowId": "9e7fc338-d341-447f-a5c6-4a16f9e954da",
+  "credentials": {
+    "email": "fetline2016@gmail.com",
+    "imapPassword": "Gmail@2016*",
+    "imapServer": "imap.gmail.com",
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T07:27:00.344Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "186",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T07:41:35.366Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T07:41:35.368Z] Body reçu: {
+  "workflowId": "5114f297-e56e-4fec-be2b-1afbb5ea8619",
+  "credentials": {
+    "email": "fetline2016@gmail.com",
+    "imapPassword": "Gmail@2016*",
+    "imapServer": "imap.gmail.com",
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T07:41:35.368Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "186",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T07:58:51.878Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T07:58:51.879Z] Body reçu: {
+  "workflowId": "5114f297-e56e-4fec-be2b-1afbb5ea8619",
+  "credentials": {
+    "email": "fetline2016@gmail.com",
+    "imapPassword": "Gmail@2016*",
+    "imapServer": "imap.gmail.com",
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T07:58:51.879Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "186",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T07:58:52.234Z] ERREUR: Erreur déploiement n8n: {"message":"request/body must NOT have additional properties"}
+[2025-11-12T07:58:52.235Z] Stack: Error: Erreur déploiement n8n: {"message":"request/body must NOT have additional properties"}
+    at C:\Users\direc\app\automivy\backend\routes\smartDeploy.js:473:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2025-11-12T07:59:52.385Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T07:59:52.386Z] Body reçu: {
+  "workflowId": "5114f297-e56e-4fec-be2b-1afbb5ea8619",
+  "credentials": {
+    "email": "fetline2016@gmail.com",
+    "imapPassword": "Gmail@2016*",
+    "imapServer": "imap.gmail.com",
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T07:59:52.388Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "186",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI4NTA2OTYsImV4cCI6MTc2MjkzNzA5Nn0.UeiAy-XjUIbGmbSyyMfOIpN3lHaVkolEulmeCdyNXBs",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+[2025-11-12T08:08:19.085Z] Route /deploy appelée - User: user@heleam.com - ID: 8c210030-7d0a-48ee-97d2-b74564b1efef
+[2025-11-12T08:08:19.087Z] Body reçu: {
+  "workflowId": "5114f297-e56e-4fec-be2b-1afbb5ea8619",
+  "credentials": {
+    "email": "fetline2016@gmail.com",
+    "imapPassword": "Gmail@2016*",
+    "imapServer": "imap.gmail.com",
+    "gmailOAuth2": "connected"
+  }
+}
+[2025-11-12T08:08:19.088Z] Headers: {
+  "host": "localhost:3004",
+  "connection": "keep-alive",
+  "content-length": "186",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhjMjEwMDMwLTdkMGEtNDhlZS05N2QyLWI3NDU2NGIxZWZlZiIsImVtYWlsIjoidXNlckBoZWxlYW0uY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjI5MzQ4MDMsImV4cCI6MTc2MzAyMTIwM30.NVJt7ZEaOYXKWfsVruoaxWCLmsXudxbUaw3wyTBm6DU",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+  "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+  "content-type": "application/json",
+  "sec-ch-ua-mobile": "?0",
+  "accept": "*/*",
+  "origin": "http://localhost:5173",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  "referer": "http://localhost:5173/",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+}

@@ -23,6 +23,17 @@ export function EditAutomationModal({ isOpen, onClose, onSuccess, workflow }: Ed
       setDescription(workflow.description || '');
       setSchedule(workflow.schedule || '');
       setError(null);
+      
+      // Logger les champs du workflow pour debug
+      console.log('🔍 [EditAutomationModal] Workflow reçu:', {
+        id: workflow.id,
+        name: workflow.name,
+        n8n_workflow_id: (workflow as any).n8n_workflow_id,
+        n8nWorkflowId: (workflow as any).n8nWorkflowId,
+        webhook_path: (workflow as any).webhook_path,
+        user_id: (workflow as any).user_id,
+        userId: (workflow as any).userId
+      });
     }
   }, [workflow, isOpen]);
 
@@ -42,37 +53,53 @@ export function EditAutomationModal({ isOpen, onClose, onSuccess, workflow }: Ed
       });
 
       // Synchroniser le schedule avec n8n
-      if (workflow.n8nWorkflowId) {
-      console.log('🔧 [EditAutomationModal] Appel updateN8nSchedule:', {
-        n8nWorkflowId: workflow.n8nWorkflowId,
+      // Utiliser le webhook unique stocké dans la base de données
+      const n8nWorkflowId = (workflow as any).n8n_workflow_id || workflow.n8nWorkflowId;
+      const webhookPath = (workflow as any).webhook_path;
+      const userId = (workflow as any).user_id || workflow.userId;
+      const userWorkflowId = workflow.id;
+      
+      console.log('🔧 [EditAutomationModal] Paramètres workflow:', {
+        userWorkflowId: userWorkflowId,
+        n8nWorkflowId: n8nWorkflowId,
+        webhookPath: webhookPath,
         schedule: schedule,
-        userId: workflow.userId
+        userId: userId
       });
-      console.log('🔧 [EditAutomationModal] Workflow complet:', workflow);
-        await userWorkflowService.updateN8nSchedule(workflow.n8nWorkflowId, schedule, workflow.userId);
-        console.log('✅ [EditAutomationModal] updateN8nSchedule terminé');
+      
+      if (n8nWorkflowId) {
+        console.log('🔧 [EditAutomationModal] Utilisation du système de planification avec webhook unique');
+        try {
+          // Utiliser le système de planification avec userWorkflowId pour récupérer le webhook unique
+          await userWorkflowService.scheduleUserWorkflowWithWebhook(
+            userId,
+            n8nWorkflowId,
+            schedule,
+            userWorkflowId
+          );
+          console.log('✅ [EditAutomationModal] Planification avec webhook unique réussie');
+        } catch (error) {
+          console.error('❌ [EditAutomationModal] Erreur planification avec webhook unique:', error);
+          // Fallback: utiliser le webhook path directement si disponible
+          if (webhookPath) {
+            const webhookUrl = `https://n8n.globalsaas.eu/webhook/${webhookPath}`;
+            console.log('🔧 [EditAutomationModal] Fallback: utilisation directe du webhook path:', webhookUrl);
+            await userWorkflowService.scheduleDirectWebhook(webhookUrl, schedule, userId);
+            console.log('✅ [EditAutomationModal] Planification directe réussie (fallback)');
+          } else {
+            throw error;
+          }
+        }
       } else {
         console.log('⚠️ [EditAutomationModal] Pas de n8nWorkflowId, utilisation du système de planification direct');
-        // Utiliser le système de planification direct même sans n8nWorkflowId
-        try {
-          // Utiliser l'ID utilisateur directement
-          const userId = '8c210030-7d0a-48ee-97d2-b74564b1efef';
-          
-          console.log('🔧 [EditAutomationModal] Paramètres planification:', {
-            n8nWorkflowId: '3UywacWvzJaTPSRU',
-            schedule: schedule,
-            userId: userId
-          });
-          
-          // Utiliser directement le webhook sans passer par n8n
-          const webhookUrl = 'https://n8n.globalsaas.eu/webhook/email-summary-trigger';
-          console.log('🔧 [EditAutomationModal] Utilisation directe du webhook:', webhookUrl);
-          
-          // Planifier directement avec le webhook
+        // Fallback: utiliser le webhook path si disponible
+        if (webhookPath) {
+          const webhookUrl = `https://n8n.globalsaas.eu/webhook/${webhookPath}`;
+          console.log('🔧 [EditAutomationModal] Utilisation directe du webhook path:', webhookUrl);
           await userWorkflowService.scheduleDirectWebhook(webhookUrl, schedule, userId);
           console.log('✅ [EditAutomationModal] Planification directe réussie');
-        } catch (error) {
-          console.error('❌ [EditAutomationModal] Erreur planification directe:', error);
+        } else {
+          console.warn('⚠️ [EditAutomationModal] Aucun webhook path disponible, planification impossible');
         }
       }
       

@@ -149,7 +149,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION get_activity_stats(
     start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW() - INTERVAL '24 hours',
     end_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID DEFAULT NULL
+    filter_user_id UUID DEFAULT NULL
 )
 RETURNS JSON AS $$
 DECLARE
@@ -159,19 +159,19 @@ BEGIN
         'total_activities', (
             SELECT COUNT(*) FROM activities 
             WHERE created_at BETWEEN start_date AND end_date
-            AND (user_id IS NULL OR activities.user_id = get_activity_stats.user_id)
+            AND (filter_user_id IS NULL OR activities.user_id = filter_user_id)
         ),
         'successful_activities', (
             SELECT COUNT(*) FROM activities 
             WHERE created_at BETWEEN start_date AND end_date
             AND status = 'SUCCESS'
-            AND (user_id IS NULL OR activities.user_id = get_activity_stats.user_id)
+            AND (filter_user_id IS NULL OR activities.user_id = filter_user_id)
         ),
         'failed_activities', (
             SELECT COUNT(*) FROM activities 
             WHERE created_at BETWEEN start_date AND end_date
             AND status = 'FAILED'
-            AND (user_id IS NULL OR activities.user_id = get_activity_stats.user_id)
+            AND (filter_user_id IS NULL OR activities.user_id = filter_user_id)
         ),
         'by_category', (
             SELECT json_object_agg(category, count)
@@ -179,7 +179,7 @@ BEGIN
                 SELECT category, COUNT(*) as count
                 FROM activities
                 WHERE created_at BETWEEN start_date AND end_date
-                AND (user_id IS NULL OR activities.user_id = get_activity_stats.user_id)
+                AND (filter_user_id IS NULL OR activities.user_id = filter_user_id)
                 GROUP BY category
             ) t
         ),
@@ -189,7 +189,7 @@ BEGIN
                 SELECT action, COUNT(*) as count
                 FROM activities
                 WHERE created_at BETWEEN start_date AND end_date
-                AND (user_id IS NULL OR activities.user_id = get_activity_stats.user_id)
+                AND (filter_user_id IS NULL OR activities.user_id = filter_user_id)
                 GROUP BY action
             ) t
         ),
@@ -199,7 +199,7 @@ BEGIN
                 SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
                 FROM activities
                 WHERE created_at BETWEEN start_date AND end_date
-                AND (user_id IS NULL OR activities.user_id = get_activity_stats.user_id)
+                AND (filter_user_id IS NULL OR activities.user_id = filter_user_id)
                 GROUP BY EXTRACT(HOUR FROM created_at)
                 ORDER BY hour
             ) t
@@ -209,7 +209,7 @@ BEGIN
             FROM activities
             WHERE created_at BETWEEN start_date AND end_date
             AND duration_ms IS NOT NULL
-            AND (user_id IS NULL OR activities.user_id = get_activity_stats.user_id)
+            AND (filter_user_id IS NULL OR activities.user_id = filter_user_id)
         ),
         'most_active_users', (
             SELECT json_agg(json_build_object('user_id', user_id, 'count', count))

@@ -162,13 +162,23 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     console.log('🔧 [Backend] Workflow trouvé:', {
       id: workflow.id,
       name: workflow.name,
-      n8nWorkflowId: workflow.n8nWorkflowId,
-      n8nCredentialId: workflow.n8nCredentialId
+      n8n_workflow_id: workflow.n8n_workflow_id,
+      n8n_credential_id: workflow.n8n_credential_id
     });
 
     // Supprimer de la base de données
-    await db.deleteUserWorkflow(req.params.id, req.user.id);
-    console.log('✅ [Backend] Workflow supprimé de la base de données');
+    try {
+      const deletedWorkflow = await db.deleteUserWorkflow(req.params.id, req.user.id);
+      if (!deletedWorkflow) {
+        console.warn('⚠️ [Backend] Aucun workflow supprimé (peut-être déjà supprimé)');
+        return res.status(404).json({ error: 'User workflow not found or already deleted' });
+      }
+      console.log('✅ [Backend] Workflow supprimé de la base de données:', deletedWorkflow.id);
+    } catch (dbError) {
+      console.error('❌ [Backend] Erreur suppression BDD:', dbError);
+      console.error('❌ [Backend] Stack:', dbError.stack);
+      throw dbError;
+    }
 
     // Note: La suppression des workflows et credentials n8n se fait côté frontend
     // via userWorkflowService.deleteUserWorkflow() pour une meilleure gestion des erreurs
@@ -177,6 +187,112 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'User workflow deleted successfully' });
   } catch (error) {
     console.error('❌ [Backend] Delete user workflow error:', error);
+    console.error('❌ [Backend] Error message:', error.message);
+    console.error('❌ [Backend] Error stack:', error.stack);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Nettoyer les workflows orphelins (supprimés sur n8n mais encore en BDD)
+router.post('/cleanup-orphaned', authenticateToken, async (req, res) => {
+  try {
+    console.log('🧹 [Backend] Nettoyage des workflows orphelins pour user:', req.user.id);
+    
+    const userWorkflows = await db.getUserWorkflows(req.user.id);
+    const n8nService = require('../services/n8nService');
+    const config = require('../config');
+    const n8nUrl = config.n8n.url;
+    const n8nApiKey = config.n8n.apiKey;
+    
+    let cleanedCount = 0;
+    const errors = [];
+    
+    for (const workflow of userWorkflows) {
+      if (workflow.n8n_workflow_id) {
+        try {
+          // Vérifier si le workflow existe encore sur n8n
+          const response = await fetch(`${n8nUrl}/api/v1/workflows/${workflow.n8n_workflow_id}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-N8N-API-KEY': n8nApiKey
+            }
+          });
+          
+          if (!response.ok && response.status === 404) {
+            // Le workflow n'existe plus sur n8n, le supprimer de la BDD
+            console.log(`🧹 [Backend] Workflow orphelin trouvé: ${workflow.name} (${workflow.id})`);
+            await db.deleteUserWorkflow(workflow.id, req.user.id);
+            cleanedCount++;
+            console.log(`✅ [Backend] Workflow orphelin supprimé: ${workflow.name}`);
+          }
+        } catch (error) {
+          console.error(`❌ [Backend] Erreur vérification workflow ${workflow.id}:`, error.message);
+          errors.push({ workflowId: workflow.id, error: error.message });
+        }
+      } else {
+        // Workflow sans n8n_workflow_id, supprimer directement
+        console.log(`🧹 [Backend] Workflow sans n8n_workflow_id trouvé: ${workflow.name} (${workflow.id})`);
+        try {
+          await db.deleteUserWorkflow(workflow.id, req.user.id);
+          cleanedCount++;
+          console.log(`✅ [Backend] Workflow sans n8n_workflow_id supprimé: ${workflow.name}`);
+        } catch (error) {
+          console.error(`❌ [Backend] Erreur suppression workflow ${workflow.id}:`, error.message);
+          errors.push({ workflowId: workflow.id, error: error.message });
+        }
+      }
+    }
+    
+    console.log(`✅ [Backend] Nettoyage terminé: ${cleanedCount} workflow(s) orphelin(s) supprimé(s)`);
+    res.json({ 
+      success: true, 
+      message: `${cleanedCount} workflow(s) orphelin(s) supprimé(s)`,
+      cleanedCount,
+      errors: errors.length > 0 ? errors : undefined
+    });
+    
+  } catch (error) {
+    console.error('❌ [Backend] Erreur nettoyage workflows orphelins:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Supprimer tous les workflows d'un utilisateur (pour nettoyage)
+router.delete('/user/:userId/all', authenticateToken, async (req, res) => {
+  try {
+    console.log('🧹 [Backend] Suppression de tous les workflows pour user:', req.params.userId);
+    
+    // Vérifier que l'utilisateur ne peut supprimer que ses propres workflows
+    if (req.user.id !== req.params.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    const userWorkflows = await db.getUserWorkflows(req.params.userId);
+    let deletedCount = 0;
+    const errors = [];
+    
+    for (const workflow of userWorkflows) {
+      try {
+        await db.deleteUserWorkflow(workflow.id, req.params.userId);
+        deletedCount++;
+        console.log(`✅ [Backend] Workflow supprimé: ${workflow.name} (${workflow.id})`);
+      } catch (error) {
+        console.error(`❌ [Backend] Erreur suppression workflow ${workflow.id}:`, error.message);
+        errors.push({ workflowId: workflow.id, error: error.message });
+      }
+    }
+    
+    console.log(`✅ [Backend] ${deletedCount} workflow(s) supprimé(s) pour user ${req.params.userId}`);
+    res.json({ 
+      success: true, 
+      message: `${deletedCount} workflow(s) supprimé(s)`,
+      deletedCount,
+      errors: errors.length > 0 ? errors : undefined
+    });
+    
+  } catch (error) {
+    console.error('❌ [Backend] Erreur suppression workflows:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

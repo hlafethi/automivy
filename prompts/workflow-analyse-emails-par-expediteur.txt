@@ -1,0 +1,30 @@
+Crée un workflow n8n qui analyse les emails de la boîte mail et crée des dossiers par expéditeur. Le workflow doit :
+
+1. Utiliser un webhook trigger (comme les autres workflows de l'application) pour être déclenché depuis l'application
+
+2. Lire les emails depuis IMAP (INBOX) avec n8n-nodes-base.emailReadImap (PAS n8n-nodes-imap.imap) - credentials USER_IMAP_CREDENTIAL_ID
+
+3. Ajouter un nœud Aggregate (n8n-nodes-base.aggregate) avec aggregate: "aggregateAllItemData" et destinationFieldName: "data" pour regrouper tous les emails (OBLIGATOIRE)
+
+4. Utiliser un Agent IA (@n8n/n8n-nodes-langchain.agent) avec le prompt: "Analyse ces emails et extrait pour chaque email : l'expéditeur (email et nom), le sujet, la date, la catégorie (Client, Facture, Support, Publicité, Spam, Personnel, Urgent), et le contenu important. Réponds en JSON structuré avec un tableau d'emails. Voici les emails : {{ $json.data.toJsonString() }}"
+
+5. Inclure OBLIGATOIREMENT les 4 nœuds suivants connectés à l'Agent IA :
+   - OpenRouter Chat Model (@n8n/n8n-nodes-langchain.lmChatOpenRouter) avec modèle "qwen/qwen2.5-72b-instruct" et credentials ADMIN_OPENROUTER_CREDENTIAL_ID (connecté via ai_languageModel)
+   - Calculator Tool (@n8n/n8n-nodes-langchain.toolCalculator) (connecté via ai_tool)
+   - Buffer Window Memory (@n8n/n8n-nodes-langchain.memoryBufferWindow) avec contextWindowLength: 10 (connecté via ai_memory)
+
+6. Utiliser un nœud Code/Function pour extraire les expéditeurs uniques et grouper les emails par expéditeur
+
+7. Pour chaque expéditeur unique, créer un dossier IMAP (n8n-nodes-imap.imap) avec le nom de l'expéditeur (format: "Nom Expéditeur - email@domain.com" ou juste "email@domain.com")
+
+8. Déplacer chaque email dans le dossier correspondant à son expéditeur
+
+9. Optionnel: Envoyer un email de résumé avec toEmail: "{{USER_EMAIL}}" (credentials USER_SMTP_CREDENTIAL_ID)
+
+Règles CRITIQUES:
+- TOUJOURS utiliser n8n-nodes-base.emailReadImap (PAS n8n-nodes-imap.imap) pour la lecture
+- TOUJOURS ajouter Aggregate entre IMAP Email et AI Agent
+- Utiliser {{ $json.data.toJsonString() }} dans le prompt AI Agent (PAS {{ $json.toJsonString() }})
+- Utiliser les NOMS des nœuds (pas les IDs) dans les connexions
+- Inclure "settings": {}, "active": false, "versionId": "1" dans le workflow
+

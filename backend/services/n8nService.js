@@ -125,14 +125,30 @@ async function getAdminCredentials() {
     const adminCreds = {};
     
     for (const cred of allCredentials) {
-      console.log(`  - ${cred.name} (${cred.type}) [ID: ${cred.id}]`);
+      console.log(`🔍 [n8nService] Credential trouvé: ${cred.name} (type: ${cred.type}) [ID: ${cred.id}]`);
       
-      if (cred.name.toLowerCase().includes('openrouter') || 
-          cred.name.toLowerCase().includes('llm') || 
-          cred.name.toLowerCase().includes('ai') ||
-          cred.name.toLowerCase().includes('admin')) {
+      // Chercher OpenRouter par type d'abord (plus fiable)
+      // Le type peut être 'openRouterApi' ou variantes
+      const credTypeLower = cred.type?.toLowerCase() || '';
+      const credNameLower = cred.name?.toLowerCase() || '';
+      
+      if (credTypeLower === 'openrouterapi' || 
+          credTypeLower === 'openrouter' ||
+          credTypeLower.includes('openrouter') ||
+          credTypeLower === 'openrouterapi') {
         adminCreds.OPENROUTER_ID = cred.id;
-        console.log('✅ Credential OpenRouter/LLM trouvé:', cred.id);
+        adminCreds.OPENROUTER_NAME = cred.name;
+        console.log(`✅ [n8nService] Credential OpenRouter trouvé par type: ${cred.id} (${cred.name})`);
+      } else if (credNameLower.includes('openrouter') || 
+          credNameLower.includes('llm') || 
+          (credNameLower.includes('ai') && credTypeLower.includes('router')) ||
+          (credNameLower.includes('admin') && credTypeLower.includes('router'))) {
+        // Si pas trouvé par type, chercher par nom
+        if (!adminCreds.OPENROUTER_ID) {
+          adminCreds.OPENROUTER_ID = cred.id;
+          adminCreds.OPENROUTER_NAME = cred.name;
+          console.log(`✅ [n8nService] Credential OpenRouter trouvé par nom: ${cred.id} (${cred.name})`);
+        }
       }
       
       if (cred.name.toLowerCase().includes('smtp') || 
@@ -628,6 +644,67 @@ async function deployEmailSummaryWorkflow(userId, userEmail, userPassword, userI
     // 3. Créer le workflow dans n8n
     console.log('🔧 [n8nService] Création du workflow dans n8n...');
     const result = await createWorkflow(workflowWithCredentials);
+    
+    // 4. Mettre à jour le workflow avec les credentials après création (comme les workflows fonctionnels)
+    // Cela garantit que les credentials OpenRouter et autres sont correctement appliqués
+    console.log('🔧 [n8nService] Mise à jour du workflow avec les credentials...');
+    try {
+      const config = require('../config');
+      const n8nUrl = config.n8n.url;
+      const n8nApiKey = config.n8n.apiKey;
+      
+      const updateResponse = await fetch(`${n8nUrl}/api/v1/workflows/${result.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': n8nApiKey
+        },
+        body: JSON.stringify({
+          name: workflowWithCredentials.name,
+          nodes: workflowWithCredentials.nodes,
+          connections: workflowWithCredentials.connections,
+          settings: workflowWithCredentials.settings || {}
+        })
+      });
+      
+      if (updateResponse.ok) {
+        console.log('✅ [n8nService] Workflow mis à jour avec les credentials');
+      } else {
+        const errorText = await updateResponse.text();
+        console.warn('⚠️ [n8nService] Impossible de mettre à jour le workflow:', errorText);
+      }
+    } catch (updateError) {
+      console.warn('⚠️ [n8nService] Erreur mise à jour workflow:', updateError.message);
+      // Ne pas bloquer si la mise à jour échoue
+    }
+    
+    // 5. Activer automatiquement le workflow (comme pour les workflows fonctionnels)
+    console.log('🔧 [n8nService] Activation automatique du workflow...');
+    try {
+      const config = require('../config');
+      const n8nUrl = config.n8n.url;
+      const n8nApiKey = config.n8n.apiKey;
+      
+      const activateResponse = await fetch(`${n8nUrl}/api/v1/workflows/${result.id}/activate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': n8nApiKey
+        }
+      });
+      
+      if (activateResponse.ok) {
+        const activateResult = await activateResponse.json();
+        console.log('✅ [n8nService] Workflow activé automatiquement:', activateResult.active);
+      } else {
+        const errorText = await activateResponse.text();
+        console.warn('⚠️ [n8nService] Impossible d\'activer automatiquement le workflow:', errorText);
+        // Ne pas bloquer le déploiement si l'activation échoue
+      }
+    } catch (activateError) {
+      console.warn('⚠️ [n8nService] Erreur activation automatique:', activateError.message);
+      // Ne pas bloquer le déploiement si l'activation échoue
+    }
     
     console.log('✅ [n8nService] Workflow Email Summary déployé:', result.id);
     return result;

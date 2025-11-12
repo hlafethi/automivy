@@ -103,8 +103,40 @@ class SimpleScheduler {
   /**
    * Récupérer l'URL webhook d'un workflow n8n
    */
-  async getWebhookUrl(n8nWorkflowId) {
+  async getWebhookUrl(n8nWorkflowId, userWorkflowId = null) {
     try {
+      const db = require('../database');
+      
+      // Si on a un userWorkflowId, récupérer le webhook path depuis la base de données
+      if (userWorkflowId) {
+        const userWorkflow = await db.query(
+          'SELECT webhook_path FROM user_workflows WHERE id = $1',
+          [userWorkflowId]
+        );
+        
+        if (userWorkflow.rows.length > 0 && userWorkflow.rows[0].webhook_path) {
+          const webhookPath = userWorkflow.rows[0].webhook_path;
+          const webhookUrl = `${config.n8n.url}/webhook/${webhookPath}`;
+          console.log(`🔗 [SimpleScheduler] URL webhook unique depuis BDD (userWorkflowId): ${webhookUrl}`);
+          return webhookUrl;
+        }
+      }
+      
+      // Sinon, chercher par n8nWorkflowId dans la base de données
+      const userWorkflowByN8n = await db.query(
+        'SELECT webhook_path FROM user_workflows WHERE n8n_workflow_id = $1 ORDER BY created_at DESC LIMIT 1',
+        [n8nWorkflowId]
+      );
+      
+      if (userWorkflowByN8n.rows.length > 0 && userWorkflowByN8n.rows[0].webhook_path) {
+        const webhookPath = userWorkflowByN8n.rows[0].webhook_path;
+        const webhookUrl = `${config.n8n.url}/webhook/${webhookPath}`;
+        console.log(`🔗 [SimpleScheduler] URL webhook unique depuis BDD (n8nWorkflowId): ${webhookUrl}`);
+        return webhookUrl;
+      }
+      
+      // Fallback: récupérer depuis n8n (ancienne méthode - ne devrait plus être utilisée)
+      console.warn('⚠️ [SimpleScheduler] Webhook path non trouvé en BDD, récupération depuis n8n (fallback)');
       const response = await fetch(`${config.n8n.url}/api/v1/workflows/${n8nWorkflowId}`, {
         headers: { 'X-N8N-API-KEY': config.n8n.apiKey }
       });
@@ -122,8 +154,10 @@ class SimpleScheduler {
         throw new Error('Webhook node not found');
       }
       
-      const webhookUrl = `https://n8n.globalsaas.eu/webhook/email-summary-trigger`;
-      console.log(`🔗 [SimpleScheduler] URL webhook: ${webhookUrl}`);
+      // Utiliser le path du webhook depuis le nœud si disponible
+      const webhookPath = webhookNode.parameters?.path || 'email-summary-trigger';
+      const webhookUrl = `${config.n8n.url}/webhook/${webhookPath}`;
+      console.log(`🔗 [SimpleScheduler] URL webhook depuis n8n (fallback): ${webhookUrl}`);
       
       return webhookUrl;
       
@@ -138,8 +172,8 @@ class SimpleScheduler {
 const scheduler = new SimpleScheduler();
 
 // Fonctions d'API simples
-async function scheduleUserWorkflow(userId, n8nWorkflowId, schedule) {
-  const webhookUrl = await scheduler.getWebhookUrl(n8nWorkflowId);
+async function scheduleUserWorkflow(userId, n8nWorkflowId, schedule, userWorkflowId = null) {
+  const webhookUrl = await scheduler.getWebhookUrl(n8nWorkflowId, userWorkflowId);
   scheduler.scheduleWorkflow(userId, n8nWorkflowId, schedule, webhookUrl);
 }
 

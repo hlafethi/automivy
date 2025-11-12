@@ -9,6 +9,7 @@ import { LandingAdmin } from './components/LandingAdmin';
 import { SupportPage } from './pages/SupportPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { OAuthCallback } from './components/OAuthCallback';
 
 function App() {
   const { user, loading, isAdmin } = useAuth();
@@ -32,6 +33,7 @@ function App() {
         <Route path="/support" element={<SupportPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
         
         {/* Routes d'authentification */}
         <Route 

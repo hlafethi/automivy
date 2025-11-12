@@ -110,11 +110,36 @@ export const aiService = {
 
     const systemPrompt = `You are an expert n8n workflow designer. Generate valid n8n workflow JSON that follows n8n specifications exactly.
 
-CRITICAL REQUIREMENTS - EVERY workflow MUST include these essential nodes:
-1. An AI Agent node (@n8n/n8n-nodes-langchain.agent) using OpenRouter API
-2. A Calculator Tool node (@n8n/n8n-nodes-langchain.toolCalculator) 
-3. A Memory node (@n8n/n8n-nodes-langchain.memoryBufferWindow)
-4. OpenRouter Chat Model (@n8n/n8n-nodes-langchain.lmChatOpenRouter) with admin credentials
+⚠️ CRITICAL REQUIREMENTS - If you create an AI Agent, you MUST automatically include these 4 nodes:
+
+1. ✅ AI Agent node (@n8n/n8n-nodes-langchain.agent) - name: "AI Agent"
+   - parameters: { "promptType": "define", "text": "..." }
+
+2. ✅ OpenRouter Chat Model (@n8n/n8n-nodes-langchain.lmChatOpenRouter) - name: "OpenRouter Chat Model"
+   - MANDATORY: Use ADMIN credentials directly (they are already available):
+     "credentials": {
+       "openRouterApi": {
+         "id": "ADMIN_OPENROUTER_CREDENTIAL_ID",
+         "name": "ADMIN_OPENROUTER_CREDENTIAL_NAME"
+       }
+     }
+   - ⚠️ CRITICAL: ALWAYS use the BEST performing but CHEAPEST model - NEVER use "anthropic/claude" (too expensive!)
+     - Recommended model: "qwen/qwen2.5-72b-instruct" (best performance/cost ratio, reliable, and available via OpenRouter)
+     - Alternative if qwen2.5-72b not available: "openai/gpt-4o-mini" (cheap and reliable)
+     - NEVER use: "anthropic/claude-3.5-sonnet" or any anthropic model (too expensive!)
+     - NEVER use: "meta-llama/llama-3.1-70b-instruct" (may not be available in all OpenRouter accounts)
+   - parameters: { "model": "qwen/qwen2.5-72b-instruct" }
+   - MUST connect to AI Agent via "ai_languageModel" connection
+
+3. ✅ Calculator Tool (@n8n/n8n-nodes-langchain.toolCalculator) - name: "Calculator Tool"
+   - parameters: {} (empty is OK)
+   - MUST connect to AI Agent via "ai_tool" connection
+
+4. ✅ Buffer Window Memory (@n8n/n8n-nodes-langchain.memoryBufferWindow) - name: "Buffer Window Memory" or "Simple Memory"
+   - parameters: { "contextWindowLength": 10 } or { "k": 5 }
+   - MUST connect to AI Agent via "ai_memory" connection
+
+These 4 nodes are MANDATORY if you create an AI Agent. NEVER omit them!
 
 CREDENTIALS STRATEGY - CRITICAL:
 - OpenRouter: ALWAYS use ADMIN credentials (ADMIN_OPENROUTER_CREDENTIAL_ID) - these are automatically available
@@ -198,21 +223,36 @@ COMMUNITY NODES FOR PDF OCR:
 
     const prompt = `Generate a complete n8n workflow JSON based on this description: "${description}"
 
-MANDATORY BASELINE NODES (include in EVERY workflow):
-1. AI Agent (@n8n/n8n-nodes-langchain.agent)
-   - MUST have OpenRouter Chat Model as sub-node
-   - Connect Calculator Tool and Memory as tool inputs
-   - Use admin OpenRouter credentials
-2. OpenRouter Chat Model (@n8n/n8n-nodes-langchain.lmChatOpenRouter)
-   - parameters: { "modelName": "anthropic/claude-3.5-sonnet" }
-   - credentials: { "openRouterApi": { "id": "ADMIN_OPENROUTER_CREDENTIAL_ID", "name": "ADMIN_OPENROUTER_CREDENTIAL_NAME" } }
-   - This connects TO the AI Agent
-3. Calculator Tool (@n8n/n8n-nodes-langchain.toolCalculator)
-   - parameters: {}
-   - Connects TO the AI Agent as tool input
-4. Buffer Window Memory (@n8n/n8n-nodes-langchain.memoryBufferWindow)
-   - parameters: { "contextWindowLength": 10 }
-   - Connects TO the AI Agent
+⚠️ MANDATORY BASELINE NODES - If you create an AI Agent, you MUST automatically include ALL 4:
+
+1. ✅ AI Agent (@n8n/n8n-nodes-langchain.agent) - name: "AI Agent"
+   - parameters: { "promptType": "define", "text": "..." }
+
+2. ✅ OpenRouter Chat Model (@n8n/n8n-nodes-langchain.lmChatOpenRouter) - name: "OpenRouter Chat Model"
+   - MANDATORY: Use ADMIN credentials directly (already available):
+     "credentials": {
+       "openRouterApi": {
+         "id": "ADMIN_OPENROUTER_CREDENTIAL_ID",
+         "name": "ADMIN_OPENROUTER_CREDENTIAL_NAME"
+       }
+     }
+   - ⚠️ CRITICAL: ALWAYS use the BEST performing but CHEAPEST model - NEVER use "anthropic/claude" (too expensive!)
+     - Recommended model: "qwen/qwen2.5-72b-instruct" (best performance/cost ratio, reliable, and available via OpenRouter)
+     - Alternative if qwen2.5-72b not available: "openai/gpt-4o-mini" (cheap and reliable)
+     - NEVER use: "anthropic/claude-3.5-sonnet" or any anthropic model (too expensive!)
+     - NEVER use: "meta-llama/llama-3.1-70b-instruct" (may not be available in all OpenRouter accounts)
+   - parameters: { "model": "qwen/qwen2.5-72b-instruct" }
+   - MUST connect to AI Agent via "ai_languageModel" (use NODE NAMES!)
+
+3. ✅ Calculator Tool (@n8n/n8n-nodes-langchain.toolCalculator) - name: "Calculator Tool"
+   - parameters: {} (empty is OK)
+   - MUST connect to AI Agent via "ai_tool" (use NODE NAMES!)
+
+4. ✅ Buffer Window Memory (@n8n/n8n-nodes-langchain.memoryBufferWindow) - name: "Buffer Window Memory" or "Simple Memory"
+   - parameters: { "contextWindowLength": 10 } or { "k": 5 }
+   - MUST connect to AI Agent via "ai_memory" (use NODE NAMES!)
+
+⚠️ IMPORTANT: OpenRouter credentials are ADMIN-level and already available - use ADMIN_OPENROUTER_CREDENTIAL_ID directly!
 
 THEN add nodes specific to the request:
 
@@ -223,31 +263,45 @@ For EMAIL workflows, add these nodes in ORDER:
 1. Webhook Trigger (n8n-nodes-base.webhook) at position [250, 300]
    - parameters: { "httpMethod": "POST", "path": "email-summary-trigger" }
    - webhookId: "email-summary-webhook"
-2. IMAP Email (n8n-nodes-imap.imap) at position [500, 300]
-   - parameters: { "authentication": "coreImapAccount", "resource": "email", "mailboxPath": "INBOX" }
+2. IMAP Email (n8n-nodes-base.emailReadImap) at position [500, 300]
+   - parameters: { "mailbox": "INBOX", "options": {} }
+   - ⚠️ CRITICAL: Use n8n-nodes-base.emailReadImap (NOT n8n-nodes-imap.imap) - it's simpler and more reliable!
    - credentials: { "imap": { "id": "USER_IMAP_CREDENTIAL_ID", "name": "USER_IMAP_CREDENTIAL_NAME" } }
-3. Organize Email Data (n8n-nodes-base.aggregate) at position [750, 300]
-   - parameters: { "aggregate": "aggregateAllItemData" }
-4. Generate Session ID (n8n-nodes-base.set) at position [1000, 300]
-   - parameters: { "assignments": { "assignments": [{"name": "sessionId", "type": "string", "value": "=email-summary-{{ $now.format('YYYY-MM-DD') }}"}] } }
-5. AI Agent at position [1250, 300]
+3. Aggregate Emails (n8n-nodes-base.aggregate) at position [750, 300]
+   - parameters: { 
+       "aggregate": "aggregateAllItemData",
+       "destinationFieldName": "data",
+       "options": {}
+     }
+   - ⚠️ CRITICAL: This node is MANDATORY when IMAP returns multiple emails - it groups all emails into a single "data" field
+   - ⚠️ CRITICAL: destinationFieldName MUST be "data" so AI Agent can access it with {{ $json.data.toJsonString() }}
+4. AI Agent at position [1000, 300]
    - parameters: {
        "promptType": "define",
-       "text": "=Voici les emails reçus aujourd'hui : {{ $json.data.toJsonString() }}\\n\\nAnalyse TOUS les emails et résume sous forme de liste :\\n- Catégorise par priorité (urgent, important, à lire)\\n- Identifie les emails avec le mot 'urgent' dans le sujet ou le contenu\\n- Propose un résumé, puis liste toutes les tâches/action items importantes.\\n- Assure-toi de ne manquer aucun email\\n"
+       "text": "=Analyse ces emails et classifie-les en Client, Facture, Support, Publicité, Spam, Personnel, Urgent. Voici les emails : {{ $json.data.toJsonString() }}"
      }
-6. Markdown (n8n-nodes-base.markdown) at position [1500, 300]
+   - ⚠️ CRITICAL: Use {{ $json.data.toJsonString() }} (NOT {{ $json.toJsonString() }}) because Aggregate creates the "data" field
+5. Markdown (n8n-nodes-base.markdown) at position [1250, 300]
    - parameters: { "mode": "markdownToHtml", "markdown": "={{ $('AI Agent').item.json.output }}" }
-7. SMTP Email (n8n-nodes-base.emailSend) at position [1750, 300]
+6. SMTP Email (n8n-nodes-base.emailSend) at position [1500, 300]
    - parameters: {
        "fromEmail": "={{USER_EMAIL}}",
        "toEmail": "={{USER_EMAIL}}",
        "subject": "=Résumé quotidien des emails importants du {{ $now.format('DD/MM/YYYY') }}",
        "html": "=<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { font-family: Arial, sans-serif; background: #f9fafb; color: #23272f; }\\n.container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 6px #dedede; padding: 24px; }\\nh1 { background: #0066cc; color: #fff; border-radius: 8px; padding: 14px 0; text-align: center; }\\n</style>\\n</head>\\n<body>\\n<div class=\\"container\\">\\n<h1>📬 Résumé & actions des emails reçus ces 24h</h1>\\n<div style=\\"padding: 14px;\\">{{ $json.html }}</div>\\n</div>\\n</body>\\n</html>"
      }
+   - ⚠️ CRITICAL: toEmail MUST use a valid email address - use {{USER_EMAIL}} or a hardcoded email, NOT dynamic expressions like {{ $('imap-email').item.json.to }} which may be empty!
    - credentials: { "smtp": { "id": "USER_SMTP_CREDENTIAL_ID", "name": "USER_SMTP_CREDENTIAL_NAME" } }
 
-CRITICAL: Connect nodes in this exact chain:
-Webhook Trigger -> IMAP Email -> Organize Email Data -> Generate Session ID -> AI Agent -> Markdown -> SMTP Email
+CRITICAL: Connect nodes in this exact chain (CORRECT ORDER):
+Webhook Trigger -> IMAP Email -> Aggregate Emails -> AI Agent -> Markdown -> SMTP Email
+
+⚠️ CRITICAL EMAIL WORKFLOW PATTERNS (MANDATORY):
+1. IMAP Email returns MULTIPLE items (one per email) - you MUST aggregate them before AI Agent
+2. Aggregate node creates a "data" field containing all emails as an array
+3. AI Agent prompt MUST use {{ $json.data.toJsonString() }} to access aggregated emails
+4. SMTP toEmail MUST use {{USER_EMAIL}} or a hardcoded email - NEVER use {{ $('imap-email').item.json.to }} which may be empty!
+5. NEVER skip the Aggregate node - it's MANDATORY for email workflows with AI Agent
 
 AND connect these to AI Agent as inputs:
 - OpenRouter Chat Model -> AI Agent (ai_languageModel connection)
@@ -376,44 +430,45 @@ Node positioning:
 - AI Agent tools vertically below: Y = 500, 650, 800
 - Platform nodes: adapt positioning based on workflow complexity
 
-Return ONLY valid JSON with this EXACT structure:
+Return ONLY valid JSON with this EXACT structure (MANDATORY fields):
 {
   "name": "Workflow Name",
   "nodes": [
     {
-      "parameters": {
-        "rule": {
-          "interval": [{"field": "hours", "hoursInterval": 1}]
-        }
-      },
-      "id": "uuid1",
-      "name": "Schedule Trigger",
-      "type": "n8n-nodes-base.schedule",
-      "typeVersion": 1.2,
-      "position": [250, 300]
+      "id": "unique-node-id",
+      "name": "Node Name",
+      "type": "n8n-nodes-base.nodeType",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": { /* complete parameters */ }
     }
   ],
   "connections": {
-    "Schedule Trigger": {
-      "main": [[{"node": "IMAP Email", "type": "main", "index": 0}]]
-    },
-    "OpenRouter Chat Model": {
-      "ai_languageModel": [[{"node": "AI Agent", "type": "ai_languageModel", "index": 0}]]
-    },
-    "Calculator Tool": {
-      "ai_tool": [[{"node": "AI Agent", "type": "ai_tool", "index": 0}]]
-    },
-    "Buffer Window Memory": {
-      "ai_memory": [[{"node": "AI Agent", "type": "ai_memory", "index": 0}]]
+    "Node Name Source": {
+      "main": [[{"node": "Node Name Destination", "type": "main", "index": 0}]]
     }
-  }
+  },
+  "settings": {},
+  "active": false,
+  "versionId": "1"
 }
+
+⚠️ MANDATORY STRUCTURE RULES:
+1. ALWAYS include "settings": {} (even if empty) - n8n API requires it
+2. ALWAYS set "active": false (activation happens after deployment via API)
+3. ALWAYS include "versionId": "1"
+4. For EMAIL workflows with IMAP: ALWAYS add Aggregate node between IMAP and AI Agent
+5. For EMAIL workflows: toEmail MUST use {{USER_EMAIL}} or hardcoded email, NEVER dynamic expressions
 
 CRITICAL RULES:
 1. Every node MUST have complete "parameters" object - NEVER use empty {}
-2. ALL connections must be properly defined
+2. ⚠️ CRITICAL - ALL connections must use NODE NAMES (not IDs):
+   - In "connections" object, use the "name" of the source node as the key
+   - In each connection object, the "node" field must contain the exact "name" of the destination node
+   - Example: If a node has "name": "IMAP Email", use "IMAP Email" in connections, NOT "imap-email"
+   - n8n requires node names in connections, not IDs
 3. Use these connection types:
-   - "main" for regular workflow connections
+   - "main" for regular workflow connections (ONLY use "main", NEVER use "next" which doesn't exist in n8n)
    - "ai_languageModel" for OpenRouter -> AI Agent
    - "ai_tool" for Calculator -> AI Agent
    - "ai_memory" for Memory -> AI Agent
@@ -433,7 +488,11 @@ CRITICAL FINAL RULES:
 4. For PDF processing, use HTTP Request to PDF.co or similar services
 5. For file operations, use HTTP Request to external file services
 6. Every node MUST have complete parameters - never use empty {}
-7. ALL connections must be properly defined with correct connection types
+7. ⚠️ CRITICAL - ALL connections MUST use NODE NAMES (not IDs):
+   - Use the "name" field of nodes in connections object keys
+   - Use the "name" field of nodes in connection "node" values
+   - Example: If node has "id": "imap-email" and "name": "IMAP Email", use "IMAP Email" in connections
+   - NEVER use "next" connection type - only use "main", "ai_languageModel", "ai_tool", "ai_memory"
 8. Use workflow variables for dynamic values like email addresses and API keys
 9. Test every node type to ensure it exists in n8n before including it
 10. For folder monitoring, use Schedule Trigger that checks external file services via HTTP Request

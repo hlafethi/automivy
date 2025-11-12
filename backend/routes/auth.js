@@ -64,7 +64,10 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
+  console.log('🔐 [Auth] Tentative de connexion pour:', email);
+
   if (!email || !password) {
+    console.log('❌ [Auth] Email ou mot de passe manquant');
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
@@ -73,14 +76,21 @@ router.post('/login', async (req, res) => {
     const user = result.rows[0];
 
     if (!user) {
+      console.log('❌ [Auth] Utilisateur non trouvé:', email);
       return res.status(400).json({ error: 'Invalid credentials' });
     }
+
+    console.log('✅ [Auth] Utilisateur trouvé:', user.email, 'Role:', user.role);
+    console.log('🔐 [Auth] Vérification du mot de passe...');
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
+      console.log('❌ [Auth] Mot de passe invalide pour:', email);
       return res.status(400).json({ error: 'Invalid credentials' });
     }
+
+    console.log('✅ [Auth] Mot de passe valide pour:', email);
 
     // Mettre à jour la dernière connexion
     await pool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);

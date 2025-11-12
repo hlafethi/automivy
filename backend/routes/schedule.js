@@ -15,15 +15,17 @@ router.post('/schedule-workflow', authenticateToken, async (req, res) => {
   try {
     console.log('🕐 [Schedule] Planification demandée:', req.body);
     
-    const { userId, n8nWorkflowId, schedule } = req.body;
+    const { userId, n8nWorkflowId, schedule, userWorkflowId } = req.body;
     
     if (!userId || !n8nWorkflowId || !schedule) {
       return res.status(400).json({ error: 'userId, n8nWorkflowId et schedule requis' });
     }
     
-    await scheduleUserWorkflow(userId, n8nWorkflowId, schedule);
+    console.log('🕐 [Schedule] Paramètres:', { userId, n8nWorkflowId, schedule, userWorkflowId });
     
-    console.log('✅ [Schedule] Workflow planifié');
+    await scheduleUserWorkflow(userId, n8nWorkflowId, schedule, userWorkflowId);
+    
+    console.log('✅ [Schedule] Workflow planifié avec webhook unique');
     res.json({ 
       success: true, 
       message: 'Workflow planifié avec succès',

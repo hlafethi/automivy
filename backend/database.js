@@ -126,6 +126,21 @@ class Database {
     return result.rows[0];
   }
 
+  async updateTemplateAsAdmin(id, updates) {
+    // Permet aux admins de mettre à jour n'importe quel template sans vérifier created_by
+    const setClause = Object.keys(updates)
+      .map((key, index) => `${key} = $${index + 2}`)
+      .join(', ');
+    
+    const values = [id, ...Object.values(updates)];
+    
+    const result = await this.query(
+      `UPDATE templates SET ${setClause} WHERE id = $1 RETURNING *`,
+      values
+    );
+    return result.rows[0];
+  }
+
   async deleteTemplate(id, userId) {
     const result = await this.query(
       'DELETE FROM templates WHERE id = $1 AND created_by = $2 RETURNING *',
@@ -308,15 +323,27 @@ class Database {
       name,
       description,
       schedule,
-      isActive = true
+      isActive = true,
+      webhookPath
     } = data;
+
+    // Vérifier si la colonne webhook_path existe, sinon l'ajouter
+    try {
+      await this.query(`
+        ALTER TABLE user_workflows 
+        ADD COLUMN IF NOT EXISTS webhook_path VARCHAR(255)
+      `);
+    } catch (err) {
+      // La colonne existe déjà ou erreur, continuer
+      console.log('🔍 [Database] Colonne webhook_path:', err.message.includes('already exists') ? 'existe déjà' : 'erreur');
+    }
 
     const result = await this.query(
       `INSERT INTO user_workflows 
-       (user_id, template_id, n8n_workflow_id, n8n_credential_id, name, description, schedule, is_active) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+       (user_id, template_id, n8n_workflow_id, n8n_credential_id, name, description, schedule, is_active, webhook_path) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
        RETURNING *`,
-      [userId, templateId, n8nWorkflowId, n8nCredentialId, name, description, schedule, isActive]
+      [userId, templateId, n8nWorkflowId, n8nCredentialId, name, description, schedule, isActive, webhookPath]
     );
     return result.rows[0];
   }
@@ -360,11 +387,75 @@ class Database {
   }
 
   async deleteUserWorkflow(id, userId) {
-    const result = await this.query(
-      'DELETE FROM user_workflows WHERE id = $1 AND user_id = $2 RETURNING *',
-      [id, userId]
-    );
-    return result.rows[0];
+    const client = await this.pool.connect();
+    try {
+      console.log('🔧 [Database] Suppression workflow:', { id, userId });
+      
+      await client.query('BEGIN');
+      
+      // Désactiver temporairement RLS pour permettre la suppression
+      await client.query('SET LOCAL row_security = off');
+      
+      // Récupérer le n8n_workflow_id avant suppression
+      const workflowResult = await client.query(
+        'SELECT n8n_workflow_id FROM user_workflows WHERE id = $1 AND user_id = $2',
+        [id, userId]
+      );
+      
+      if (workflowResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        console.warn('⚠️ [Database] Workflow non trouvé');
+        return null;
+      }
+      
+      const n8nWorkflowId = workflowResult.rows[0].n8n_workflow_id;
+      
+      // Supprimer d'abord les enregistrements dans workflow_executions qui référencent ce workflow
+      // La contrainte utilise user_workflow_id (l'ID de la table user_workflows), pas n8n_workflow_id
+      // Utiliser SAVEPOINT pour pouvoir continuer même en cas d'erreur
+      try {
+        await client.query('SAVEPOINT before_delete_executions');
+        const deleteExecutionsResult = await client.query(
+          'DELETE FROM workflow_executions WHERE user_workflow_id = $1',
+          [id]
+        );
+        await client.query('RELEASE SAVEPOINT before_delete_executions');
+        console.log(`🧹 [Database] ${deleteExecutionsResult.rowCount} exécution(s) supprimée(s) pour workflow ${id}`);
+      } catch (execError) {
+        // Rollback au savepoint pour continuer la transaction
+        await client.query('ROLLBACK TO SAVEPOINT before_delete_executions');
+        // Si la table n'existe pas ou s'il n'y a pas d'enregistrements, continuer
+        if (execError.message.includes('does not exist') || execError.code === '42P01') {
+          console.log('ℹ️ [Database] Table workflow_executions n\'existe pas, continuation...');
+        } else {
+          console.warn('⚠️ [Database] Erreur suppression executions (non bloquant):', execError.message);
+        }
+      }
+      
+      // Supprimer le workflow de user_workflows
+      const result = await client.query(
+        'DELETE FROM user_workflows WHERE id = $1 AND user_id = $2 RETURNING *',
+        [id, userId]
+      );
+      
+      await client.query('COMMIT');
+      
+      console.log('✅ [Database] Workflow supprimé:', result.rows.length > 0 ? result.rows[0].id : 'aucun');
+      return result.rows[0];
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('❌ [Database] Erreur lors du rollback:', rollbackError);
+      }
+      console.error('❌ [Database] Erreur suppression workflow:', error);
+      console.error('❌ [Database] Error message:', error.message);
+      console.error('❌ [Database] Error code:', error.code);
+      console.error('❌ [Database] Error detail:', error.detail);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }
 

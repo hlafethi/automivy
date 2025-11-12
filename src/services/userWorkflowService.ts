@@ -208,6 +208,50 @@ class UserWorkflowService {
   }
 
   /**
+   * Planifie un workflow utilisateur avec webhook unique
+   */
+  async scheduleUserWorkflowWithWebhook(
+    userId: string,
+    n8nWorkflowId: string,
+    schedule: string,
+    userWorkflowId: string
+  ): Promise<void> {
+    try {
+      console.log('🔧 [UserWorkflowService] Planification avec webhook unique:', {
+        userId,
+        n8nWorkflowId,
+        schedule,
+        userWorkflowId
+      });
+      
+      const response = await fetch('http://localhost:3004/api/schedule-workflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          userId,
+          n8nWorkflowId,
+          schedule,
+          userWorkflowId // Passer l'ID du workflow utilisateur pour récupérer le webhook unique
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Schedule service error: ${error}`);
+      }
+
+      console.log('✅ [UserWorkflowService] Planification avec webhook unique réussie');
+      
+    } catch (error) {
+      console.error('❌ [UserWorkflowService] Erreur planification avec webhook unique:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Planifie directement un webhook sans passer par n8n
    */
   async scheduleDirectWebhook(webhookUrl: string, schedule: string, userId: string): Promise<void> {
@@ -277,6 +321,7 @@ class UserWorkflowService {
 
   /**
    * Supprime un workflow utilisateur (cascade n8n + BDD)
+   * La suppression de la BDD se fait toujours, même si n8n retourne une erreur
    */
   async deleteUserWorkflow(workflowId: string): Promise<void> {
     try {
@@ -288,25 +333,81 @@ class UserWorkflowService {
         throw new Error('User workflow not found');
       }
 
-      // 2. Supprimer le workflow de n8n
+      // 2. Supprimer le workflow de n8n (ne pas bloquer si erreur 404 - workflow déjà supprimé)
       if (userWorkflow.n8n_workflow_id) {
         console.log('🔧 [UserWorkflowService] Suppression workflow n8n:', userWorkflow.n8n_workflow_id);
-        await n8nService.deleteWorkflow(userWorkflow.n8n_workflow_id);
+        try {
+          await n8nService.deleteWorkflow(userWorkflow.n8n_workflow_id);
+          console.log('✅ [UserWorkflowService] Workflow n8n supprimé');
+        } catch (n8nError: any) {
+          // Si le workflow n'existe plus sur n8n (404), continuer quand même
+          if (n8nError.message?.includes('404') || n8nError.message?.includes('Not Found')) {
+            console.warn('⚠️ [UserWorkflowService] Workflow n8n déjà supprimé ou introuvable (404), continuation...');
+          } else {
+            console.error('❌ [UserWorkflowService] Erreur suppression workflow n8n:', n8nError);
+            // Ne pas bloquer, continuer quand même
+          }
+        }
       }
 
-      // 3. Supprimer le credential de n8n
+      // 3. Supprimer le credential de n8n (ne pas bloquer si erreur)
       if (userWorkflow.n8n_credential_id) {
         console.log('🔧 [UserWorkflowService] Suppression credential n8n:', userWorkflow.n8n_credential_id);
-        await n8nService.deleteCredential(userWorkflow.n8n_credential_id);
+        try {
+          await n8nService.deleteCredential(userWorkflow.n8n_credential_id);
+          console.log('✅ [UserWorkflowService] Credential n8n supprimé');
+        } catch (credError: any) {
+          // Si le credential n'existe plus sur n8n (404), continuer quand même
+          if (credError.message?.includes('404') || credError.message?.includes('Not Found')) {
+            console.warn('⚠️ [UserWorkflowService] Credential n8n déjà supprimé ou introuvable (404), continuation...');
+          } else {
+            console.error('❌ [UserWorkflowService] Erreur suppression credential n8n:', credError);
+            // Ne pas bloquer, continuer quand même
+          }
+        }
       }
 
-      // 4. Supprimer de la BDD
+      // 4. Supprimer de la BDD (TOUJOURS faire, même si n8n a échoué)
+      console.log('🔧 [UserWorkflowService] Suppression de la base de données...');
       await apiClient.deleteUserWorkflow(workflowId);
+      console.log('✅ [UserWorkflowService] Workflow supprimé de la base de données');
       
       console.log('✅ [UserWorkflowService] Workflow utilisateur supprimé avec succès');
 
     } catch (error) {
       console.error('❌ [UserWorkflowService] Erreur suppression workflow:', error);
+      // Si c'est une erreur de BDD, la lancer
+      // Si c'est une erreur n8n, on a déjà géré ça plus haut
+      throw error;
+    }
+  }
+
+  /**
+   * Nettoie les workflows orphelins (supprimés sur n8n mais encore en BDD)
+   */
+  async cleanupOrphanedWorkflows(): Promise<{ cleanedCount: number; errors?: any[] }> {
+    try {
+      console.log('🧹 [UserWorkflowService] Nettoyage des workflows orphelins...');
+      
+      const response = await fetch('http://localhost:3004/api/user-workflows/cleanup-orphaned', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Cleanup service error: ${error}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [UserWorkflowService] Nettoyage terminé:', result);
+      return result;
+      
+    } catch (error) {
+      console.error('❌ [UserWorkflowService] Erreur nettoyage workflows orphelins:', error);
       throw error;
     }
   }

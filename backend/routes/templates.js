@@ -84,22 +84,49 @@ router.put('/:id', async (req, res) => {
     const { name, description, workflowData } = req.body;
     const updates = {};
 
+    console.log('🔧 [Templates] Mise à jour template:', req.params.id);
+    console.log('🔧 [Templates] User:', req.user.email, 'Role:', req.user.role);
+    console.log('🔧 [Templates] Données reçues:', {
+      name: name ? name.substring(0, 50) + '...' : undefined,
+      description: description ? description.substring(0, 50) + '...' : undefined,
+      hasWorkflowData: !!workflowData,
+      workflowDataName: workflowData?.name
+    });
+
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
-    if (workflowData !== undefined) updates.workflow_data = JSON.stringify(workflowData);
+    // Le champ dans la base de données est 'json', pas 'workflow_data'
+    if (workflowData !== undefined) {
+      updates.json = JSON.stringify(workflowData);
+      console.log('🔧 [Templates] WorkflowData JSON stringifié, longueur:', updates.json.length);
+      console.log('🔧 [Templates] Nom du workflow dans workflowData:', workflowData.name);
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'No updates provided' });
     }
 
-    const template = await db.updateTemplate(req.params.id, req.user.id, updates);
+    // Si l'utilisateur est admin, permettre la mise à jour même s'il n'est pas le créateur
+    let template;
+    if (req.user.role === 'admin') {
+      console.log('🔧 [Templates] Utilisateur admin - mise à jour sans vérification created_by');
+      template = await db.updateTemplateAsAdmin(req.params.id, updates);
+    } else {
+      template = await db.updateTemplate(req.params.id, req.user.id, updates);
+    }
+
     if (!template) {
+      console.error('❌ [Templates] Template non trouvé ou non autorisé');
       return res.status(404).json({ error: 'Template not found' });
     }
 
+    console.log('✅ [Templates] Template mis à jour avec succès:', template.name);
+    console.log('✅ [Templates] Nom du workflow dans le JSON sauvegardé:', JSON.parse(template.json || '{}').name);
+    
     res.json(template);
   } catch (error) {
-    console.error('Update template error:', error);
+    console.error('❌ [Templates] Update template error:', error);
+    console.error('❌ [Templates] Stack:', error.stack);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

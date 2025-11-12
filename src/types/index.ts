@@ -40,6 +40,7 @@ export interface UserWorkflow {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  webhook_path?: string; // Chemin du webhook unique pour ce workflow
 }
 
 export interface ApiKey {

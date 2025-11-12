@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { oauthService } from '../services';
 
 export function OAuthCallback() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Completing authentication...');
+  const [message, setMessage] = useState('Finalisation de la connexion...');
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -13,45 +12,78 @@ export function OAuthCallback() {
         const code = params.get('code');
         const state = params.get('state');
         const error = params.get('error');
+        const oauthError = params.get('oauth_error');
+        const oauthSuccess = params.get('oauth_success');
+        const email = params.get('email');
 
-        if (error) {
-          throw new Error(`OAuth error: ${error}`);
+        // Le backend gère déjà le callback et redirige ici avec les paramètres
+        if (oauthError) {
+          throw new Error(decodeURIComponent(oauthError));
         }
 
-        if (!code || !state) {
-          throw new Error('Missing OAuth parameters');
+        if (oauthSuccess) {
+          setStatus('success');
+          setMessage(`Gmail connecté avec succès${email ? ` : ${decodeURIComponent(email)}` : ''} !`);
+          
+          setTimeout(() => {
+            // Envoyer un message à la fenêtre parente si elle existe
+            if (window.opener) {
+              window.opener.postMessage(
+                { type: 'oauth_success', provider: 'gmail', email: email ? decodeURIComponent(email) : null },
+                window.location.origin
+              );
+            }
+            window.close();
+          }, 2000);
+          return;
         }
 
-        setMessage('Exchanging authorization code...');
-        const credential = await oauthService.handleOAuthCallback(code, state);
-
-        setStatus('success');
-        setMessage(`Successfully connected ${credential.provider}!`);
-
-        setTimeout(() => {
-          window.close();
-
-          if (window.opener) {
-            window.opener.postMessage(
-              { type: 'oauth_success', provider: credential.provider },
-              window.location.origin
-            );
+        // Si on a un code et un state, envoyer au backend pour traitement
+        if (code && state) {
+          setMessage('Traitement de l\'autorisation...');
+          
+          try {
+            // Envoyer le code et le state au backend pour traitement
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3004/api'}/oauth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.redirectUrl) {
+              // Le backend a traité avec succès, rediriger vers l'URL fournie
+              window.location.href = data.redirectUrl;
+              return; // La redirection va changer l'URL et déclencher un nouveau rendu
+            } else if (data.redirectUrl) {
+              // Erreur, rediriger vers l'URL d'erreur
+              window.location.href = data.redirectUrl;
+              return;
+            } else {
+              throw new Error(data.error || 'Erreur lors du traitement OAuth');
+            }
+          } catch (fetchError) {
+            console.error('Erreur lors de l\'appel au backend:', fetchError);
+            throw fetchError;
           }
-        }, 2000);
+        } else {
+          throw new Error('Paramètres OAuth manquants');
+        }
       } catch (error) {
         console.error('OAuth callback error:', error);
         setStatus('error');
-        setMessage(error instanceof Error ? error.message : 'Authentication failed');
+        setMessage(error instanceof Error ? error.message : 'Échec de l\'authentification');
 
         setTimeout(() => {
-          window.close();
-
           if (window.opener) {
             window.opener.postMessage(
-              { type: 'oauth_error', error: error instanceof Error ? error.message : 'Unknown error' },
+              { type: 'oauth_error', error: error instanceof Error ? error.message : 'Erreur inconnue' },
               window.location.origin
             );
           }
+          window.close();
         }, 3000);
       }
     };

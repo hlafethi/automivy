@@ -76,6 +76,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('auth_token');
+    authService.logout();
+  };
+
+  // Écouter l'événement d'expiration du token
+  useEffect(() => {
+    const handleTokenExpired = () => {
+      console.log('⚠️ [AuthContext] Token expiré détecté, déconnexion...');
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('auth_token');
+      authService.logout();
+      // Rediriger vers la page de login
+      window.location.href = '/login';
+    };
+
+    window.addEventListener('auth:token-expired', handleTokenExpired);
+
+    return () => {
+      window.removeEventListener('auth:token-expired', handleTokenExpired);
+    };
+  }, []);
+
   const login = async (email: string, password: string) => {
     try {
       console.log('🔍 [AuthContext] Tentative de connexion pour:', email);
@@ -104,13 +130,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       throw error;
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('auth_token');
-    authService.logout();
   };
 
   const value: AuthContextType = {
