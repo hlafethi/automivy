@@ -58,7 +58,7 @@ router.get('/:id', async (req, res) => {
 // Créer un nouveau template
 router.post('/', async (req, res) => {
   try {
-    const { name, description, workflowData } = req.body;
+    const { name, description, workflowData, setup_time, execution_time } = req.body;
 
     if (!name || !workflowData) {
       return res.status(400).json({ error: 'Name and workflow data are required' });
@@ -68,7 +68,9 @@ router.post('/', async (req, res) => {
       req.user.id,
       name,
       description,
-      workflowData
+      workflowData,
+      setup_time,
+      execution_time
     );
 
     res.status(201).json(template);
@@ -81,7 +83,7 @@ router.post('/', async (req, res) => {
 // Mettre à jour un template
 router.put('/:id', async (req, res) => {
   try {
-    const { name, description, workflowData } = req.body;
+    const { name, description, workflowData, setup_time, execution_time, visible } = req.body;
     const updates = {};
 
     console.log('🔧 [Templates] Mise à jour template:', req.params.id);
@@ -90,17 +92,23 @@ router.put('/:id', async (req, res) => {
       name: name ? name.substring(0, 50) + '...' : undefined,
       description: description ? description.substring(0, 50) + '...' : undefined,
       hasWorkflowData: !!workflowData,
-      workflowDataName: workflowData?.name
+      workflowDataName: workflowData?.name,
+      setup_time,
+      execution_time,
+      visible
     });
 
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
+    if (visible !== undefined) updates.visible = visible;
     // Le champ dans la base de données est 'json', pas 'workflow_data'
     if (workflowData !== undefined) {
       updates.json = JSON.stringify(workflowData);
       console.log('🔧 [Templates] WorkflowData JSON stringifié, longueur:', updates.json.length);
       console.log('🔧 [Templates] Nom du workflow dans workflowData:', workflowData.name);
     }
+    if (setup_time !== undefined) updates.setup_time = setup_time;
+    if (execution_time !== undefined) updates.execution_time = execution_time;
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'No updates provided' });
@@ -121,12 +129,31 @@ router.put('/:id', async (req, res) => {
     }
 
     console.log('✅ [Templates] Template mis à jour avec succès:', template.name);
-    console.log('✅ [Templates] Nom du workflow dans le JSON sauvegardé:', JSON.parse(template.json || '{}').name);
+    
+    // Gérer le cas où template.json est déjà un objet ou une string
+    try {
+      const workflowJson = typeof template.json === 'string' 
+        ? JSON.parse(template.json || '{}') 
+        : (template.json || {});
+      console.log('✅ [Templates] Nom du workflow dans le JSON sauvegardé:', workflowJson.name || 'N/A');
+    } catch (parseError) {
+      console.warn('⚠️ [Templates] Impossible de parser le JSON du template:', parseError.message);
+    }
     
     res.json(template);
   } catch (error) {
     console.error('❌ [Templates] Update template error:', error);
+    console.error('❌ [Templates] Error message:', error.message);
     console.error('❌ [Templates] Stack:', error.stack);
+    
+    // Vérifier si l'erreur est liée à des colonnes manquantes
+    if (error.message && error.message.includes('column') && error.message.includes('does not exist')) {
+      console.error('⚠️ [Templates] Colonnes manquantes dans la base de données. Exécutez la migration: node backend/scripts/apply-template-times-migration.js');
+      return res.status(500).json({ 
+        error: 'Database schema mismatch. Please run the migration script: node backend/scripts/apply-template-times-migration.js' 
+      });
+    }
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });

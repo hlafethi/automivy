@@ -54,10 +54,10 @@ class Database {
   }
 
   // Méthodes pour les templates
-  async createTemplate(userId, name, description, workflowData) {
+  async createTemplate(userId, name, description, workflowData, setupTime = null, executionTime = null) {
     const result = await this.query(
-      'INSERT INTO templates (created_by, name, description, json) VALUES ($1, $2, $3, $4) RETURNING *',
-      [userId, name, description, JSON.stringify(workflowData)]
+      'INSERT INTO templates (created_by, name, description, json, setup_time, execution_time) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [userId, name, description, JSON.stringify(workflowData), setupTime, executionTime]
     );
     return result.rows[0];
   }
@@ -384,6 +384,53 @@ class Database {
       [id, userId, active]
     );
     return result.rows[0];
+  }
+
+  // Méthodes pour les credentials de workflow
+  async saveWorkflowCredentials(userWorkflowId, credentials) {
+    // credentials est un tableau d'objets { id, name, type }
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Supprimer les anciens credentials pour ce workflow
+      await client.query(
+        'DELETE FROM workflow_credentials WHERE user_workflow_id = $1',
+        [userWorkflowId]
+      );
+      
+      // Insérer les nouveaux credentials
+      for (const cred of credentials) {
+        await client.query(
+          `INSERT INTO workflow_credentials (user_workflow_id, credential_id, credential_name, credential_type)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (user_workflow_id, credential_id) DO UPDATE
+           SET credential_name = EXCLUDED.credential_name,
+               credential_type = EXCLUDED.credential_type`,
+          [userWorkflowId, cred.id, cred.name || null, cred.type || null]
+        );
+      }
+      
+      await client.query('COMMIT');
+      console.log(`✅ [Database] ${credentials.length} credential(s) enregistré(s) pour workflow ${userWorkflowId}`);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getWorkflowCredentials(userWorkflowId) {
+    const result = await this.query(
+      'SELECT credential_id, credential_name, credential_type FROM workflow_credentials WHERE user_workflow_id = $1',
+      [userWorkflowId]
+    );
+    return result.rows.map(row => ({
+      id: row.credential_id,
+      name: row.credential_name,
+      type: row.credential_type
+    }));
   }
 
   async deleteUserWorkflow(id, userId) {

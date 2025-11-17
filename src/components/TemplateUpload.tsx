@@ -9,6 +9,8 @@ export function TemplateUpload() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [jsonContent, setJsonContent] = useState('');
+  const [setupTime, setSetupTime] = useState<number | ''>('');
+  const [executionTime, setExecutionTime] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -59,11 +61,19 @@ export function TemplateUpload() {
 
     try {
       const json = JSON.parse(jsonContent);
-      await templateService.createTemplate(name, description, json, user.id);
+      await templateService.createTemplate(
+        name,
+        description,
+        json,
+        setupTime ? Number(setupTime) : undefined,
+        executionTime ? Number(executionTime) : undefined
+      );
       setSuccess(true);
       setName('');
       setDescription('');
       setJsonContent('');
+      setSetupTime('');
+      setExecutionTime('');
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to create template');
@@ -99,6 +109,35 @@ export function TemplateUpload() {
           placeholder="Describe what this workflow does..."
           rows={3}
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Temps de paramétrage (minutes)
+          </label>
+          <input
+            type="number"
+            min="0"
+            value={setupTime}
+            onChange={(e) => setSetupTime(e.target.value ? Number(e.target.value) : '')}
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            placeholder="Ex: 5"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Temps d'exécution (minutes)
+          </label>
+          <input
+            type="number"
+            min="0"
+            value={executionTime}
+            onChange={(e) => setExecutionTime(e.target.value ? Number(e.target.value) : '')}
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            placeholder="Ex: 2"
+          />
+        </div>
       </div>
 
       <div>
@@ -150,9 +189,9 @@ export function TemplateUpload() {
       )}
 
       {success && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-800">Template created successfully!</p>
+        <div className="p-4 border rounded-lg flex items-start gap-3" style={{ backgroundColor: '#e0f4f6', borderColor: '#a3dde3' }}>
+          <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#046f78' }} />
+          <p className="text-sm" style={{ color: '#034a52' }}>Template created successfully!</p>
         </div>
       )}
 

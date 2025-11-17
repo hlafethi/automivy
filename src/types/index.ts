@@ -13,6 +13,8 @@ export interface Template {
   workflow_data: any;
   created_at: string;
   updated_at: string;
+  setup_time?: number; // Temps de paramétrage en minutes
+  execution_time?: number; // Temps d'exécution en minutes
 }
 
 export interface Workflow {

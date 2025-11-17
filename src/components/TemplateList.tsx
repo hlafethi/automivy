@@ -108,12 +108,14 @@ export function TemplateList() {
         {templates.map((template) => (
           <div
             key={template.id}
-            className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-green-300"
+            className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200"
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#75ccd5'}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
-                  <FileJson className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)' }}>
+                  <FileJson className="w-6 h-6" style={{ color: '#046f78' }} />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-slate-900 text-lg mb-1">
@@ -152,7 +154,10 @@ export function TemplateList() {
                 </button>
                 <button
                   onClick={() => handleEdit(template)}
-                  className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                  className="p-2 rounded-lg transition"
+                  style={{ color: '#046f78' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e0f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   title="Edit template"
                 >
                   <Edit className="w-4 h-4" />
@@ -161,9 +166,12 @@ export function TemplateList() {
                   onClick={() => handleToggleVisibility(template.id, template.visible)}
                   className={`p-2 rounded-lg transition ${
                     template.visible
-                      ? 'text-green-600 hover:bg-green-50'
+                      ? ''
                       : 'text-slate-400 hover:bg-slate-50'
                   }`}
+                  style={template.visible ? { color: '#046f78' } : {}}
+                  onMouseEnter={template.visible ? (e) => e.currentTarget.style.backgroundColor = '#e0f4f6' : undefined}
+                  onMouseLeave={template.visible ? (e) => e.currentTarget.style.backgroundColor = 'transparent' : undefined}
                   title={template.visible ? 'Hide from users' : 'Show to users'}
                 >
                   {template.visible ? (
@@ -185,7 +193,10 @@ export function TemplateList() {
                   console.log('Deploy button clicked in TemplateList for:', template.name);
                   setDeployTemplate(template);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:shadow-md"
+                className="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:shadow-md"
+                style={{ backgroundColor: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#046f78'}
                 title="Deploy to n8n"
               >
                 <Rocket className="w-5 h-5" />
