@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { FileCode, Loader2 } from 'lucide-react';
+import { FileCode, Loader2, Info } from 'lucide-react';
 import { Template } from '../types';
 import { templateService } from '../services';
 import { useAuth } from '../contexts/AuthContext';
+import { TemplateDetailsModal } from './TemplateDetailsModal';
 
 export function TemplateCatalog() {
   const { user, loading: authLoading } = useAuth();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -76,10 +78,10 @@ export function TemplateCatalog() {
           {templates.map((template) => (
             <div
               key={template.id}
-              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-green-300"
+              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-green-300 relative"
             >
               <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
                   <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
                     <FileCode className="w-6 h-6 text-green-600" />
                   </div>
@@ -90,6 +92,14 @@ export function TemplateCatalog() {
                     </p>
                   </div>
                 </div>
+                <button
+                  onClick={() => setSelectedTemplate(template)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors ml-2 flex-shrink-0"
+                  aria-label="Voir les détails"
+                  title="Voir les détails"
+                >
+                  <Info className="w-5 h-5 text-slate-600" />
+                </button>
               </div>
 
               <div className="mb-4">
@@ -98,14 +108,43 @@ export function TemplateCatalog() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <div className="text-xs text-slate-500">
                   Created: {new Date(template.created_at).toLocaleDateString()}
                 </div>
               </div>
+
+              {(template.setup_time !== null && template.setup_time !== undefined) ||
+              (template.execution_time !== null && template.execution_time !== undefined) ? (
+                <div className="flex gap-3 pt-3 border-t border-slate-200">
+                  {template.setup_time !== null && template.setup_time !== undefined && (
+                    <div className="flex-1 bg-slate-50 rounded-lg p-2">
+                      <p className="text-xs text-slate-600 mb-1">Paramétrage</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {template.setup_time} min
+                      </p>
+                    </div>
+                  )}
+                  {template.execution_time !== null && template.execution_time !== undefined && (
+                    <div className="flex-1 bg-slate-50 rounded-lg p-2">
+                      <p className="text-xs text-slate-600 mb-1">Exécution</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {template.execution_time} min
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
+      )}
+
+      {selectedTemplate && (
+        <TemplateDetailsModal
+          template={selectedTemplate}
+          onClose={() => setSelectedTemplate(null)}
+        />
       )}
     </div>
   );

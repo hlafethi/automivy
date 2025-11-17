@@ -10,8 +10,8 @@ export class TemplateService {
     return apiClient.getTemplate(id);
   }
 
-  async createTemplate(name: string, description: string, workflowData: any): Promise<Template> {
-    return apiClient.createTemplate(name, description, workflowData);
+  async createTemplate(name: string, description: string, workflowData: any, setupTime?: number, executionTime?: number): Promise<Template> {
+    return apiClient.createTemplate(name, description, workflowData, setupTime, executionTime);
   }
 
   async updateTemplate(id: string, updates: Partial<Template>): Promise<Template> {

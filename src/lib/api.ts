@@ -123,10 +123,10 @@ class ApiClient {
     return this.request(`/templates/${id}`);
   }
 
-  async createTemplate(name: string, description: string, workflowData: any) {
+  async createTemplate(name: string, description: string, workflowData: any, setupTime?: number, executionTime?: number) {
     return this.request('/templates', {
       method: 'POST',
-      body: JSON.stringify({ name, description, workflowData }),
+      body: JSON.stringify({ name, description, workflowData, setup_time: setupTime, execution_time: executionTime }),
     });
   }
 
