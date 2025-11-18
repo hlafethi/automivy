@@ -1,0 +1,753 @@
+{
+  "name": "CV Screening with OpenRouter AI",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "Initializes storage for applicant data. Can use Google Sheets, Airtable, Notion, PostgreSQL, or Supabase.",
+        "height": 272,
+        "width": 320,
+        "color": 7
+      },
+      "id": "821d52da-591f-44db-b218-ee3974855a05",
+      "name": "Sticky Note - Create Storage",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [832, 560],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Adds the applicant's name and email immediately after form submission to log the candidate even if the workflow fails.",
+        "height": 288,
+        "width": 320,
+        "color": 7
+      },
+      "id": "72c7af0e-d8f8-4498-a849-b95c323a6cd6",
+      "name": "Sticky Note - Log Candidate",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1520, 208],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "This uses **OpenRouter** with a vision-capable model to extract text from the candidate's CV (PDF).\n\n**Models supported:**\n- google/gemini-2.0-flash-exp:free (recommended for OCR)\n- openai/gpt-4o (high quality)\n- anthropic/claude-3.5-sonnet (premium)\n\n**Note:** The OpenRouter API key will be injected automatically by AUTOMIVY.",
+        "height": 320,
+        "width": 300,
+        "color": 7
+      },
+      "id": "b8076a35-fb6e-481d-9d92-3a95e9c3c732",
+      "name": "Sticky Note - Extract Text",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1536, 528],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Adapt the `job requirements` in the prompt to **your position & criteria**. The job requirements are passed from AUTOMIVY via the webhook.",
+        "height": 248,
+        "width": 320,
+        "color": 6
+      },
+      "id": "f7d1f44f-2d84-4a97-adad-2923f6ba1736",
+      "name": "Sticky Note - LLM Chain",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1776, 560],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Ensures the AI's response is perfectly structured as JSON (e.g., `qualificationRate`, `explanation`), making the data reliable and easy to use.",
+        "height": 256,
+        "width": 368,
+        "color": 7
+      },
+      "id": "a1e153ae-1a1b-4a4f-b901-b999c31b4059",
+      "name": "Sticky Note - Output Parser",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1920, 864],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Check your storage! You now have the analysis of the candidate.",
+        "height": 256,
+        "width": 272,
+        "color": 7
+      },
+      "id": "641d597c-400b-4d6c-a21c-5fc28099c9be",
+      "name": "Sticky Note - Update Row",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [2112, 560],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Automated CV Scanner\n\nThis workflow automates your hiring pipeline:\n1.  **Receives** applications via webhook from AUTOMIVY (fullName, email, cvUrl, storageType, jobRequirements).\n2.  **Extracts** text from the CV (PDF) using OpenRouter vision models.\n3.  **Analyzes** the CV with AI against your job description using OpenRouter.\n4.  **Stores** the candidate's score and detailed explanation in your chosen storage (Google Sheets, Airtable, Notion, PostgreSQL, etc.).",
+        "height": 592,
+        "width": 480
+      },
+      "id": "704e43dd-ee85-4514-8a41-cb3daaf71eee",
+      "name": "Sticky Note - Workflow Goal",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [368, 240],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cv-screening",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-cv",
+      "name": "Webhook Trigger (AUTOMIVY)",
+      "type": "n8n-nodes-base.webhook",
+      "position": [1312, 656],
+      "webhookId": "cv-screening-webhook-automivy",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {},
+      "id": "8af8707e-de1b-4687-8d7a-c853dfec2b31",
+      "name": "Start Here",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [592, 656],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "HTTP-Referer",
+              "value": "https://automivy.com"
+            },
+            {
+              "name": "X-Title",
+              "value": "Automivy CV Screening"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/gemini-2.0-flash-exp:free\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Extract all text from this PDF CV. Return only the extracted text, no analysis, no formatting, just the raw text content.\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"={{ $json.cvUrl || $json.cv_url }}\"\n          }\n        }\n      ]\n    }\n  ],\n  \"temperature\": 0.1\n}",
+        "options": {}
+      },
+      "id": "extract-cv-text-openrouter",
+      "name": "Extract CV Text (OpenRouter)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1600, 656],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ADMIN_OPENROUTER_CREDENTIAL_ID",
+          "name": "ADMIN_OPENROUTER_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse OpenRouter response and extract text\nconst openRouterResponse = $input.item.json;\nconst extractedText = openRouterResponse.choices?.[0]?.message?.content || '';\nconst webhookData = $('Webhook Trigger (AUTOMIVY)').item.json;\n\nreturn {\n  json: {\n    extractedText: extractedText.trim(),\n    fullName: webhookData.fullName || webhookData['Full Name'] || '',\n    email: webhookData.email || webhookData.Email || '',\n    cvUrl: webhookData.cvUrl || webhookData.cv_url || '',\n    storageType: webhookData.storageType || webhookData.storage_type || 'google_sheets',\n    jobRequirements: webhookData.jobRequirements || webhookData.job_requirements || ''\n  }\n};"
+      },
+      "id": "parse-extracted-text",
+      "name": "Parse Extracted Text",
+      "type": "n8n-nodes-base.code",
+      "position": [1728, 656],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "CVs"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0"
+        },
+        "columns": {
+          "value": {
+            "Email": "={{ $json.email }}",
+            "FullName": "={{ $json.fullName }}"
+          },
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "log-candidate-google-sheets",
+      "name": "Log Candidate (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [1616, 320],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2": {
+          "id": "USER_GOOGLE_CREDENTIAL_ID",
+          "name": "USER_GOOGLE_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "CVs Base"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "CVs Table"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $json.email }}",
+            "FullName": "={{ $json.fullName }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-candidate-airtable",
+      "name": "Log Candidate (Airtable)",
+      "type": "n8n-nodes-base.airtable",
+      "position": [1616, 400],
+      "typeVersion": 2,
+      "credentials": {
+        "airtableApi": {
+          "id": "USER_AIRTABLE_CREDENTIAL_ID",
+          "name": "USER_AIRTABLE_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "CVs Database"
+        },
+        "pageId": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "CVs Page"
+        },
+        "properties": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": {
+              "type": "title",
+              "title": "={{ $json.email }}"
+            },
+            "FullName": {
+              "type": "rich_text",
+              "rich_text": "={{ $json.fullName }}"
+            }
+          }
+        },
+        "options": {}
+      },
+      "id": "log-candidate-notion",
+      "name": "Log Candidate (Notion)",
+      "type": "n8n-nodes-base.notion",
+      "position": [1616, 480],
+      "typeVersion": 2,
+      "credentials": {
+        "notionApi": {
+          "id": "USER_NOTION_CREDENTIAL_ID",
+          "name": "USER_NOTION_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO cv_screening_results (email, full_name, created_at) VALUES ('{{ $json.email }}', '{{ $json.fullName }}', NOW()) RETURNING id;",
+        "options": {}
+      },
+      "id": "log-candidate-postgresql",
+      "name": "Log Candidate (PostgreSQL)",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1616, 560],
+      "typeVersion": 2.4,
+      "credentials": {
+        "postgres": {
+          "id": "USER_POSTGRES_CREDENTIAL_ID",
+          "name": "USER_POSTGRES_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "value1": "={{ $json.storageType }}",
+        "rules": {
+          "values": [
+            {
+              "value2": "google_sheets"
+            },
+            {
+              "value2": "airtable"
+            },
+            {
+              "value2": "notion"
+            },
+            {
+              "value2": "postgresql"
+            }
+          ]
+        },
+        "fallbackOutput": 0,
+        "options": {}
+      },
+      "id": "switch-storage-type",
+      "name": "Switch Storage Type",
+      "type": "n8n-nodes-base.switch",
+      "position": [1500, 320],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "HTTP-Referer",
+              "value": "https://automivy.com"
+            },
+            {
+              "name": "X-Title",
+              "value": "Automivy CV Screening"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen/qwen2.5-72b-instruct\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are the AI Hiring Assistant, a specialized AI agent designed to meticulously analyze and evaluate candidate CVs against specific job requirements. Your personality is professional, objective, and detail-oriented. You provide clear, evidence-based assessments to support hiring decisions.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"=<goal>\\nYour primary goal is to evaluate a candidate's CV against the provided job requirements. You must determine if the prospect is qualified and produce a raw JSON output containing a qualification score and a detailed, evidence-based explanation for that score.\\n</goal>\\n\\n<context>\\n<job_requirements>\\n{{ $json.jobRequirements || 'Senior Frontend Developer position with 5+ years experience, React, TypeScript, modern CSS, API integration, testing frameworks.' }}\\n</job_requirements>\\n\\n<cv_text>\\n{{ $json.extractedText }}\\n</cv_text>\\n\\n<qualification>\\n# How I Evaluate\\nI operate based on a strict set of evaluation criteria provided for a specific role. My analysis is broken down into two main categories: \\\"Core Requirements\\\" (which are non-negotiable) and \\\"Preferred Qualifications\\\" (which act as bonuses). My final output is a qualification score and a detailed justification, citing specific evidence from the candidate's CV.\\n\\n# Evaluation Logic\\n- The `qualificationRate` is a score from 0.0 to 1.0.\\n- **Core Requirements** are critical. A candidate missing one or more core requirements cannot score above 0.6. A candidate meeting all core requirements should score at least 0.75.\\n- **Preferred Qualifications** are bonuses. Each met preferred qualification adds to the score, pushing it closer to 1.0.\\n- The `explanation` must be a detailed, point-by-point analysis, justifying the score by citing evidence (or lack thereof) from the CV for each requirement.\\n</qualification>\\n</context>\\n\\n<output_format>\\nYou must produce a single, raw JSON object. Do not add any conversational text, greetings, or explanations outside of the JSON structure. The JSON object must strictly adhere to the following format:\\n```json\\n{\\n  \\\"explanation\\\": \\\"<string>\\\",\\n  \\\"qualificationRate\\\": <number>\\n}\\n```\\n</output_format>\\n</instructions>\"\n    }\n  ],\n  \"temperature\": 0.4,\n  \"response_format\": {\n    \"type\": \"json_object\"\n  }\n}",
+        "options": {}
+      },
+      "id": "ai-qualification-openrouter",
+      "name": "AI Qualification (OpenRouter)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1824, 656],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ADMIN_OPENROUTER_CREDENTIAL_ID",
+          "name": "ADMIN_OPENROUTER_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse OpenRouter response and extract qualification data\nconst openRouterResponse = $input.item.json;\nconst content = openRouterResponse.choices?.[0]?.message?.content || '{}';\nlet analysis;\n\ntry {\n  analysis = typeof content === 'string' ? JSON.parse(content) : content;\n} catch (e) {\n  // If parsing fails, try to extract JSON from text\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    analysis = JSON.parse(jsonMatch[0]);\n  } else {\n    analysis = { qualificationRate: 0, explanation: 'Failed to parse AI response: ' + e.message };\n  }\n}\n\nconst parsedData = $('Parse Extracted Text').item.json;\n\nreturn {\n  json: {\n    qualificationRate: analysis.qualificationRate || 0,\n    explanation: analysis.explanation || '',\n    email: parsedData.email,\n    fullName: parsedData.fullName,\n    storageType: parsedData.storageType\n  }\n};"
+      },
+      "id": "parse-qualification-result",
+      "name": "Parse Qualification Result",
+      "type": "n8n-nodes-base.code",
+      "position": [1952, 656],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "CVs"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0"
+        },
+        "columns": {
+          "value": {
+            "Email": "={{ $json.email }}",
+            "QualificationRate": "={{ $json.qualificationRate }}",
+            "QualificationDescription": "={{ $json.explanation }}"
+          },
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["Email"],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "add-cv-analysis-google-sheets",
+      "name": "Add CV Analysis (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [2176, 656],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2": {
+          "id": "USER_GOOGLE_CREDENTIAL_ID",
+          "name": "USER_GOOGLE_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "CVs Base"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "CVs Table"
+        },
+        "id": "={{ $('Log Candidate (Airtable)').item.json.id }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "QualificationRate": "={{ $json.qualificationRate }}",
+            "QualificationDescription": "={{ $json.explanation }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "add-cv-analysis-airtable",
+      "name": "Add CV Analysis (Airtable)",
+      "type": "n8n-nodes-base.airtable",
+      "position": [2176, 720],
+      "typeVersion": 2,
+      "credentials": {
+        "airtableApi": {
+          "id": "USER_AIRTABLE_CREDENTIAL_ID",
+          "name": "USER_AIRTABLE_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "pageId": "={{ $('Log Candidate (Notion)').item.json.id }}",
+        "properties": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "QualificationRate": {
+              "type": "number",
+              "number": "={{ $json.qualificationRate }}"
+            },
+            "QualificationDescription": {
+              "type": "rich_text",
+              "rich_text": "={{ $json.explanation }}"
+            }
+          }
+        },
+        "options": {}
+      },
+      "id": "add-cv-analysis-notion",
+      "name": "Add CV Analysis (Notion)",
+      "type": "n8n-nodes-base.notion",
+      "position": [2176, 784],
+      "typeVersion": 2,
+      "credentials": {
+        "notionApi": {
+          "id": "USER_NOTION_CREDENTIAL_ID",
+          "name": "USER_NOTION_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE cv_screening_results SET qualification_rate = {{ $json.qualificationRate }}, qualification_description = '{{ $json.explanation }}', updated_at = NOW() WHERE email = '{{ $json.email }}';",
+        "options": {}
+      },
+      "id": "add-cv-analysis-postgresql",
+      "name": "Add CV Analysis (PostgreSQL)",
+      "type": "n8n-nodes-base.postgres",
+      "position": [2176, 848],
+      "typeVersion": 2.4,
+      "credentials": {
+        "postgres": {
+          "id": "USER_POSTGRES_CREDENTIAL_ID",
+          "name": "USER_POSTGRES_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "value1": "={{ $json.storageType }}",
+        "rules": {
+          "values": [
+            {
+              "value2": "google_sheets"
+            },
+            {
+              "value2": "airtable"
+            },
+            {
+              "value2": "notion"
+            },
+            {
+              "value2": "postgresql"
+            }
+          ]
+        },
+        "fallbackOutput": 0,
+        "options": {}
+      },
+      "id": "switch-storage-type-update",
+      "name": "Switch Storage Type (Update)",
+      "type": "n8n-nodes-base.switch",
+      "position": [2064, 656],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "resource": "spreadsheet",
+        "title": "CVs",
+        "sheetsUi": {
+          "sheetValues": [
+            {
+              "title": "FullName"
+            },
+            {
+              "title": "Email"
+            },
+            {
+              "title": "QualificationRate"
+            },
+            {
+              "title": "QualificationDescription"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-cvs-spreadsheet",
+      "name": "Create 'CVs' Spreadsheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [912, 656],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2": {
+          "id": "USER_GOOGLE_CREDENTIAL_ID",
+          "name": "USER_GOOGLE_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"CV analysis completed successfully\",\n  \"qualificationRate\": {{ $json.qualificationRate }},\n  \"email\": \"{{ $json.email }}\",\n  \"fullName\": \"{{ $json.fullName }}\"\n}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [2400, 656],
+      "typeVersion": 1.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start Here": {
+      "main": [
+        [
+          {
+            "node": "Create 'CVs' Spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger (AUTOMIVY)": {
+      "main": [
+        [
+          {
+            "node": "Extract CV Text (OpenRouter)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch Storage Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CV Text (OpenRouter)": {
+      "main": [
+        [
+          {
+            "node": "Parse Extracted Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Extracted Text": {
+      "main": [
+        [
+          {
+            "node": "AI Qualification (OpenRouter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Storage Type": {
+      "main": [
+        [
+          {
+            "node": "Log Candidate (Google Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Candidate (Airtable)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Candidate (Notion)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Candidate (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Qualification (OpenRouter)": {
+      "main": [
+        [
+          {
+            "node": "Parse Qualification Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Qualification Result": {
+      "main": [
+        [
+          {
+            "node": "Switch Storage Type (Update)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Storage Type (Update)": {
+      "main": [
+        [
+          {
+            "node": "Add CV Analysis (Google Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add CV Analysis (Airtable)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add CV Analysis (Notion)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add CV Analysis (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add CV Analysis (Google Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add CV Analysis (Airtable)": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add CV Analysis (Notion)": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add CV Analysis (PostgreSQL)": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cv-screening-v1",
+  "id": "cv-screening-workflow",
+  "tags": []
+}
