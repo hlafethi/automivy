@@ -24,7 +24,7 @@ export function RichTextEditor({ value, onChange, placeholder = '', height = 300
 
   const formats = [
     'header', 'bold', 'italic', 'underline', 'strike',
-    'color', 'background', 'list', 'bullet', 'align',
+    'color', 'background', 'list', 'align',
     'link', 'blockquote'
   ];
 

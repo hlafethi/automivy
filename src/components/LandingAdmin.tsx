@@ -196,7 +196,7 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
   const sections = [
     { id: 'hero', name: 'Hero Section', icon: Globe, color: 'bg-blue-500' },
     { id: 'video_demo', name: 'Video Demo', icon: PlayCircle, color: 'bg-purple-500' },
-    { id: 'features', name: 'Features', icon: FileText, color: 'bg-green-500' },
+    { id: 'features', name: 'Features', icon: FileText, color: 'bg-teal-600' },
     { id: 'pricing', name: 'Pricing', icon: DollarSign, color: 'bg-yellow-500' },
     { id: 'about', name: 'About', icon: Users, color: 'bg-purple-500' },
     { id: 'contact', name: 'Contact', icon: Mail, color: 'bg-red-500' },
@@ -329,7 +329,7 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#046f78', borderTopColor: 'transparent' }}></div>
           <p className="text-slate-600">Chargement du contenu...</p>
         </div>
       </div>
@@ -364,7 +364,10 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
               <button
                 onClick={handleSaveSection}
                 disabled={saving || Object.keys(tempContent).length === 0}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#046f78'}
               >
                 <Save className="w-4 h-4 mr-2" />
                 {saving ? 'Saving...' : 'Save Changes'}
@@ -393,9 +396,14 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                       onClick={() => setActiveSection(section.id)}
                       className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
                         isActive
-                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          ? 'border'
                           : 'text-slate-600 hover:bg-slate-50'
                       }`}
+                      style={isActive ? {
+                        backgroundColor: '#e0f4f6',
+                        color: '#046f78',
+                        borderColor: '#75ccd5'
+                      } : {}}
                     >
                       <div className="flex items-center">
                         <div className={`w-8 h-8 rounded-lg ${section.color} flex items-center justify-center mr-3`}>
@@ -461,7 +469,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
                                     rows={4}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 ) : (
@@ -469,7 +488,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 )}
@@ -501,9 +531,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     });
                                     handleFieldChange(`feature_${featureNumber}_enabled`, newValue);
                                   }}
-                                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                    featureEnabled ? 'bg-green-600' : 'bg-gray-200'
-                                  }`}
+                                  className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                                  style={{ backgroundColor: featureEnabled ? '#046f78' : '#e2e8f0' }}
                                 >
                                   <span
                                     className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
@@ -526,7 +555,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   type="text"
                                   value={tempContent[`feature_${featureNumber}_title`] !== undefined ? tempContent[`feature_${featureNumber}_title`] : featureContent[`feature_${featureNumber}_title`] || ''}
                                   onChange={(e) => handleFieldChange(`feature_${featureNumber}_title`, e.target.value)}
-                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                   placeholder="Titre de la feature"
                                 />
                               </div>
@@ -539,7 +579,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   value={tempContent[`feature_${featureNumber}_description`] !== undefined ? tempContent[`feature_${featureNumber}_description`] : featureContent[`feature_${featureNumber}_description`] || ''}
                                   onChange={(e) => handleFieldChange(`feature_${featureNumber}_description`, e.target.value)}
                                   rows={3}
-                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                   placeholder="Description de la feature"
                                 />
                               </div>
@@ -592,9 +643,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   <div className="flex items-center space-x-3">
                                     <button
                                       onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
-                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
-                                      }`}
+                                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                      style={{ backgroundColor: value === 'true' ? '#046f78' : '#e2e8f0' }}
                                     >
                                       <span
                                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -611,7 +661,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
                                     rows={4}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 ) : (
@@ -619,7 +680,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 )}
@@ -643,9 +715,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() => handleFieldChange(`video_${videoNumber}_enabled`, videoEnabled ? 'false' : 'true')}
-                                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                    videoEnabled ? 'bg-green-600' : 'bg-gray-200'
-                                  }`}
+                                  className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                                  style={{ backgroundColor: videoEnabled ? '#046f78' : '#e2e8f0' }}
                                 >
                                   <span
                                     className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
@@ -668,7 +739,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   type="text"
                                   value={tempContent[`video_${videoNumber}_title`] !== undefined ? tempContent[`video_${videoNumber}_title`] : videoContent[`video_${videoNumber}_title`] || ''}
                                   onChange={(e) => handleFieldChange(`video_${videoNumber}_title`, e.target.value)}
-                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                  style={{ 
+                                    '--tw-ring-color': '#046f78',
+                                  } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                  onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = '#046f78';
+                                    e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = '#cbd5e1';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                  }}
                                   placeholder="Titre de la vidéo..."
                                 />
                               </div>
@@ -681,7 +763,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   type="text"
                                   value={tempContent[`video_${videoNumber}_button_text`] !== undefined ? tempContent[`video_${videoNumber}_button_text`] : videoContent[`video_${videoNumber}_button_text`] || ''}
                                   onChange={(e) => handleFieldChange(`video_${videoNumber}_button_text`, e.target.value)}
-                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                  style={{ 
+                                    '--tw-ring-color': '#046f78',
+                                  } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                  onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = '#046f78';
+                                    e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = '#cbd5e1';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                  }}
                                   placeholder="Texte du bouton..."
                                 />
                               </div>
@@ -694,7 +787,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   value={tempContent[`video_${videoNumber}_description`] !== undefined ? tempContent[`video_${videoNumber}_description`] : videoContent[`video_${videoNumber}_description`] || ''}
                                   onChange={(e) => handleFieldChange(`video_${videoNumber}_description`, e.target.value)}
                                   rows={2}
-                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                  style={{ 
+                                    '--tw-ring-color': '#046f78',
+                                  } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                  onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = '#046f78';
+                                    e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = '#cbd5e1';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                  }}
                                   placeholder="Description de la vidéo..."
                                 />
                               </div>
@@ -707,7 +811,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   type="text"
                                   value={tempContent[`video_${videoNumber}_button_link`] !== undefined ? tempContent[`video_${videoNumber}_button_link`] : videoContent[`video_${videoNumber}_button_link`] || ''}
                                   onChange={(e) => handleFieldChange(`video_${videoNumber}_button_link`, e.target.value)}
-                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                  className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                  style={{ 
+                                    '--tw-ring-color': '#046f78',
+                                  } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                  onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = '#046f78';
+                                    e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = '#cbd5e1';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                  }}
                                   placeholder="/demo"
                                 />
                               </div>
@@ -754,9 +869,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   <div className="flex items-center space-x-3">
                                     <button
                                       onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
-                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
-                                      }`}
+                                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                      style={{ backgroundColor: value === 'true' ? '#046f78' : '#e2e8f0' }}
                                     >
                                       <span
                                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -773,7 +887,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
                                     rows={4}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 ) : (
@@ -781,7 +906,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 )}
@@ -810,7 +946,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[`plan_${planNumber}_name`] !== undefined ? tempContent[`plan_${planNumber}_name`] : planContent[`plan_${planNumber}_name`] || ''}
                                     onChange={(e) => handleFieldChange(`plan_${planNumber}_name`, e.target.value)}
-                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Plan ${planNumber}`}
                                   />
                                 </div>
@@ -823,7 +970,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[`plan_${planNumber}_price`] !== undefined ? tempContent[`plan_${planNumber}_price`] : planContent[`plan_${planNumber}_price`] || ''}
                                     onChange={(e) => handleFieldChange(`plan_${planNumber}_price`, e.target.value)}
-                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder="$29"
                                   />
                                 </div>
@@ -836,7 +994,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[`plan_${planNumber}_period`] !== undefined ? tempContent[`plan_${planNumber}_period`] : planContent[`plan_${planNumber}_period`] || ''}
                                     onChange={(e) => handleFieldChange(`plan_${planNumber}_period`, e.target.value)}
-                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder="/mois"
                                   />
                                 </div>
@@ -849,7 +1018,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     value={tempContent[`plan_${planNumber}_description`] !== undefined ? tempContent[`plan_${planNumber}_description`] : planContent[`plan_${planNumber}_description`] || ''}
                                     onChange={(e) => handleFieldChange(`plan_${planNumber}_description`, e.target.value)}
                                     rows={2}
-                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder="Description du plan..."
                                   />
                                 </div>
@@ -878,7 +1058,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                       }
                                     }}
                                     rows={4}
-                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
                                   />
                                 </div>
@@ -913,9 +1104,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   <div className="flex items-center space-x-3">
                                     <button
                                       onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
-                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
-                                      }`}
+                                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                      style={{ backgroundColor: value === 'true' ? '#046f78' : '#e2e8f0' }}
                                     >
                                       <span
                                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -932,7 +1122,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
                                     rows={4}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 ) : (
@@ -940,7 +1141,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 )}
@@ -975,9 +1187,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   <div className="flex items-center space-x-3">
                                     <button
                                       onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
-                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
-                                      }`}
+                                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                      style={{ backgroundColor: value === 'true' ? '#046f78' : '#e2e8f0' }}
                                     >
                                       <span
                                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -994,7 +1205,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
                                     rows={4}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 ) : (
@@ -1002,7 +1224,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 )}
@@ -1057,9 +1290,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   <div className="flex items-center space-x-3">
                                     <button
                                       onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
-                                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        value === 'true' ? 'bg-green-600' : 'bg-gray-200'
-                                      }`}
+                                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                      style={{ backgroundColor: value === 'true' ? '#046f78' : '#e2e8f0' }}
                                     >
                                       <span
                                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -1076,7 +1308,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
                                     rows={4}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 ) : (
@@ -1084,7 +1327,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                     type="text"
                                     value={tempContent[field] !== undefined ? tempContent[field] : value}
                                     onChange={(e) => handleFieldChange(field, e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                    style={{ 
+                                      '--tw-ring-color': '#046f78',
+                                    } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                    onFocus={(e) => {
+                                      e.currentTarget.style.borderColor = '#046f78';
+                                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.currentTarget.style.borderColor = '#cbd5e1';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                     placeholder={`Enter ${label.toLowerCase()}...`}
                                   />
                                 )}
@@ -1111,7 +1365,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   type="text"
                                   value={tempContent[`${linkType}_text`] !== undefined ? tempContent[`${linkType}_text`] : (content.footer?.[`${linkType}_text`] || '')}
                                   onChange={(e) => handleFieldChange(`${linkType}_text`, e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                   placeholder={`Texte pour ${linkType}...`}
                                 />
                               </div>
@@ -1123,7 +1388,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                   type="text"
                                   value={tempContent[`${linkType}_link`] !== undefined ? tempContent[`${linkType}_link`] : (content.footer?.[`${linkType}_link`] || '')}
                                   onChange={(e) => handleFieldChange(`${linkType}_link`, e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                   placeholder={`URL pour ${linkType}...`}
                                 />
                               </div>
@@ -1140,8 +1416,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                       {/* Page Support */}
                       <div className="bg-white border border-slate-200 rounded-lg p-6">
                         <div className="flex items-center mb-4">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                            <span className="text-green-600 font-semibold">S</span>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3" style={{ backgroundColor: '#e0f4f6' }}>
+                            <span className="font-semibold" style={{ color: '#046f78' }}>S</span>
                           </div>
                           <h4 className="text-lg font-semibold text-slate-900">Page Support</h4>
                         </div>
@@ -1155,7 +1431,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="text"
                                 value={tempContent.support_title !== undefined ? tempContent.support_title : (content.footer?.support_title || '')}
                                 onChange={(e) => handleFieldChange('support_title', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="Titre de la page support..."
                               />
                             </div>
@@ -1167,7 +1454,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="text"
                                 value={tempContent.support_subtitle !== undefined ? tempContent.support_subtitle : (content.footer?.support_subtitle || '')}
                                 onChange={(e) => handleFieldChange('support_subtitle', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="Sous-titre de la page support..."
                               />
                             </div>
@@ -1179,7 +1477,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="email"
                                 value={tempContent.support_email !== undefined ? tempContent.support_email : (content.footer?.support_email || '')}
                                 onChange={(e) => handleFieldChange('support_email', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="support@example.com"
                               />
                             </div>
@@ -1191,7 +1500,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="tel"
                                 value={tempContent.support_phone !== undefined ? tempContent.support_phone : (content.footer?.support_phone || '')}
                                 onChange={(e) => handleFieldChange('support_phone', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="+33 1 23 45 67 89"
                               />
                             </div>
@@ -1203,7 +1523,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="text"
                                 value={tempContent.support_chat_text !== undefined ? tempContent.support_chat_text : (content.footer?.support_chat_text || '')}
                                 onChange={(e) => handleFieldChange('support_chat_text', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="Démarrer le chat"
                               />
                             </div>
@@ -1265,7 +1596,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="text"
                                 value={tempContent.privacy_title !== undefined ? tempContent.privacy_title : (content.footer?.privacy_title || '')}
                                 onChange={(e) => handleFieldChange('privacy_title', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="Titre de la page privacy..."
                               />
                             </div>
@@ -1277,7 +1619,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="text"
                                 value={tempContent.privacy_subtitle !== undefined ? tempContent.privacy_subtitle : (content.footer?.privacy_subtitle || '')}
                                 onChange={(e) => handleFieldChange('privacy_subtitle', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="Sous-titre de la page privacy..."
                               />
                             </div>
@@ -1328,7 +1681,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="text"
                                 value={tempContent.terms_title !== undefined ? tempContent.terms_title : (content.footer?.terms_title || '')}
                                 onChange={(e) => handleFieldChange('terms_title', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="Titre de la page terms..."
                               />
                             </div>
@@ -1340,7 +1704,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="text"
                                 value={tempContent.terms_subtitle !== undefined ? tempContent.terms_subtitle : (content.footer?.terms_subtitle || '')}
                                 onChange={(e) => handleFieldChange('terms_subtitle', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder="Sous-titre de la page terms..."
                               />
                             </div>
@@ -1381,9 +1756,28 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                   </div>
                 ) : activeSection === 'hero' ? (
                   <div className="space-y-6">
+                    {/* Section Logo - Mise en avant */}
+                    <div className="bg-slate-50 rounded-lg p-6 border-2 border-dashed" style={{ borderColor: '#75ccd5' }}>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-4">Logo</h3>
+                      <div className="max-w-md">
+                        {getSectionFields(activeSection)
+                          .filter(({ field }) => field === 'logo_image')
+                          .map(({ field, value, label }) => (
+                            <div key={field}>
+                              <MediaField
+                                label={label}
+                                value={tempContent[field] !== undefined ? tempContent[field] : value}
+                                onChange={(newValue) => handleFieldChange(field, newValue)}
+                                type="image"
+                              />
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
                     {/* Champs texte en 2 colonnes */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {getSectionFields(activeSection).filter(({ isMedia }) => !isMedia).map(({ field, value, label }) => (
+                      {getSectionFields(activeSection).filter(({ isMedia, field }) => !isMedia && field !== 'logo_image').map(({ field, value, label }) => (
                         <div key={field} className="space-y-2">
                           <label className="block text-sm font-medium text-slate-700">
                             {label}
@@ -1392,9 +1786,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                             <div className="flex items-center space-x-3">
                               <button
                                 onClick={() => handleFieldChange(field, value === 'image' ? 'video' : 'image')}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                  value === 'video' ? 'bg-green-600' : 'bg-gray-200'
-                                }`}
+                                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                style={{ backgroundColor: value === 'video' ? '#046f78' : '#e2e8f0' }}
                               >
                                 <span
                                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -1411,7 +1804,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                               type="text"
                               value={tempContent[field] !== undefined ? tempContent[field] : value}
                               onChange={(e) => handleFieldChange(field, e.target.value)}
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                              style={{ 
+                                '--tw-ring-color': '#046f78',
+                              } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                              onFocus={(e) => {
+                                e.currentTarget.style.borderColor = '#046f78';
+                                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                              }}
+                              onBlur={(e) => {
+                                e.currentTarget.style.borderColor = '#cbd5e1';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
                               placeholder={`Enter ${label.toLowerCase()}...`}
                             />
                           )}
@@ -1419,9 +1823,9 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                       ))}
                     </div>
                     
-                    {/* Médias en 3 colonnes */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {getSectionFields(activeSection).filter(({ isMedia }) => isMedia).map(({ field, value, label }) => (
+                    {/* Médias (Image de fond et Vidéo) en 2 colonnes */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {getSectionFields(activeSection).filter(({ isMedia, field }) => isMedia && field !== 'logo_image').map(({ field, value, label }) => (
                         <div key={field} className="bg-slate-50 rounded-lg p-4">
                           <MediaField
                             label={label}
@@ -1453,9 +1857,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                               <div className="flex items-center space-x-3">
                                 <button
                                   onClick={() => handleFieldChange(field, value === 'true' ? 'false' : 'true')}
-                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                    value === 'true' ? 'bg-green-600' : 'bg-gray-200'
-                                  }`}
+                                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                  style={{ backgroundColor: value === 'true' ? '#046f78' : '#e2e8f0' }}
                                 >
                                   <span
                                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -1471,9 +1874,8 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                               <div className="flex items-center space-x-3">
                                 <button
                                   onClick={() => handleFieldChange(field, value === 'image' ? 'video' : 'image')}
-                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                    value === 'video' ? 'bg-green-600' : 'bg-gray-200'
-                                  }`}
+                                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                  style={{ backgroundColor: value === 'video' ? '#046f78' : '#e2e8f0' }}
                                 >
                                   <span
                                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -1490,7 +1892,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 value={tempContent[field] !== undefined ? tempContent[field] : value}
                                 onChange={(e) => handleFieldChange(field, e.target.value)}
                                 rows={4}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder={`Enter ${label.toLowerCase()}...`}
                               />
                             ) : (
@@ -1498,7 +1911,18 @@ export function LandingAdmin({ onBack }: LandingAdminProps) {
                                 type="text"
                                 value={tempContent[field] !== undefined ? tempContent[field] : value}
                                 onChange={(e) => handleFieldChange(field, e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:outline-none transition"
+                                style={{ 
+                                  '--tw-ring-color': '#046f78',
+                                } as React.CSSProperties & { '--tw-ring-color'?: string }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.borderColor = '#046f78';
+                                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
                                 placeholder={`Enter ${label.toLowerCase()}...`}
                               />
                             )}

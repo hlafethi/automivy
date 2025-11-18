@@ -11,7 +11,7 @@ export function ManagementTabs({ activeTab, setActiveTab }: ManagementTabsProps)
     { id: 'analytics', name: 'Analytics', icon: BarChart3, color: 'bg-blue-50 text-blue-700 border-blue-600' },
     { id: 'tickets', name: 'Tickets', icon: Ticket, color: 'bg-orange-50 text-orange-700 border-orange-600' },
     { id: 'community', name: 'Communauté', icon: Users2, color: 'bg-purple-50 text-purple-700 border-purple-600' },
-    { id: 'users', name: 'Utilisateurs', icon: UserCheck, color: 'bg-green-50 text-green-700 border-green-600' },
+    { id: 'users', name: 'Utilisateurs', icon: UserCheck, color: 'custom-green' },
     { id: 'database', name: 'Base de données', icon: Database, color: 'bg-slate-50 text-slate-700 border-slate-600' },
     { id: 'activity', name: 'Activité', icon: Activity, color: 'bg-yellow-50 text-yellow-700 border-yellow-600' },
     { id: 'alerts', name: 'Alertes', icon: AlertTriangle, color: 'bg-red-50 text-red-700 border-red-600' },
@@ -31,10 +31,17 @@ export function ManagementTabs({ activeTab, setActiveTab }: ManagementTabsProps)
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition ${
-              isActive
+              isActive && tab.color !== 'custom-green'
                 ? `${tab.color} border-b-2`
+                : isActive && tab.color === 'custom-green'
+                ? 'border-b-2'
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
+            style={isActive && tab.color === 'custom-green' ? {
+              backgroundColor: '#e0f4f6',
+              color: '#046f78',
+              borderBottomColor: '#046f78'
+            } : {}}
           >
             <Icon className="w-4 h-4" />
             {tab.name}

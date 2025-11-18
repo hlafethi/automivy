@@ -6,30 +6,49 @@ import { LandingService, LandingContent } from '../services/landingService';
 export function LandingPage() {
   const [content, setContent] = useState<LandingContent>({});
   const [loading, setLoading] = useState(true);
+  const [contentTimestamp, setContentTimestamp] = useState(Date.now());
 
   useEffect(() => {
+    const loadContent = async () => {
+      try {
+        setLoading(true);
+        const landingContent = await LandingService.getContent();
+        console.log('🔍 [LandingPage] Contenu chargé:', landingContent);
+        console.log('🔍 [LandingPage] Logo hero:', landingContent.hero?.logo_image);
+        setContent(landingContent);
+        setContentTimestamp(Date.now()); // Mettre à jour le timestamp pour forcer le rechargement des images
+      } catch (error) {
+        console.error('Erreur lors du chargement du contenu:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     loadContent();
+    
+    // Recharger le contenu quand la fenêtre reprend le focus
+    const handleFocus = () => {
+      loadContent();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Recharger le contenu toutes les 30 secondes
+    const interval = setInterval(() => {
+      loadContent();
+    }, 30000);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, []);
-
-  const loadContent = async () => {
-    try {
-      setLoading(true);
-      const landingContent = await LandingService.getContent();
-      console.log('🔍 [LandingPage] Contenu chargé:', landingContent);
-      console.log('🔍 [LandingPage] Image hero:', landingContent.hero?.background_image);
-      setContent(landingContent);
-    } catch (error) {
-      console.error('Erreur lors du chargement du contenu:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-slate-50 to-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #f8fafc, #eff6ff)' }}>
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#046f78', borderTopColor: 'transparent' }}></div>
           <p className="text-slate-600">Chargement...</p>
         </div>
       </div>
@@ -53,31 +72,35 @@ export function LandingPage() {
               {/* Logo */}
               {hero.logo_image && (
                 <img 
-                  src={`http://localhost:3004${hero.logo_image}?v=${Date.now()}`} 
+                  src={`http://localhost:3004${hero.logo_image}?v=${contentTimestamp}`} 
                   alt="Logo AUTOMIVY" 
                   className="h-8 w-auto"
+                  key={`nav-logo-${contentTimestamp}`}
                 />
               )}
               <div className="flex-shrink-0">
-                <h1 className="text-2xl font-bold text-green-600">AUTOMIVY</h1>
+                <h1 className="text-2xl font-bold" style={{ color: '#046f78' }}>AUTOMIVY</h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <a href="#features" className="text-slate-600 hover:text-green-600 transition-colors">
+              <a href="#features" className="text-slate-600 transition-colors" style={{ color: '#64748b' }} onMouseEnter={(e) => e.currentTarget.style.color = '#046f78'} onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}>
                 Features
               </a>
-              <a href="#pricing" className="text-slate-600 hover:text-green-600 transition-colors">
+              <a href="#pricing" className="text-slate-600 transition-colors" style={{ color: '#64748b' }} onMouseEnter={(e) => e.currentTarget.style.color = '#046f78'} onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}>
                 Pricing
               </a>
-              <a href="#about" className="text-slate-600 hover:text-green-600 transition-colors">
+              <a href="#about" className="text-slate-600 transition-colors" style={{ color: '#64748b' }} onMouseEnter={(e) => e.currentTarget.style.color = '#046f78'} onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}>
                 About
               </a>
-              <a href="#contact" className="text-slate-600 hover:text-green-600 transition-colors">
+              <a href="#contact" className="text-slate-600 transition-colors" style={{ color: '#64748b' }} onMouseEnter={(e) => e.currentTarget.style.color = '#046f78'} onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}>
                 Contact
               </a>
               <a
                 href="/login"
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                className="text-white px-4 py-2 rounded-lg transition-colors"
+                style={{ backgroundColor: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#046f78'}
               >
                 Sign In
               </a>
@@ -136,14 +159,26 @@ export function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="/login"
-                className="bg-green-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                className="text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                style={{ backgroundColor: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#046f78'}
               >
                 {hero.button_text || 'Get Started'}
                 <ArrowRight className="ml-2 w-5 h-5" />
               </a>
               <a
                 href="#features"
-                className="border-2 border-green-600 text-green-600 px-8 py-4 rounded-xl font-semibold hover:bg-green-600 hover:text-white transition-all duration-200"
+                className="px-8 py-4 rounded-xl font-semibold transition-all duration-200"
+                style={{ border: '2px solid #046f78', color: '#046f78' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#046f78';
+                  e.currentTarget.style.color = '#ffffff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = '#046f78';
+                }}
               >
                 {hero.secondary_button || 'Learn More'}
               </a>
@@ -334,10 +369,10 @@ export function LandingPage() {
                 ].filter(Boolean)
               },
             ].map((plan, index) => (
-              <div key={index} className={`bg-white rounded-2xl p-8 shadow-lg ${plan.popular ? 'ring-2 ring-green-500 relative' : ''}`}>
+              <div key={index} className={`bg-white rounded-2xl p-8 shadow-lg relative ${plan.popular ? '' : ''}`} style={plan.popular ? { border: '2px solid #046f78' } : {}}>
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                    <span className="text-white px-4 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: '#046f78' }}>
                       Most Popular
                     </span>
                   </div>
@@ -357,18 +392,37 @@ export function LandingPage() {
                 <ul className="space-y-4 mb-8">
                   {plan.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-center">
-                      <span className="text-green-500 mr-3 flex-shrink-0">✅</span>
+                      <span className="mr-3 flex-shrink-0" style={{ color: '#046f78' }}>✅</span>
                       <span className="text-slate-600">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 <a
                   href="/login"
-                  className={`w-full block text-center py-3 px-4 rounded-xl font-semibold transition-all duration-200 ${
-                    plan.popular
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white'
-                  }`}
+                  className="w-full block text-center py-3 px-4 rounded-xl font-semibold transition-all duration-200"
+                  style={plan.popular ? {
+                    backgroundColor: '#046f78',
+                    color: '#ffffff'
+                  } : {
+                    border: '2px solid #046f78',
+                    color: '#046f78'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (plan.popular) {
+                      e.currentTarget.style.backgroundColor = '#034a52';
+                    } else {
+                      e.currentTarget.style.backgroundColor = '#046f78';
+                      e.currentTarget.style.color = '#ffffff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (plan.popular) {
+                      e.currentTarget.style.backgroundColor = '#046f78';
+                    } else {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#046f78';
+                    }
+                  }}
                 >
                   Get Started
                 </a>
@@ -411,9 +465,9 @@ export function LandingPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-green-100 to-blue-100 rounded-2xl p-8">
+            <div className="rounded-2xl p-8" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #dbeafe)' }}>
               <div className="text-center">
-                <div className="w-24 h-24 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: '#046f78' }}>
                   <div className="text-4xl">⚡</div>
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-4">Why Choose AUTOMIVY?</h3>
@@ -445,21 +499,21 @@ export function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#046f78' }}>
                 <div className="text-2xl">📧</div>
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-2">Email</h3>
               <p className="text-slate-600">{contact.email || 'contact@automivy.com'}</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#046f78' }}>
                 <div className="text-2xl">📞</div>
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-2">Phone</h3>
               <p className="text-slate-600">{contact.phone || '+1 (555) 123-4567'}</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#046f78' }}>
                 <div className="text-2xl">📍</div>
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-2">Address</h3>
@@ -480,12 +534,13 @@ export function LandingPage() {
                 {/* Logo */}
                 {hero.logo_image && (
                   <img 
-                    src={`http://localhost:3004${hero.logo_image}?v=${Date.now()}`} 
+                    src={`http://localhost:3004${hero.logo_image}?v=${contentTimestamp}`} 
                     alt="Logo AUTOMIVY" 
                     className="h-8 w-auto"
+                    key={`footer-logo-${contentTimestamp}`}
                   />
                 )}
-                <h3 className="text-2xl font-bold text-green-400">
+                <h3 className="text-2xl font-bold" style={{ color: '#75ccd5' }}>
                   {footer.company_name || 'AUTOMIVY'}
                 </h3>
               </div>
@@ -499,24 +554,24 @@ export function LandingPage() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Product</h4>
               <ul className="space-y-2">
-                <li><a href="#features" className="text-slate-300 hover:text-green-400 transition-colors">Features</a></li>
-                <li><a href="#pricing" className="text-slate-300 hover:text-green-400 transition-colors">Pricing</a></li>
-                <li><a href="/login" className="text-slate-300 hover:text-green-400 transition-colors">Sign In</a></li>
+                <li><a href="#features" className="text-slate-300 transition-colors" style={{ color: '#cbd5e1' }} onMouseEnter={(e) => e.currentTarget.style.color = '#75ccd5'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>Features</a></li>
+                <li><a href="#pricing" className="text-slate-300 transition-colors" style={{ color: '#cbd5e1' }} onMouseEnter={(e) => e.currentTarget.style.color = '#75ccd5'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>Pricing</a></li>
+                <li><a href="/login" className="text-slate-300 transition-colors" style={{ color: '#cbd5e1' }} onMouseEnter={(e) => e.currentTarget.style.color = '#75ccd5'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>Sign In</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-4">Company</h4>
               <ul className="space-y-2">
-                <li><a href="#about" className="text-slate-300 hover:text-green-400 transition-colors">About</a></li>
-                <li><a href="#contact" className="text-slate-300 hover:text-green-400 transition-colors">Contact</a></li>
-                <li><a href={footer.support_link || '/support'} className="text-slate-300 hover:text-green-400 transition-colors">{footer.support_text || 'Support'}</a></li>
+                <li><a href="#about" className="text-slate-300 transition-colors" style={{ color: '#cbd5e1' }} onMouseEnter={(e) => e.currentTarget.style.color = '#75ccd5'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>About</a></li>
+                <li><a href="#contact" className="text-slate-300 transition-colors" style={{ color: '#cbd5e1' }} onMouseEnter={(e) => e.currentTarget.style.color = '#75ccd5'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>Contact</a></li>
+                <li><a href={footer.support_link || '/support'} className="text-slate-300 transition-colors" style={{ color: '#cbd5e1' }} onMouseEnter={(e) => e.currentTarget.style.color = '#75ccd5'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>{footer.support_text || 'Support'}</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-4">Legal</h4>
               <ul className="space-y-2">
-                <li><a href={footer.privacy_link || '/privacy'} className="text-slate-300 hover:text-green-400 transition-colors">{footer.privacy_text || 'Privacy'}</a></li>
-                <li><a href={footer.terms_link || '/terms'} className="text-slate-300 hover:text-green-400 transition-colors">{footer.terms_text || 'Terms'}</a></li>
+                <li><a href={footer.privacy_link || '/privacy'} className="text-slate-300 transition-colors" style={{ color: '#cbd5e1' }} onMouseEnter={(e) => e.currentTarget.style.color = '#75ccd5'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>{footer.privacy_text || 'Privacy'}</a></li>
+                <li><a href={footer.terms_link || '/terms'} className="text-slate-300 transition-colors" style={{ color: '#cbd5e1' }} onMouseEnter={(e) => e.currentTarget.style.color = '#75ccd5'} onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}>{footer.terms_text || 'Terms'}</a></li>
               </ul>
             </div>
           </div>

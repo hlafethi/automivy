@@ -270,7 +270,7 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
               Connecter Gmail
             </button>
             {formData[field.name] && (
-              <p className="text-sm text-green-600 flex items-center gap-1">
+              <p className="text-sm flex items-center gap-1" style={{ color: '#046f78' }}>
                 <CheckCircle className="w-4 h-4" />
                 Gmail connecté avec succès
               </p>
@@ -282,9 +282,24 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
             value={formData[field.name] || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             placeholder={field.placeholder}
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ${
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none transition-all duration-200 ${
               hasError ? 'border-red-400 bg-red-50' : 'border-slate-300 hover:border-slate-400'
             }`}
+            style={!hasError ? {
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string } : undefined}
+            onFocus={(e) => {
+              if (!hasError) {
+                e.currentTarget.style.borderColor = '#046f78';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+              }
+            }}
+            onBlur={(e) => {
+              if (!hasError) {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }
+            }}
           />
         ) : field.type === 'time' ? (
           <input
@@ -292,9 +307,24 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
             value={formData[field.name] || field.defaultValue || '09:00'}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             placeholder={field.placeholder || 'HH:MM'}
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ${
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none transition-all duration-200 ${
               hasError ? 'border-red-400 bg-red-50' : 'border-slate-300 hover:border-slate-400'
             }`}
+            style={!hasError ? {
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string } : undefined}
+            onFocus={(e) => {
+              if (!hasError) {
+                e.currentTarget.style.borderColor = '#046f78';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+              }
+            }}
+            onBlur={(e) => {
+              if (!hasError) {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }
+            }}
           />
         ) : field.type === 'number' ? (
           <input
@@ -302,9 +332,24 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
             value={formData[field.name] || field.defaultValue || ''}
             onChange={(e) => handleInputChange(field.name, parseInt(e.target.value) || 0)}
             placeholder={field.placeholder}
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ${
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none transition-all duration-200 ${
               hasError ? 'border-red-400 bg-red-50' : 'border-slate-300 hover:border-slate-400'
             }`}
+            style={!hasError ? {
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string } : undefined}
+            onFocus={(e) => {
+              if (!hasError) {
+                e.currentTarget.style.borderColor = '#046f78';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+              }
+            }}
+            onBlur={(e) => {
+              if (!hasError) {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }
+            }}
           />
         ) : (
           <input
@@ -312,9 +357,24 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
             value={formData[field.name] || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             placeholder={field.placeholder}
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ${
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none transition-all duration-200 ${
               hasError ? 'border-red-400 bg-red-50' : 'border-slate-300 hover:border-slate-400'
             }`}
+            style={!hasError ? {
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string } : undefined}
+            onFocus={(e) => {
+              if (!hasError) {
+                e.currentTarget.style.borderColor = '#046f78';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+              }
+            }}
+            onBlur={(e) => {
+              if (!hasError) {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }
+            }}
           />
         )}
         {hasError && (
@@ -330,7 +390,7 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
         {/* Header avec gradient */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6 text-white">
+        <div className="px-8 py-6 text-white" style={{ background: 'linear-gradient(to right, #046f78, #034a52)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
@@ -343,7 +403,7 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
                   {step === 'deploying' && '⏳ Déploiement'}
                   {step === 'success' && '✅ Succès'}
                 </h2>
-                <p className="text-green-100 text-sm mt-1">
+                <p className="text-sm mt-1" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
                   {step === 'select' && 'Sélectionnez un workflow à déployer'}
                   {step === 'configure' && 'Configurez vos credentials'}
                   {step === 'deploying' && 'Déploiement en cours...'}
@@ -371,7 +431,7 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
           {step === 'select' && (
             <div>
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)' }}>
                   <span className="text-2xl">🚀</span>
                 </div>
                 <h3 className="text-xl font-semibold text-slate-800 mb-2">Choisissez votre workflow</h3>
@@ -383,8 +443,8 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
               
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mb-4">
-                    <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)' }}>
+                    <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#046f78' }} />
                   </div>
                   <p className="text-slate-600 font-medium">Chargement des workflows...</p>
                 </div>
@@ -407,14 +467,25 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
                           });
                           handleWorkflowSelect(workflow);
                         }}
-                        className="group p-6 border border-slate-200 rounded-xl hover:border-green-300 hover:bg-gradient-to-br hover:from-green-50 hover:to-white cursor-pointer transition-all duration-300 hover:shadow-lg"
+                        className="group p-6 border border-slate-200 rounded-xl cursor-pointer transition-all duration-300 hover:shadow-lg"
+                        style={{
+                          borderColor: 'inherit'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#75ccd5';
+                          e.currentTarget.style.background = 'linear-gradient(to bottom right, #e0f4f6, #ffffff)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                          e.currentTarget.style.background = 'transparent';
+                        }}
                       >
                         <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center group-hover:from-green-200 group-hover:to-green-300 transition-all duration-300">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)' }}>
                             <span className="text-lg">⚡</span>
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-slate-900 group-hover:text-green-700 transition-colors">{workflow.name}</h3>
+                            <h3 className="font-semibold text-slate-900 transition-colors" style={{ color: 'inherit' }} onMouseEnter={(e) => e.currentTarget.style.color = '#046f78'} onMouseLeave={(e) => e.currentTarget.style.color = '#1e293b'}>{workflow.name}</h3>
                             {workflow.description && (
                               <p className="text-sm text-slate-600 mt-2 line-clamp-2">{workflow.description}</p>
                             )}
@@ -422,7 +493,7 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
                               <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                                 {new Date(workflow.created_at).toLocaleDateString()}
                               </span>
-                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                              <span className="text-xs px-2 py-1 rounded-full" style={{ color: '#046f78', backgroundColor: '#e0f4f6', border: '1px solid #75ccd5' }}>
                                 Prêt à déployer
                               </span>
                             </div>
@@ -442,7 +513,7 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
           {step === 'configure' && formConfig && (
             <div>
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)' }}>
                   <span className="text-2xl">⚙️</span>
                 </div>
                 <h3 className="text-xl font-semibold text-slate-800 mb-2">{formConfig.title}</h3>
@@ -452,8 +523,8 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
               {formConfig.sections.map((section, sectionIndex) => (
                 <div key={sectionIndex} className="mb-8 bg-slate-50 rounded-xl p-6 border border-slate-200">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center">
-                      <span className="text-sm font-bold text-green-700">{sectionIndex + 1}</span>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)' }}>
+                      <span className="text-sm font-bold" style={{ color: '#046f78' }}>{sectionIndex + 1}</span>
                     </div>
                     <h4 className="text-lg font-semibold text-slate-800">{section.title}</h4>
                   </div>
@@ -477,7 +548,18 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
                 <button
                   onClick={handleDeploy}
                   disabled={loading}
-                  className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
+                  className="px-8 py-3 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
+                  style={{ background: 'linear-gradient(to right, #046f78, #034a52)' }}
+                  onMouseEnter={(e) => {
+                    if (!e.currentTarget.disabled) {
+                      e.currentTarget.style.background = 'linear-gradient(to right, #034a52, #023a42)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!e.currentTarget.disabled) {
+                      e.currentTarget.style.background = 'linear-gradient(to right, #046f78, #034a52)';
+                    }
+                  }}
                 >
                   {loading ? (
                     <>
@@ -496,8 +578,8 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
 
           {step === 'deploying' && (
             <div className="text-center py-12">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <Loader2 className="w-10 h-10 animate-spin text-green-600" />
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)' }}>
+                <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#046f78' }} />
               </div>
               <h3 className="text-2xl font-semibold text-slate-800 mb-3">Déploiement en cours...</h3>
               <p className="text-slate-600 text-lg max-w-md mx-auto">
@@ -505,7 +587,7 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
               </p>
               <div className="mt-6 bg-slate-50 rounded-xl p-4 max-w-md mx-auto">
                 <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#046f78' }}></div>
                   <span>Configuration des credentials...</span>
                 </div>
               </div>
@@ -514,21 +596,21 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess }: SmartDe
 
           {step === 'success' && deployedWorkflow && (
             <div className="text-center py-12">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6" style={{ background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)' }}>
+                <CheckCircle className="w-10 h-10" style={{ color: '#046f78' }} />
               </div>
               <h3 className="text-2xl font-semibold text-slate-800 mb-3">Workflow déployé avec succès !</h3>
               <p className="text-slate-600 text-lg mb-6 max-w-md mx-auto">
                 Le workflow "{deployedWorkflow.name}" a été déployé et est maintenant actif.
               </p>
-              <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-6 max-w-md mx-auto shadow-sm">
+              <div className="rounded-xl p-6 max-w-md mx-auto shadow-sm" style={{ background: 'linear-gradient(to right, #e0f4f6, #d1eef1)', border: '1px solid #75ccd5' }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 bg-green-200 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#75ccd5' }}>
                     <span className="text-sm">🎉</span>
                   </div>
-                  <h4 className="font-semibold text-green-800">Déploiement réussi</h4>
+                  <h4 className="font-semibold" style={{ color: '#034a52' }}>Déploiement réussi</h4>
                 </div>
-                <p className="text-sm text-green-700">
+                <p className="text-sm" style={{ color: '#046f78' }}>
                   <strong>ID du workflow :</strong> {deployedWorkflow.n8n_workflow_id}
                 </p>
               </div>

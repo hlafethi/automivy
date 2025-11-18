@@ -68,69 +68,34 @@ router.put('/section/:section', authenticateToken, requireAdmin, async (req, res
     const { section } = req.params;
     const updates = req.body;
     
-    console.log(`🚨🚨🚨 [Landing PUT] ===== DÉBUT MISE À JOUR =====`);
-    console.log(`🚨🚨🚨 [Landing PUT] Section: ${section}`);
-    console.log(`🚨🚨🚨 [Landing PUT] Headers:`, req.headers);
-    console.log(`🚨🚨🚨 [Landing PUT] Body reçu:`, JSON.stringify(updates, null, 2));
-    console.log(`🚨🚨🚨 [Landing PUT] User:`, req.user);
+    console.log(`🔍 [Landing PUT] Mise à jour de la section: ${section}`);
+    console.log(`🔍 [Landing PUT] Updates reçus:`, JSON.stringify(updates, null, 2));
     
-    // Mettre à jour chaque champ
-    for (const [field, content] of Object.entries(updates)) {
-      console.log(`🚨🚨🚨 [Landing PUT] Traitement du champ: ${field} = "${content}"`);
-      
-      if (content !== null && content !== undefined) {
-        // Vérifier si l'enregistrement existe
-        console.log(`🚨🚨🚨 [Landing PUT] Vérification existence: ${section}.${field}`);
-        const existing = await db.query(`
-          SELECT id, content FROM landing_content 
-          WHERE section = $1 AND field = $2
-        `, [section, field]);
-        
-        console.log(`🚨🚨🚨 [Landing PUT] Résultat vérification:`, existing.rows);
-        
-        if (existing.rows.length > 0) {
-          console.log(`🚨🚨🚨 [Landing PUT] Mise à jour existant: ${section}.${field}`);
-          console.log(`🚨🚨🚨 [Landing PUT] Ancien contenu: "${existing.rows[0].content}"`);
-          console.log(`🚨🚨🚨 [Landing PUT] Nouveau contenu: "${content}"`);
-          
-          // Mettre à jour l'enregistrement existant
-          const updateResult = await db.query(`
-            UPDATE landing_content 
-            SET content = $1, updated_at = CURRENT_TIMESTAMP
-            WHERE section = $2 AND field = $3
-          `, [content, section, field]);
-          
-          console.log(`🚨🚨🚨 [Landing PUT] Résultat UPDATE:`, updateResult.rowCount, 'lignes affectées');
-          console.log(`✅ [Landing PUT] Champ ${section}.${field} mis à jour`);
-        } else {
-          console.log(`🚨🚨🚨 [Landing PUT] Création nouveau: ${section}.${field}`);
-          
-          // Créer un nouvel enregistrement
-          const insertResult = await db.query(`
-            INSERT INTO landing_content (section, field, content, created_at, updated_at)
-            VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-          `, [section, field, content]);
-          
-          console.log(`🚨🚨🚨 [Landing PUT] Résultat INSERT:`, insertResult.rowCount, 'lignes affectées');
-          console.log(`✅ [Landing PUT] Nouveau champ ${section}.${field} créé`);
-        }
-      } else {
-        console.log(`🚨🚨🚨 [Landing PUT] Champ ${field} ignoré (null/undefined)`);
-      }
-    }
-    
-    // Vérification finale
-    console.log(`🚨🚨🚨 [Landing PUT] Vérification finale de la section ${section}:`);
-    const finalCheck = await db.query(`
-      SELECT field, content FROM landing_content 
-      WHERE section = $1
+    // Récupérer le contenu existant de la section
+    const existingResult = await db.query(`
+      SELECT content FROM landing_sections WHERE section = $1
     `, [section]);
     
-    console.log(`🚨🚨🚨 [Landing PUT] Contenu final:`, finalCheck.rows);
+    let currentContent = {};
+    if (existingResult.rows.length > 0) {
+      currentContent = existingResult.rows[0].content || {};
+    }
+    
+    // Fusionner les updates avec le contenu existant
+    const mergedContent = { ...currentContent, ...updates };
+    
+    // Mettre à jour ou insérer la section
+    await db.query(`
+      INSERT INTO landing_sections (section, content, updated_at)
+      VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
+      ON CONFLICT (section)
+      DO UPDATE SET 
+        content = $2::jsonb,
+        updated_at = CURRENT_TIMESTAMP
+    `, [section, JSON.stringify(mergedContent)]);
     
     console.log(`✅ [Landing PUT] Section ${section} mise à jour avec succès`);
     res.json({ message: 'Section updated successfully' });
-    console.log(`🚨🚨🚨 [Landing PUT] ===== FIN MISE À JOUR =====`);
   } catch (error) {
     console.error(`❌ [Landing PUT] Erreur lors de la mise à jour de la section ${section}:`, error);
     console.error(`❌ [Landing PUT] Stack trace:`, error.stack);
@@ -145,14 +110,28 @@ router.put('/field', authenticateToken, requireAdmin, async (req, res) => {
     
     console.log(`🔍 [Landing] Mise à jour du champ: ${section}.${field}`);
     
+    // Récupérer le contenu existant de la section
+    const existingResult = await db.query(`
+      SELECT content FROM landing_sections WHERE section = $1
+    `, [section]);
+    
+    let currentContent = {};
+    if (existingResult.rows.length > 0) {
+      currentContent = existingResult.rows[0].content || {};
+    }
+    
+    // Mettre à jour le champ spécifique
+    currentContent[field] = content;
+    
+    // Mettre à jour ou insérer la section
     await db.query(`
-      INSERT INTO landing_content (section, field, content, updated_at)
-      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-      ON CONFLICT (section, field)
+      INSERT INTO landing_sections (section, content, updated_at)
+      VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
+      ON CONFLICT (section)
       DO UPDATE SET 
-        content = EXCLUDED.content,
+        content = $2::jsonb,
         updated_at = CURRENT_TIMESTAMP
-    `, [section, field, content]);
+    `, [section, JSON.stringify(currentContent)]);
     
     console.log(`✅ [Landing] Champ ${section}.${field} mis à jour avec succès`);
     res.json({ message: 'Field updated successfully' });
@@ -169,7 +148,7 @@ router.delete('/section/:section', authenticateToken, requireAdmin, async (req, 
     
     console.log(`🔍 [Landing] Suppression de la section: ${section}`);
     
-    await db.query('DELETE FROM landing_content WHERE section = $1', [section]);
+    await db.query('DELETE FROM landing_sections WHERE section = $1', [section]);
     
     console.log(`✅ [Landing] Section ${section} supprimée avec succès`);
     res.json({ message: 'Section deleted successfully' });
@@ -184,22 +163,28 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
     console.log('🔍 [Landing] Récupération des statistiques');
     
-    const result = await db.query(`
-      SELECT 
-        section,
-        COUNT(*) as field_count,
-        MAX(updated_at) as last_updated
-      FROM landing_content 
-      GROUP BY section
+    // Récupérer les sections avec leur contenu
+    const sectionsResult = await db.query(`
+      SELECT section, updated_at as last_updated, content
+      FROM landing_sections 
       ORDER BY section
     `);
     
-    const totalFields = await db.query('SELECT COUNT(*) as total FROM landing_content');
+    let totalFields = 0;
+    const sections = sectionsResult.rows.map(row => {
+      const fieldCount = row.content ? Object.keys(row.content).length : 0;
+      totalFields += fieldCount;
+      return {
+        section: row.section,
+        field_count: fieldCount,
+        last_updated: row.last_updated
+      };
+    });
     
     console.log('✅ [Landing] Statistiques récupérées avec succès');
     res.json({
-      sections: result.rows,
-      totalFields: totalFields.rows[0].total
+      sections: sections,
+      totalFields: totalFields.toString()
     });
   } catch (error) {
     console.error('❌ [Landing] Erreur lors de la récupération des statistiques:', error);

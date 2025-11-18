@@ -25,7 +25,7 @@ export function PrivacyPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#046f78', borderTopColor: 'transparent' }}></div>
           <p className="text-slate-600">Chargement...</p>
         </div>
       </div>
@@ -57,7 +57,10 @@ export function PrivacyPage() {
             <div className="flex items-center space-x-3">
               <a
                 href="/login"
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-4 py-2 text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#046f78'}
               >
                 Se connecter
               </a>
@@ -71,7 +74,7 @@ export function PrivacyPage() {
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <Shield className="w-12 h-12 text-green-600" />
+              <Shield className="w-12 h-12" style={{ color: '#046f78' }} />
             </div>
             <h1 className="text-3xl font-bold text-slate-900 mb-4">
               {title}
@@ -92,7 +95,7 @@ export function PrivacyPage() {
           <div className="prose prose-slate max-w-none">
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-slate-900 mb-4 flex items-center">
-                <Lock className="w-6 h-6 text-green-600 mr-2" />
+                <Lock className="w-6 h-6 mr-2" style={{ color: '#046f78' }} />
                 Introduction
               </h2>
               <p className="text-slate-600 mb-4">
@@ -104,7 +107,7 @@ export function PrivacyPage() {
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-slate-900 mb-4 flex items-center">
-                <Database className="w-6 h-6 text-green-600 mr-2" />
+                <Database className="w-6 h-6 mr-2" style={{ color: '#046f78' }} />
                 Informations que nous collectons
               </h2>
               <div className="space-y-4">
@@ -131,7 +134,7 @@ export function PrivacyPage() {
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-slate-900 mb-4 flex items-center">
-                <Eye className="w-6 h-6 text-green-600 mr-2" />
+                <Eye className="w-6 h-6 mr-2" style={{ color: '#046f78' }} />
                 Comment nous utilisons vos données
               </h2>
               <div className="space-y-4">

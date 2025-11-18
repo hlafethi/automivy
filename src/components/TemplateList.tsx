@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Trash2, Eye, EyeOff, FileJson, Loader2, Rocket, Edit } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Trash2, Eye, EyeOff, FileJson, Loader2, Rocket, Edit, Search, Filter, X } from 'lucide-react';
 import { templateService } from '../services';
 import { Template } from '../types';
 import { WorkflowDeployModal } from './WorkflowDeployModal';
 import { TemplateEditModal } from './TemplateEditModal';
 import { useAuth } from '../contexts/AuthContext';
+import { MAIN_CATEGORIES, getSubcategories } from '../constants/categories';
 
 export function TemplateList() {
   const { user, loading: authLoading } = useAuth();
@@ -13,12 +14,28 @@ export function TemplateList() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [deployTemplate, setDeployTemplate] = useState<Template | null>(null);
   const [editTemplate, setEditTemplate] = useState<Template | null>(null);
+  
+  // États pour les filtres
+  const [searchTerm, setSearchTerm] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [subcategoryFilter, setSubcategoryFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'created_at' | 'nodes'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (user && !authLoading) {
       loadTemplates();
     }
   }, [user, authLoading]);
+
+  // Réinitialiser la sous-catégorie quand la catégorie change
+  useEffect(() => {
+    if (categoryFilter === 'all') {
+      setSubcategoryFilter('all');
+    }
+  }, [categoryFilter]);
 
   const loadTemplates = async () => {
     try {
@@ -56,10 +73,76 @@ export function TemplateList() {
     }
   };
 
+  // Filtrer et trier les templates
+  const filteredTemplates = useMemo(() => {
+    let filtered = [...templates];
+
+    // Filtre par recherche
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(template =>
+        template.name.toLowerCase().includes(searchLower) ||
+        (template.description || '').toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filtre par visibilité
+    if (visibilityFilter !== 'all') {
+      filtered = filtered.filter(template => {
+        const isVisible = (template as any).visible !== false;
+        return visibilityFilter === 'visible' ? isVisible : !isVisible;
+      });
+    }
+
+    // Filtre par catégorie
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(template => template.category === categoryFilter);
+    }
+
+    // Filtre par sous-catégorie
+    if (subcategoryFilter !== 'all') {
+      filtered = filtered.filter(template => template.subcategory === subcategoryFilter);
+    }
+
+    // Tri
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'created_at':
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        case 'nodes':
+          const aNodes = a.json?.nodes?.length || 0;
+          const bNodes = b.json?.nodes?.length || 0;
+          comparison = aNodes - bNodes;
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [templates, searchTerm, visibilityFilter, categoryFilter, subcategoryFilter, sortBy, sortOrder]);
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setVisibilityFilter('all');
+    setCategoryFilter('all');
+    setSubcategoryFilter('all');
+    setSortBy('created_at');
+    setSortOrder('desc');
+  };
+
+  const availableSubcategories = categoryFilter !== 'all' ? getSubcategories(categoryFilter) : [];
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#046f78' }} />
       </div>
     );
   }
@@ -79,19 +162,7 @@ export function TemplateList() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (templates.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <FileJson className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-slate-900 mb-2">No Templates Yet</h3>
-        <p className="text-slate-600">
-          Upload or generate your first template to get started
-        </p>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#046f78' }} />
       </div>
     );
   }
@@ -100,12 +171,151 @@ export function TemplateList() {
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-slate-900">
-          All Templates ({templates.length})
+          All Templates ({filteredTemplates.length})
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {templates.map((template) => (
+      {/* Barre de recherche et filtres - Design compact harmonisé */}
+      <div className="bg-white border border-slate-200 rounded-lg p-3 mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Recherche */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+              style={{ 
+                '--tw-ring-color': '#046f78',
+              } as React.CSSProperties & { '--tw-ring-color'?: string }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#046f78';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
+          </div>
+
+          {/* Visibilité */}
+          <select
+            value={visibilityFilter}
+            onChange={(e) => setVisibilityFilter(e.target.value as any)}
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+            style={{ 
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+          >
+            <option value="all">Tous</option>
+            <option value="visible">Visibles</option>
+            <option value="hidden">Masqués</option>
+          </select>
+
+          {/* Catégorie */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setSubcategoryFilter('all');
+            }}
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+            style={{ 
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+          >
+            <option value="all">Toutes catégories</option>
+            {MAIN_CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+
+          {/* Sous-catégorie */}
+          {categoryFilter !== 'all' && (
+            <select
+              value={subcategoryFilter}
+              onChange={(e) => setSubcategoryFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+              style={{ 
+                '--tw-ring-color': '#046f78',
+              } as React.CSSProperties & { '--tw-ring-color'?: string }}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+              onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+            >
+              <option value="all">Toutes sous-catégories</option>
+              {availableSubcategories.map(subcat => (
+                <option key={subcat} value={subcat}>{subcat}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Tri */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+              style={{ 
+                '--tw-ring-color': '#046f78',
+              } as React.CSSProperties & { '--tw-ring-color'?: string }}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+              onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+            >
+              <option value="created_at">Date</option>
+              <option value="name">Nom</option>
+              <option value="nodes">Nœuds</option>
+            </select>
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="px-2.5 py-1.5 border border-slate-300 rounded-md hover:bg-slate-50 transition text-sm"
+              title={`Tri ${sortOrder === 'asc' ? 'décroissant' : 'croissant'}`}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+
+          {/* Réinitialiser */}
+          {(searchTerm || visibilityFilter !== 'all' || categoryFilter !== 'all' || subcategoryFilter !== 'all') && (
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-md transition"
+            >
+              <X className="w-3.5 h-3.5" />
+              Réinitialiser
+            </button>
+          )}
+        </div>
+
+        {/* Compteur de résultats */}
+        <div className="mt-3 pt-3 border-t border-slate-200">
+          <div className="text-xs text-slate-600">
+            {filteredTemplates.length} template(s) trouvé(s) sur {templates.length}
+          </div>
+        </div>
+      </div>
+
+      {filteredTemplates.length === 0 ? (
+        <div className="text-center py-12 bg-slate-50 rounded-lg">
+          <FileJson className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 mb-2">
+            {templates.length === 0 ? 'No Templates Yet' : 'No templates match your filters'}
+          </h3>
+          <p className="text-slate-600">
+            {templates.length === 0 
+              ? 'Upload or generate your first template to get started'
+              : 'Try adjusting your filters'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTemplates.map((template) => (
           <div
             key={template.id}
             className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200"
@@ -133,6 +343,36 @@ export function TemplateList() {
                 {template.description || 'No description available'}
               </p>
             </div>
+
+            {/* Badges catégorie et sous-catégorie */}
+            {(template.category || template.subcategory) && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {template.category && (
+                  <span 
+                    className="px-2 py-1 text-xs font-medium rounded-full"
+                    style={{
+                      backgroundColor: '#e0f4f6',
+                      color: '#046f78',
+                      border: '1px solid #75ccd5'
+                    }}
+                  >
+                    {template.category}
+                  </span>
+                )}
+                {template.subcategory && (
+                  <span 
+                    className="px-2 py-1 text-xs font-medium rounded-full"
+                    style={{
+                      backgroundColor: '#f0f9fa',
+                      color: '#034a52',
+                      border: '1px solid #b8e0e5'
+                    }}
+                  >
+                    {template.subcategory}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="flex items-center justify-between mb-4">
               <div className="text-xs text-slate-500">
@@ -205,6 +445,7 @@ export function TemplateList() {
           </div>
         ))}
       </div>
+      )}
 
       {selectedTemplate && (
         <div

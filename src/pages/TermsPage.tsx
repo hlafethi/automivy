@@ -25,7 +25,7 @@ export function TermsPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#046f78', borderTopColor: 'transparent' }}></div>
           <p className="text-slate-600">Chargement...</p>
         </div>
       </div>
@@ -57,7 +57,10 @@ export function TermsPage() {
             <div className="flex items-center space-x-3">
               <a
                 href="/login"
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-4 py-2 text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#046f78'}
               >
                 Se connecter
               </a>
@@ -71,7 +74,7 @@ export function TermsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <Scale className="w-12 h-12 text-green-600" />
+              <Scale className="w-12 h-12" style={{ color: '#046f78' }} />
             </div>
             <h1 className="text-3xl font-bold text-slate-900 mb-4">
               {title}
@@ -92,7 +95,7 @@ export function TermsPage() {
           <div className="prose prose-slate max-w-none">
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-slate-900 mb-4 flex items-center">
-                <FileText className="w-6 h-6 text-green-600 mr-2" />
+                <FileText className="w-6 h-6 mr-2" style={{ color: '#046f78' }} />
                 Acceptation des conditions
               </h2>
               <p className="text-slate-600 mb-4">
@@ -148,7 +151,7 @@ export function TermsPage() {
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-slate-900 mb-4 flex items-center">
-                <AlertTriangle className="w-6 h-6 text-green-600 mr-2" />
+                <AlertTriangle className="w-6 h-6 mr-2" style={{ color: '#046f78' }} />
                 Utilisation acceptable
               </h2>
               <div className="space-y-4">
@@ -243,7 +246,7 @@ export function TermsPage() {
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-slate-900 mb-4 flex items-center">
-                <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
+                <CheckCircle className="w-6 h-6 mr-2" style={{ color: '#046f78' }} />
                 Modifications des conditions
               </h2>
               <p className="text-slate-600 mb-4">
@@ -251,8 +254,8 @@ export function TermsPage() {
                 Les modifications importantes seront communiquées par email ou via une notification 
                 sur notre plateforme au moins 30 jours avant leur entrée en vigueur.
               </p>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-green-700">
+              <div className="rounded-lg p-4" style={{ backgroundColor: '#e0f4f6', border: '1px solid #75ccd5' }}>
+                <p style={{ color: '#046f78' }}>
                   <strong>Votre utilisation continue du service après les modifications constitue 
                   votre acceptation des nouvelles conditions.</strong>
                 </p>

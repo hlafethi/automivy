@@ -27,7 +27,7 @@ export function SupportPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#046f78', borderTopColor: 'transparent' }}></div>
           <p className="text-slate-600">Chargement...</p>
         </div>
       </div>
@@ -66,7 +66,10 @@ export function SupportPage() {
             <div className="flex items-center space-x-3">
               <a
                 href="/login"
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-4 py-2 text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#046f78'}
               >
                 Se connecter
               </a>
@@ -90,7 +93,7 @@ export function SupportPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
             <div className="flex items-center mb-4">
-              <Mail className="w-8 h-8 text-green-600 mr-3" />
+              <Mail className="w-8 h-8 mr-3" style={{ color: '#046f78' }} />
               <h3 className="text-lg font-semibold text-slate-900">Email</h3>
             </div>
             <p className="text-slate-600 mb-4">
@@ -98,7 +101,10 @@ export function SupportPage() {
             </p>
             <a
               href={`mailto:${email}`}
-              className="text-green-600 hover:text-green-700 font-medium"
+              className="font-medium transition-colors"
+              style={{ color: '#046f78' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#034a52'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#046f78'}
             >
               {email}
             </a>
@@ -106,7 +112,7 @@ export function SupportPage() {
 
           <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
             <div className="flex items-center mb-4">
-              <Phone className="w-8 h-8 text-green-600 mr-3" />
+              <Phone className="w-8 h-8 mr-3" style={{ color: '#046f78' }} />
               <h3 className="text-lg font-semibold text-slate-900">Téléphone</h3>
             </div>
             <p className="text-slate-600 mb-4">
@@ -114,7 +120,10 @@ export function SupportPage() {
             </p>
             <a
               href={`tel:${phone}`}
-              className="text-green-600 hover:text-green-700 font-medium"
+              className="font-medium transition-colors"
+              style={{ color: '#046f78' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#034a52'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#046f78'}
             >
               {phone}
             </a>
@@ -122,13 +131,18 @@ export function SupportPage() {
 
           <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
             <div className="flex items-center mb-4">
-              <MessageCircle className="w-8 h-8 text-green-600 mr-3" />
+              <MessageCircle className="w-8 h-8 mr-3" style={{ color: '#046f78' }} />
               <h3 className="text-lg font-semibold text-slate-900">Chat</h3>
             </div>
             <p className="text-slate-600 mb-4">
               Chat en direct avec notre équipe support
             </p>
-            <button className="text-green-600 hover:text-green-700 font-medium">
+            <button 
+              className="font-medium transition-colors"
+              style={{ color: '#046f78' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#034a52'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#046f78'}
+            >
               {chatText}
             </button>
           </div>
@@ -148,7 +162,7 @@ export function SupportPage() {
         {faqContent && (
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
             <div className="flex items-center mb-6">
-              <HelpCircle className="w-8 h-8 text-green-600 mr-3" />
+              <HelpCircle className="w-8 h-8 mr-3" style={{ color: '#046f78' }} />
               <h2 className="text-2xl font-bold text-slate-900">Questions fréquentes</h2>
             </div>
             
@@ -168,7 +182,13 @@ export function SupportPage() {
               <p className="text-slate-600 mb-4">
                 Guides détaillés pour maîtriser toutes les fonctionnalités d'AUTOMIVY
               </p>
-              <a href="#" className="text-green-600 hover:text-green-700 font-medium">
+              <a 
+                href="#" 
+                className="font-medium transition-colors"
+                style={{ color: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#046f78'}
+              >
                 Consulter la documentation →
               </a>
             </div>
@@ -178,7 +198,13 @@ export function SupportPage() {
               <p className="text-slate-600 mb-4">
                 Apprenez avec nos tutoriels vidéo étape par étape
               </p>
-              <a href="#" className="text-green-600 hover:text-green-700 font-medium">
+              <a 
+                href="#" 
+                className="font-medium transition-colors"
+                style={{ color: '#046f78' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#034a52'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#046f78'}
+              >
                 Voir les tutoriels →
               </a>
             </div>

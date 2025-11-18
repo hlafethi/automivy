@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, Trash2, Loader2, Activity, Clock, User, Eye, FileText, Search, Filter, RefreshCw, Calendar, Mail, Users, BarChart3, ChevronDown } from 'lucide-react';
+import { Play, Pause, Trash2, Loader2, Activity, Clock, User, Eye, FileText, Search, RefreshCw, Calendar, Mail, Users, BarChart3 } from 'lucide-react';
 import { Workflow } from '../types';
 import { workflowService } from '../services';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,7 +21,6 @@ export function AllWorkflows() {
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'created_at' | 'user_id' | 'status'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -267,105 +266,113 @@ export function AllWorkflows() {
         </div>
       </div>
 
-      {/* Barre de filtres */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <h4 className="font-semibold text-slate-900">Filtres et Recherche</h4>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-3 py-1 text-sm text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+      {/* Barre de filtres - Design compact harmonisé */}
+      <div className="bg-white border border-slate-200 rounded-lg p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Recherche */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+              style={{ 
+                '--tw-ring-color': '#046f78',
+              } as React.CSSProperties & { '--tw-ring-color'?: string }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#046f78';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(4, 111, 120, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
+          </div>
+
+          {/* Statut */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+            style={{ 
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+          >
+            <option value="all">Tous statuts</option>
+            <option value="active">Actifs</option>
+            <option value="inactive">Inactifs</option>
+          </select>
+
+          {/* Utilisateur */}
+          <select
+            value={userFilter}
+            onChange={(e) => setUserFilter(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+            style={{ 
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+          >
+            <option value="all">Tous utilisateurs</option>
+            {getUniqueUsers().map(userId => (
+              <option key={userId} value={userId}>{userId}</option>
+            ))}
+          </select>
+
+          {/* Période */}
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value as any)}
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+            style={{ 
+              '--tw-ring-color': '#046f78',
+            } as React.CSSProperties & { '--tw-ring-color'?: string }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+            onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+          >
+            <option value="all">Toutes périodes</option>
+            <option value="today">Aujourd'hui</option>
+            <option value="week">Cette semaine</option>
+            <option value="month">Ce mois</option>
+          </select>
+
+          {/* Tri */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:outline-none transition"
+              style={{ 
+                '--tw-ring-color': '#046f78',
+              } as React.CSSProperties & { '--tw-ring-color'?: string }}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+              onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
             >
-              <Filter className="w-4 h-4" />
-              Filtres
-              <ChevronDown className={`w-4 h-4 transition ${showFilters ? 'rotate-180' : ''}`} />
+              <option value="created_at">Date</option>
+              <option value="name">Nom</option>
+              <option value="user_id">Utilisateur</option>
+              <option value="status">Statut</option>
+            </select>
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="px-2.5 py-1.5 border border-slate-300 rounded-md hover:bg-slate-50 transition text-sm"
+              title={`Tri ${sortOrder === 'asc' ? 'décroissant' : 'croissant'}`}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
             </button>
           </div>
-          <div className="text-sm text-slate-600">
-            {filteredWorkflows.length} workflow(s) trouvé(s)
+
+          {/* Compteur */}
+          <div className="text-xs text-slate-600 ml-auto">
+            {filteredWorkflows.length} workflow(s)
           </div>
         </div>
-
-        {/* Barre de recherche */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Rechercher par nom, utilisateur ou description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          />
-        </div>
-
-        {/* Filtres avancés */}
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Statut</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="all">Tous</option>
-                <option value="active">Actifs</option>
-                <option value="inactive">Inactifs</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Utilisateur</label>
-              <select
-                value={userFilter}
-                onChange={(e) => setUserFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="all">Tous les utilisateurs</option>
-                {getUniqueUsers().map(userId => (
-                  <option key={userId} value={userId}>{userId}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Période</label>
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value as any)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="all">Toutes les périodes</option>
-                <option value="today">Aujourd'hui</option>
-                <option value="week">Cette semaine</option>
-                <option value="month">Ce mois</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Tri par</label>
-              <div className="flex gap-2">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="created_at">Date de création</option>
-                  <option value="name">Nom</option>
-                  <option value="user_id">Utilisateur</option>
-                  <option value="status">Statut</option>
-                </select>
-                <button
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-                  title={`Tri ${sortOrder === 'asc' ? 'décroissant' : 'croissant'}`}
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {filteredWorkflows.length === 0 ? (
@@ -399,19 +406,25 @@ export function AllWorkflows() {
           {filteredWorkflows.map((workflow) => (
             <div
               key={workflow.id}
-              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:border-green-300 group"
+              className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 group"
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = '#75ccd5'}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
             >
               {/* En-tête de la carte */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3 flex-1">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    workflow.active 
-                      ? 'bg-gradient-to-br from-green-50 to-green-100' 
-                      : 'bg-gradient-to-br from-gray-50 to-gray-100'
-                  }`}>
-                    <Activity className={`w-6 h-6 ${
-                      workflow.active ? 'text-green-600' : 'text-gray-500'
-                    }`} />
+                  <div 
+                    className="w-12 h-12 rounded-lg flex items-center justify-center"
+                    style={workflow.active ? {
+                      background: 'linear-gradient(to bottom right, #e0f4f6, #d1eef1)'
+                    } : {
+                      background: 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)'
+                    }}
+                  >
+                    <Activity 
+                      className="w-6 h-6"
+                      style={workflow.active ? { color: '#046f78' } : { color: '#64748b' }}
+                    />
                   </div>
                   <div className="flex-1 min-w-0 max-w-[200px]">
                     <h4 className="font-semibold text-slate-900 text-sm mb-1 truncate" title={workflow.name}>
@@ -422,11 +435,17 @@ export function AllWorkflows() {
                     </p>
                   </div>
                 </div>
-                <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                  workflow.active 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
+                <span 
+                  className="px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap"
+                  style={workflow.active ? {
+                    backgroundColor: '#e0f4f6',
+                    color: '#046f78',
+                    border: '1px solid #75ccd5'
+                  } : {
+                    backgroundColor: '#f1f5f9',
+                    color: '#64748b'
+                  }}
+                >
                   {workflow.active ? 'Active' : 'Inactive'}
                 </span>
               </div>

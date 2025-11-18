@@ -38,9 +38,14 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('list')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'list'
-                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  ? 'border-b-2'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
+              style={activeTab === 'list' ? {
+                backgroundColor: '#e0f4f6',
+                color: '#046f78',
+                borderBottomColor: '#046f78'
+              } : {}}
             >
               <List className="w-5 h-5" />
               All Templates
@@ -49,9 +54,14 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('upload')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'upload'
-                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  ? 'border-b-2'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
+              style={activeTab === 'upload' ? {
+                backgroundColor: '#e0f4f6',
+                color: '#046f78',
+                borderBottomColor: '#046f78'
+              } : {}}
             >
               <Upload className="w-5 h-5" />
               Upload Template
@@ -60,9 +70,14 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('ai')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'ai'
-                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  ? 'border-b-2'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
+              style={activeTab === 'ai' ? {
+                backgroundColor: '#e0f4f6',
+                color: '#046f78',
+                borderBottomColor: '#046f78'
+              } : {}}
             >
               <Sparkles className="w-5 h-5" />
               AI Generator
@@ -71,9 +86,14 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('apikeys')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'apikeys'
-                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  ? 'border-b-2'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
+              style={activeTab === 'apikeys' ? {
+                backgroundColor: '#e0f4f6',
+                color: '#046f78',
+                borderBottomColor: '#046f78'
+              } : {}}
             >
               <Key className="w-5 h-5" />
               API Keys
@@ -82,9 +102,14 @@ export function AdminDashboard() {
               onClick={() => setActiveTab('workflows')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition ${
                 activeTab === 'workflows'
-                  ? 'bg-green-50 text-green-700 border-b-2 border-green-600'
+                  ? 'border-b-2'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
+              style={activeTab === 'workflows' ? {
+                backgroundColor: '#e0f4f6',
+                color: '#046f78',
+                borderBottomColor: '#046f78'
+              } : {}}
             >
               <Activity className="w-5 h-5" />
               All Workflows

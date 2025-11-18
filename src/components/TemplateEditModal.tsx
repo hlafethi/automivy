@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Save, Loader2 } from 'lucide-react';
 import { Template } from '../types';
 import { templateService } from '../services';
+import { MAIN_CATEGORIES, getSubcategories } from '../constants/categories';
 
 interface TemplateEditModalProps {
   template: Template | null;
@@ -16,7 +17,9 @@ export function TemplateEditModal({ template, onClose, onSuccess }: TemplateEdit
     visible: true,
     workflowData: null as any,
     setupTime: null as number | null,
-    executionTime: null as number | null
+    executionTime: null as number | null,
+    category: '' as string,
+    subcategory: '' as string
   });
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
@@ -32,7 +35,9 @@ export function TemplateEditModal({ template, onClose, onSuccess }: TemplateEdit
         visible: (template as any).visible ?? true,
         workflowData: templateJson,
         setupTime: template.setup_time ?? null,
-        executionTime: template.execution_time ?? null
+        executionTime: template.execution_time ?? null,
+        category: template.category || '',
+        subcategory: template.subcategory || ''
       });
       // Convertir le JSON en string formatée pour l'affichage
       try {
@@ -90,6 +95,10 @@ export function TemplateEditModal({ template, onClose, onSuccess }: TemplateEdit
       // Ajouter les temps (même si null, pour permettre de les effacer)
       updates.setup_time = formData.setupTime;
       updates.execution_time = formData.executionTime;
+      
+      // Ajouter la catégorie et sous-catégorie
+      updates.category = formData.category || null;
+      updates.subcategory = formData.subcategory || null;
       
       await templateService.updateTemplate(template.id, updates);
       onSuccess();
@@ -240,6 +249,55 @@ export function TemplateEditModal({ template, onClose, onSuccess }: TemplateEdit
                   <p className="text-xs text-slate-500 mt-1">Temps moyen d'exécution du workflow</p>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4" style={{ color: '#046f78' }}>
+                Catégorie métier
+              </h3>
+              <select
+                value={formData.category}
+                onChange={(e) => {
+                  handleChange('category', e.target.value);
+                  handleChange('subcategory', ''); // Réinitialiser la sous-catégorie
+                }}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-offset-0 outline-none transition bg-white mb-4"
+                style={{ 
+                  '--tw-ring-color': '#046f78',
+                  focusRingColor: '#046f78'
+                } as React.CSSProperties & { focusRingColor?: string }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+              >
+                <option value="">Aucune catégorie</option>
+                {MAIN_CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              {formData.category && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Sous-catégorie
+                  </label>
+                  <select
+                    value={formData.subcategory}
+                    onChange={(e) => handleChange('subcategory', e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-offset-0 outline-none transition bg-white"
+                    style={{ 
+                      '--tw-ring-color': '#046f78',
+                      focusRingColor: '#046f78'
+                    } as React.CSSProperties & { focusRingColor?: string }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#046f78'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+                  >
+                    <option value="">Aucune sous-catégorie</option>
+                    {getSubcategories(formData.category).map(subcat => (
+                      <option key={subcat} value={subcat}>{subcat}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div>
