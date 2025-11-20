@@ -427,6 +427,10 @@ class Database {
       [userWorkflowId]
     );
     return result.rows.map(row => ({
+      credential_id: row.credential_id,
+      credential_name: row.credential_name,
+      credential_type: row.credential_type,
+      // Alias pour compatibilité
       id: row.credential_id,
       name: row.credential_name,
       type: row.credential_type

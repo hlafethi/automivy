@@ -1,0 +1,284 @@
+{
+  "name": "CV Analysis and Candidate Evaluation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cv-analysis-evaluation",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-cv-analysis",
+      "name": "Webhook Trigger (AUTOMIVY)",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 400],
+      "webhookId": "cv-analysis-evaluation-webhook-automivy",
+      "typeVersion": 1.1,
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// PREPARE CVs DATA - Extract all CVs from webhook\n// =====================================================\nconst webhookData = $input.item.json;\n\nconsole.log('🚀 [PREPARE CVs] Starting...');\nconsole.log('📦 [PREPARE CVs] Webhook keys:', Object.keys(webhookData));\n\nconst body = webhookData.body || webhookData;\nconsole.log('📦 [PREPARE CVs] Body keys:', body ? Object.keys(body) : 'NO BODY');\n\nconst metadata = {\n  profileWanted: body?.profileWanted || body?.jobRequirements || body?.jobProfile || webhookData.profileWanted || webhookData.jobRequirements || 'Profil non spécifié',\n  notificationEmail: body?.notificationEmail || webhookData.notificationEmail || ''\n};\n\nconsole.log('👤 [PREPARE CVs] Metadata:', metadata);\n\nfunction extractBase64FromInput(input, fieldName) {\n  if (!input) return null;\n  const inputType = typeof input;\n  if (inputType === 'string') {\n    if (input.startsWith('data:')) {\n      const match = input.match(/^data:([^;]+);base64,(.+)$/);\n      if (match) {\n        return { base64: match[2], mimeType: match[1] };\n      }\n    }\n    if (input.length > 100 && !/[:/]/.test(input.substring(0, 50))) {\n      return { base64: input, mimeType: 'application/pdf' };\n    }\n  }\n  if (inputType === 'object' && input !== null) {\n    const dataProps = ['data', 'content', 'base64', 'url'];\n    for (const prop of dataProps) {\n      if (input[prop]) {\n        const result = extractBase64FromInput(input[prop], `${fieldName}.${prop}`);\n        if (result) return result;\n      }\n    }\n  }\n  return null;\n}\n\n// Extraire tous les CVs depuis cvFiles\nconst cvFilesRaw = body?.cvFiles || webhookData.cvFiles;\nlet cvFilesArray = [];\n\nif (cvFilesRaw) {\n  if (Array.isArray(cvFilesRaw)) {\n    cvFilesArray = cvFilesRaw;\n  } else if (typeof cvFilesRaw === 'object') {\n    cvFilesArray = Object.values(cvFilesRaw);\n  } else if (typeof cvFilesRaw === 'string') {\n    try {\n      const parsed = JSON.parse(cvFilesRaw);\n      cvFilesArray = Array.isArray(parsed) ? parsed : [parsed];\n    } catch (e) {\n      console.error('❌ [PREPARE CVs] cvFiles parse error:', e.message);\n    }\n  }\n}\n\nif (cvFilesArray.length === 0) {\n  console.error('❌ [PREPARE CVs] NO CVs FOUND');\n  throw new Error('NO_CVs_FOUND: Aucun CV détecté dans le payload webhook');\n}\n\nconsole.log(`📋 [PREPARE CVs] ${cvFilesArray.length} CV(s) trouvé(s)`);\n\n// Préparer un item pour chaque CV\nconst cvItems = [];\nfor (let i = 0; i < cvFilesArray.length; i++) {\n  const file = cvFilesArray[i];\n  if (!file || typeof file !== 'object') continue;\n  \n  const cvData = extractBase64FromInput(file, `cvFiles[${i}]`);\n  if (!cvData) continue;\n  \n  cvItems.push({\n    json: {\n      ...metadata,\n      cvIndex: i + 1,\n      cvName: file.name || `CV_${i + 1}.pdf`,\n      totalCvs: cvFilesArray.length\n    },\n    binary: {\n      CV: {\n        data: cvData.base64,\n        mimeType: cvData.mimeType,\n        fileName: file.name || `CV_${i + 1}.pdf`,\n        fileExtension: (file.name || 'CV.pdf').split('.').pop()\n      }\n    }\n  });\n}\n\nif (cvItems.length === 0) {\n  throw new Error('NO_CVs_EXTRACTED: Aucun CV n\\'a pu être extrait');\n}\n\nconsole.log(`✅ [PREPARE CVs] ${cvItems.length} CV(s) préparé(s) pour traitement`);\n\nreturn cvItems;"
+      },
+      "id": "prepare-cvs-data",
+      "name": "Prepare CVs Data",
+      "type": "n8n-nodes-base.code",
+      "position": [500, 400],
+      "typeVersion": 2,
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "CV",
+        "options": {}
+      },
+      "id": "extract-from-file",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [750, 400],
+      "typeVersion": 1,
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// NORMALIZE EXTRACTED TEXT - Process each CV individually\n// =====================================================\nconst inputItem = $input.item;\nconsole.log(`📥 [NORMALIZE] Processing CV ${inputItem.json.cvIndex || 1} of ${inputItem.json.totalCvs || 1}`);\n\nfunction cleanText(text) {\n  if (!text || typeof text !== 'string') return '';\n  return text\n    .replace(/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F-\\x9F]/g, '')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\nfunction findTextInItem(item) {\n  if (item.binary?.CV?.data) {\n    const bData = item.binary.CV.data;\n    if (Buffer.isBuffer(bData)) {\n      return bData.toString('utf8');\n    }\n    if (typeof bData === 'string') {\n      return bData;\n    }\n  }\n  const searchKeys = ['data', 'text', 'content', 'output'];\n  for (const key of searchKeys) {\n    if (item.json?.[key] && typeof item.json[key] === 'string') {\n      return item.json[key];\n    }\n  }\n  return '';\n}\n\nconst itemText = findTextInItem(inputItem);\nconst cleanedText = cleanText(itemText);\n\nconsole.log(`📊 [NORMALIZE] CV ${inputItem.json.cvIndex || 1}: ${cleanedText.length} chars`);\n\nreturn {\n  json: {\n    text: cleanedText,\n    textLength: cleanedText.length,\n    extractionMethod: 'extractFromFile',\n    cvIndex: inputItem.json.cvIndex || 1,\n    cvName: inputItem.json.cvName || 'CV.pdf',\n    totalCvs: inputItem.json.totalCvs || 1,\n    profileWanted: inputItem.json.profileWanted || '',\n    notificationEmail: inputItem.json.notificationEmail || ''\n  },\n  binary: inputItem.binary || {},\n  pairedItem: inputItem.pairedItem\n};"
+      },
+      "id": "normalize-extracted-text",
+      "name": "Normalize Extracted Text",
+      "type": "n8n-nodes-base.code",
+      "position": [875, 400],
+      "typeVersion": 2,
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openRouterApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "openai/gpt-4o-mini"
+            },
+            {
+              "name": "messages",
+              "value": "={{ (() => {\n  const normalizedData = $input.item.json;\n  const cvText = normalizedData.text || '';\n  \n  if (!cvText || cvText.length < 50) {\n    return [{ role: 'user', content: 'Extrait le nom complet et l\\'email depuis ce texte de CV (peut être vide ou corrompu). Réponds en JSON: {\\\"fullName\\\": \\\"Nom Prénom\\\", \\\"email\\\": \\\"email@example.com\\\"}' }];\n  }\n  \n  return [{ role: 'user', content: `Extrait le nom complet (prénom et nom) et l'email du candidat depuis ce texte de CV. Réponds UNIQUEMENT en JSON valide, sans texte supplémentaire:\n\n**Texte du CV:**\n${cvText.substring(0, 5000)}\n\n**Format de réponse (JSON uniquement):**\n{\n  \"fullName\": \"Prénom Nom\",\n  \"email\": \"email@example.com\"\n}\n\nSi le nom ou l'email ne peut pas être extrait, utilise \"Candidat Inconnu\" pour fullName et \"no-email@example.com\" pour email.` }];\n})() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-name-email",
+      "name": "Extract Name and Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1000, 400],
+      "typeVersion": 4.2,
+      "disabled": false,
+      "credentials": {
+        "openRouterApi": {
+          "id": "ADMIN_OPENROUTER_CREDENTIAL_ID",
+          "name": "ADMIN_OPENROUTER_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// PARSE NAME AND EMAIL\n// =====================================================\nconst aiResponse = $input.item.json;\nconst normalizedData = $('Normalize Extracted Text').item.json;\n\nconsole.log('👤 [PARSE NAME/EMAIL] Parsing AI response...');\n\nlet extractedData = {\n  fullName: 'Candidat Inconnu',\n  email: 'no-email@example.com'\n};\n\ntry {\n  let content = '';\n  \n  if (aiResponse.choices?.[0]?.message?.content) {\n    content = aiResponse.choices[0].message.content;\n  } else if (aiResponse.message?.content) {\n    content = aiResponse.message.content;\n  } else if (typeof aiResponse === 'string') {\n    content = aiResponse;\n  }\n  \n  if (content) {\n    const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      try {\n        const parsed = JSON.parse(jsonMatch[0]);\n        extractedData = {\n          fullName: parsed.fullName || parsed.name || 'Candidat Inconnu',\n          email: parsed.email || 'no-email@example.com'\n        };\n      } catch (e) {\n        console.warn('⚠️ [PARSE NAME/EMAIL] JSON parse error:', e.message);\n      }\n    }\n  }\n} catch (e) {\n  console.error('❌ [PARSE NAME/EMAIL] Error:', e.message);\n}\n\nconsole.log(`✅ [PARSE NAME/EMAIL] Name: ${extractedData.fullName}, Email: ${extractedData.email}`);\n\nreturn {\n  json: {\n    ...extractedData,\n    text: normalizedData.text,\n    textLength: normalizedData.textLength,\n    extractionMethod: normalizedData.extractionMethod,\n    cvIndex: normalizedData.cvIndex,\n    cvName: normalizedData.cvName,\n    totalCvs: normalizedData.totalCvs,\n    profileWanted: normalizedData.profileWanted,\n    notificationEmail: normalizedData.notificationEmail\n  },\n  binary: normalizedData.binary || {}\n};"
+      },
+      "id": "parse-name-email",
+      "name": "Parse Name and Email",
+      "type": "n8n-nodes-base.code",
+      "position": [1125, 400],
+      "typeVersion": 2,
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openRouterApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "openai/gpt-4o-mini"
+            },
+            {
+              "name": "messages",
+              "value": "={{ (() => {\n  const parsedData = $input.item.json;\n  const cvText = parsedData.text || '';\n  const textLength = parsedData.textLength || 0;\n  const profileWanted = parsedData.profileWanted || 'Profil non spécifié';\n  \n  if (!cvText || textLength < 50) {\n    return [{ role: 'user', content: `Tu es un expert RH. Un CV a été soumis mais l'extraction du texte a échoué.\n\n**Profil recherché:**\n${profileWanted}\n\n**Instructions:**\nPuisqu'aucun texte lisible n'a été extrait, fournis une note de 1/10 et une explication en français.\n\n**Format de sortie (JSON uniquement):**\n{\n  \"score\": 1,\n  \"explanation\": \"Explication en français de pourquoi le score est 1.\"\n}` }];\n  }\n  \n  return [{ role: 'user', content: `Tu es un expert RH. Évalue ce candidat et donne une note de 1 à 10.\n\n**Profil recherché:**\n${profileWanted}\n\n**Texte du CV:**\n${cvText.substring(0, 15000)}\n\n**Instructions:**\n1. Note de 1 à 10 (1 = ne correspond pas du tout, 10 = candidat idéal)\n2. Fournis une explication détaillée en français\n3. Analyse les compétences, expériences et qualifications\n4. Compare avec le profil recherché\n\n**Format de sortie (JSON uniquement, explication en français):**\n{\n  \"score\": 7,\n  \"explanation\": \"Analyse détaillée en français de la correspondance du candidat avec le profil recherché.\"\n}` }];\n})() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "evaluate-cv",
+      "name": "Evaluate CV",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1250, 400],
+      "typeVersion": 4.2,
+      "disabled": false,
+      "credentials": {
+        "openRouterApi": {
+          "id": "ADMIN_OPENROUTER_CREDENTIAL_ID",
+          "name": "ADMIN_OPENROUTER_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// PARSE EVALUATION RESULT\n// =====================================================\nconst aiResponse = $input.item.json;\nconst parsedData = $('Parse Name and Email').item.json;\n\nconsole.log('🤖 [PARSE EVAL] Parsing AI response...');\n\nlet evaluation = {\n  score: 1,\n  explanation: 'Erreur de parsing'\n};\n\ntry {\n  let content = '';\n  \n  if (aiResponse.choices?.[0]?.message?.content) {\n    content = aiResponse.choices[0].message.content;\n  } else if (aiResponse.message?.content) {\n    content = aiResponse.message.content;\n  } else if (typeof aiResponse === 'string') {\n    content = aiResponse;\n  }\n  \n  if (content) {\n    const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      try {\n        const parsed = JSON.parse(jsonMatch[0]);\n        evaluation = {\n          score: Math.max(1, Math.min(10, parseInt(parsed.score) || parsed.vote || 1)),\n          explanation: parsed.explanation || parsed.consideration || 'Analyse effectuée'\n        };\n      } catch (e) {\n        const scoreMatch = content.match(/(?:score|note|vote)[:\\s]*([0-9]+)/i);\n        if (scoreMatch) {\n          evaluation.score = Math.max(1, Math.min(10, parseInt(scoreMatch[1]) || 1));\n        }\n        evaluation.explanation = content.substring(0, 2000);\n      }\n    }\n  }\n} catch (e) {\n  console.error('❌ [PARSE EVAL] Error:', e.message);\n  evaluation.explanation = `Erreur lors de l'analyse: ${e.message}`;\n}\n\nconsole.log(`✅ [PARSE EVAL] Score: ${evaluation.score}/10`);\n\nreturn {\n  json: {\n    fullName: parsedData.fullName,\n    email: parsedData.email,\n    score: evaluation.score,\n    explanation: evaluation.explanation,\n    cvIndex: parsedData.cvIndex,\n    cvName: parsedData.cvName,\n    totalCvs: parsedData.totalCvs,\n    profileWanted: parsedData.profileWanted,\n    notificationEmail: parsedData.notificationEmail\n  }\n};"
+      },
+      "id": "parse-evaluation",
+      "name": "Parse Evaluation",
+      "type": "n8n-nodes-base.code",
+      "position": [1375, 400],
+      "typeVersion": 2,
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// AGGREGATE ALL RESULTS\n// =====================================================\nconst allItems = $input.all();\nconsole.log(`📊 [AGGREGATE] Aggregating ${allItems.length} CV evaluations...`);\n\nconst candidates = allItems.map(item => ({\n  fullName: item.json.fullName || 'Candidat Inconnu',\n  email: item.json.email || 'no-email@example.com',\n  score: item.json.score || 1,\n  explanation: item.json.explanation || 'Aucune explication',\n  cvName: item.json.cvName || 'CV.pdf'\n}));\n\n// Trier par score décroissant\ncandidates.sort((a, b) => b.score - a.score);\n\nconst bestCandidate = candidates[0];\nconst metadata = allItems[0]?.json || {};\n\nconsole.log(`🏆 [AGGREGATE] Best candidate: ${bestCandidate.fullName} (${bestCandidate.score}/10)`);\n\nreturn {\n  json: {\n    candidates: candidates,\n    bestCandidate: bestCandidate,\n    totalCandidates: candidates.length,\n    profileWanted: metadata.profileWanted || 'Profil non spécifié',\n    notificationEmail: metadata.notificationEmail || ''\n  }\n};"
+      },
+      "id": "aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "position": [1500, 400],
+      "typeVersion": 2,
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "fromEmail": "admin@heleam.com",
+        "toEmail": "={{ $json.notificationEmail }}",
+        "subject": "=Rapport d\\'évaluation des CVs - {{ $json.totalCandidates }} candidat(s)",
+        "html": "={{ (() => {\\n  const data = $input.item.json;\\n  const candidates = data.candidates || [];\\n  const bestCandidate = data.bestCandidate || {};\\n\\n  let candidatesHtml = '';\\n  candidates.forEach((candidate, index) => {\\n    const explanation = (candidate.explanation || 'Aucune explication').replace(/\\\\n/g, '<br>');\\n    candidatesHtml += `\\n      <div class=\\\"candidate\\\">\\n        <h3>#${index + 1} - ${candidate.fullName || 'Candidat Inconnu'}</h3>\\n        <p><strong>Email :</strong> ${candidate.email || 'no-email@example.com'}</p>\\n        <p><strong>Note :</strong> ${candidate.score || 1}/10</p>\\n        <p><strong>Évaluation :</strong><br>${explanation}</p>\\n      </div>\\n    `;\\n  });\\n\\n  const profileWanted = (data.profileWanted || 'Profil non spécifié').replace(/\\\\n/g, '<br>');\\n  const bestExplanation = (bestCandidate.explanation || 'Aucune explication').replace(/\\\\n/g, '<br>');\\n\\n  return `\\n  <html>\\n  <head>\\n  <style>\\n    body { font-family: Arial, sans-serif; background: #f9fafb; color: #23272f; }\\n    .container { max-width: 800px; margin: 20px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 6px #dedede; padding: 24px; }\\n    h2 { color: #2d5016; }\\n    h3 { color: #046f78; }\\n    .best-candidate { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 16px; margin: 20px 0; }\\n    .candidate { border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 12px 0; }\\n  </style>\\n  </head>\\n  <body>\\n    <div class=\\\"container\\\">\\n      <h2>📊 Rapport d'évaluation des CVs</h2>\\n      <p><strong>Nombre de candidats analysés :</strong> ${data.totalCandidates || 0}</p>\\n      <p><strong>Profil recherché :</strong><br>${profileWanted}</p>\\n\\n      <div class=\\\"best-candidate\\\">\\n        <h3>🏆 Meilleur candidat</h3>\\n        <p><strong>Candidat :</strong> ${bestCandidate.fullName || 'Candidat Inconnu'}</p>\\n        <p><strong>Email :</strong> ${bestCandidate.email || 'no-email@example.com'}</p>\\n        <p><strong>Note :</strong> ${bestCandidate.score || 1}/10</p>\\n        <p><strong>Évaluation :</strong><br>${bestExplanation}</p>\\n      </div>\\n\\n      <h3>📋 Tous les candidats (triés par score décroissant)</h3>\\n      ${candidatesHtml}\\n    </div>\\n  </body>\\n  </html>\\n  `;\\n})() }}",
+        "options": {}
+      },
+      "id": "send-email-report",
+      "name": "Send Email Report",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [1625, 400],
+      "typeVersion": 2.1,
+      "disabled": false,
+      "credentials": {
+        "smtp": {
+          "id": "ADMIN_SMTP_CREDENTIAL_ID",
+          "name": "ADMIN_SMTP_CREDENTIAL_NAME"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger (AUTOMIVY)": {
+      "main": [
+        [
+          {
+            "node": "Prepare CVs Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare CVs Data": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Normalize Extracted Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Extracted Text": {
+      "main": [
+        [
+          {
+            "node": "Extract Name and Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Name and Email": {
+      "main": [
+        [
+          {
+            "node": "Parse Name and Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Name and Email": {
+      "main": [
+        [
+          {
+            "node": "Evaluate CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate CV": {
+      "main": [
+        [
+          {
+            "node": "Parse Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Send Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1"
+}

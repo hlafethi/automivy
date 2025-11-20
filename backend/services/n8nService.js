@@ -106,63 +106,138 @@ async function createWorkflow(workflow) {
 async function getAdminCredentials() {
   console.log('🔍 [n8nService] Récupération des credentials admin existants...');
   
+  const adminCreds = {};
+  
+  // Si un ID OpenRouter est défini dans les variables d'environnement, l'utiliser en priorité
+  if (process.env.OPENROUTER_CREDENTIAL_ID) {
+    adminCreds.OPENROUTER_ID = process.env.OPENROUTER_CREDENTIAL_ID;
+    adminCreds.OPENROUTER_NAME = process.env.OPENROUTER_CREDENTIAL_NAME || 'OpenRouter Admin';
+    console.log(`✅ [n8nService] Credential OpenRouter forcé depuis env: ${adminCreds.OPENROUTER_ID} (${adminCreds.OPENROUTER_NAME})`);
+  } else if (process.env.OPENROUTER_USER_CREDENTIAL_ID) {
+    // Utiliser le credential utilisateur accessible (Header Auth account 2)
+    adminCreds.OPENROUTER_ID = process.env.OPENROUTER_USER_CREDENTIAL_ID;
+    adminCreds.OPENROUTER_NAME = process.env.OPENROUTER_USER_CREDENTIAL_NAME || 'Header Auth account 2';
+    console.log(`✅ [n8nService] Credential OpenRouter utilisateur forcé depuis env: ${adminCreds.OPENROUTER_ID} (${adminCreds.OPENROUTER_NAME})`);
+  }
+  
   try {
-    // Utiliser les routes du backend au lieu de se connecter directement à n8n
-    const response = await fetch('http://localhost:3004/api/n8n/credentials', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // n8n ne supporte pas GET /api/v1/credentials
+    // Récupérer les credentials depuis les workflows existants
+    console.log('🔍 [n8nService] Récupération des workflows pour extraire les credentials...');
+    const workflows = await callN8nDirect('GET', '/workflows');
     
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`);
-    }
+    // Gérer différents formats de réponse
+    const workflowsList = Array.isArray(workflows) ? workflows : 
+                         (workflows.data || workflows.workflows || []);
     
-    const allCredentials = await response.json();
-    console.log('🔍 [n8nService] Credentials trouvés dans n8n:', allCredentials.length);
+    console.log(`🔍 [n8nService] ${workflowsList.length} workflow(s) trouvé(s)`);
     
-    const adminCreds = {};
-    
-    for (const cred of allCredentials) {
-      console.log(`🔍 [n8nService] Credential trouvé: ${cred.name} (type: ${cred.type}) [ID: ${cred.id}]`);
+    // Parcourir tous les workflows pour trouver les credentials OpenRouter et SMTP
+    for (const workflow of workflowsList) {
+      if (!workflow.nodes || !Array.isArray(workflow.nodes)) continue;
       
-      // Chercher OpenRouter par type d'abord (plus fiable)
-      // Le type peut être 'openRouterApi' ou variantes
-      const credTypeLower = cred.type?.toLowerCase() || '';
-      const credNameLower = cred.name?.toLowerCase() || '';
-      
-      if (credTypeLower === 'openrouterapi' || 
-          credTypeLower === 'openrouter' ||
-          credTypeLower.includes('openrouter') ||
-          credTypeLower === 'openrouterapi') {
-        adminCreds.OPENROUTER_ID = cred.id;
-        adminCreds.OPENROUTER_NAME = cred.name;
-        console.log(`✅ [n8nService] Credential OpenRouter trouvé par type: ${cred.id} (${cred.name})`);
-      } else if (credNameLower.includes('openrouter') || 
-          credNameLower.includes('llm') || 
-          (credNameLower.includes('ai') && credTypeLower.includes('router')) ||
-          (credNameLower.includes('admin') && credTypeLower.includes('router'))) {
-        // Si pas trouvé par type, chercher par nom
-        if (!adminCreds.OPENROUTER_ID) {
-          adminCreds.OPENROUTER_ID = cred.id;
-          adminCreds.OPENROUTER_NAME = cred.name;
-          console.log(`✅ [n8nService] Credential OpenRouter trouvé par nom: ${cred.id} (${cred.name})`);
+      for (const node of workflow.nodes) {
+        if (!node.credentials) continue;
+        
+        // Chercher OpenRouter dans httpHeaderAuth
+        if (node.credentials.httpHeaderAuth && node.credentials.httpHeaderAuth.id) {
+          const credId = node.credentials.httpHeaderAuth.id;
+          const credName = node.credentials.httpHeaderAuth.name || '';
+          
+          // Vérifier si c'est un credential OpenRouter (pas un placeholder)
+          if (credId && 
+              credId !== 'ADMIN_OPENROUTER_CREDENTIAL_ID' && 
+              !credId.includes('ADMIN_OPENROUTER') &&
+              !credId.includes('USER_') &&
+              (node.parameters?.url?.includes('openrouter.ai') || 
+               node.name?.toLowerCase().includes('openrouter'))) {
+            
+            // Prioriser les credentials avec "OpenRouter" dans le nom
+            const isOpenRouterNamed = credName.toLowerCase().includes('openrouter');
+            const isCurrentOpenRouter = adminCreds.OPENROUTER_ID && 
+                                      adminCreds.OPENROUTER_NAME?.toLowerCase().includes('openrouter');
+            
+            // Prioriser le credential "Header Auth account 2" (accessible par l'utilisateur)
+            const isHeaderAuthAccount2 = credId === 'o7MztG7VAoDGoDSp' || credName.toLowerCase().includes('header auth account 2');
+            
+            // Si on n'a pas encore de credential OpenRouter, ou si celui-ci est "Header Auth account 2" (accessible)
+            if (!adminCreds.OPENROUTER_ID || isHeaderAuthAccount2) {
+              adminCreds.OPENROUTER_ID = credId;
+              adminCreds.OPENROUTER_NAME = credName || 'OpenRouter Admin';
+              console.log(`✅ [n8nService] Credential OpenRouter trouvé depuis workflow ${workflow.name}: ${credId} (${credName})`);
+            } else if (isOpenRouterNamed && !isCurrentOpenRouter) {
+              // Si celui-ci a "OpenRouter" dans le nom et l'actuel non, le remplacer
+              adminCreds.OPENROUTER_ID = credId;
+              adminCreds.OPENROUTER_NAME = credName || 'OpenRouter Admin';
+              console.log(`✅ [n8nService] Credential OpenRouter trouvé depuis workflow ${workflow.name}: ${credId} (${credName})`);
+            } else if (credId === 'DJ4JtAswl4vKWvdI') {
+              // Prioriser explicitement le credential connu OpenRouter (seulement si pas de Header Auth account 2)
+              adminCreds.OPENROUTER_ID = credId;
+              adminCreds.OPENROUTER_NAME = credName || 'OpenRouter Admin';
+              console.log(`✅ [n8nService] Credential OpenRouter prioritaire trouvé (ID connu): ${credId} (${credName})`);
+            }
+          }
+        }
+        
+        // Chercher OpenRouter dans openRouterApi
+        if (node.credentials.openRouterApi && node.credentials.openRouterApi.id) {
+          const credId = node.credentials.openRouterApi.id;
+          const credName = node.credentials.openRouterApi.name || '';
+          
+          if (credId && 
+              credId !== 'ADMIN_OPENROUTER_CREDENTIAL_ID' && 
+              !credId.includes('ADMIN_OPENROUTER') &&
+              !credId.includes('USER_')) {
+            if (!adminCreds.OPENROUTER_ID) {
+              adminCreds.OPENROUTER_ID = credId;
+              adminCreds.OPENROUTER_NAME = credName || 'OpenRouter Admin';
+              console.log(`✅ [n8nService] Credential OpenRouter (openRouterApi) trouvé depuis workflow ${workflow.name}: ${credId} (${credName})`);
+            }
+          }
+        }
+        
+        // Chercher SMTP admin
+        if (node.credentials.smtp && node.credentials.smtp.id) {
+          const credId = node.credentials.smtp.id;
+          const credName = node.credentials.smtp.name || '';
+          
+          if (credId && 
+              credName.toLowerCase().includes('admin') &&
+              (credName.toLowerCase().includes('smtp') || 
+               credName.toLowerCase().includes('email') ||
+               credName.toLowerCase().includes('mail'))) {
+            if (!adminCreds.SMTP_ID) {
+              adminCreds.SMTP_ID = credId;
+              adminCreds.SMTP_NAME = credName;
+              console.log(`✅ [n8nService] Credential SMTP admin trouvé depuis workflow ${workflow.name}: ${credId} (${credName})`);
+            }
+          }
         }
       }
-      
-      if (cred.name.toLowerCase().includes('smtp') || 
-          cred.name.toLowerCase().includes('email') ||
-          cred.name.toLowerCase().includes('mail')) {
-        adminCreds.SMTP_ID = cred.id;
-        console.log('✅ Credential SMTP/Email trouvé:', cred.id);
-      }
+    }
+    
+    // Si on a un credential OpenRouter depuis env, ne pas le remplacer
+    if (process.env.OPENROUTER_CREDENTIAL_ID && adminCreds.OPENROUTER_ID !== process.env.OPENROUTER_CREDENTIAL_ID) {
+      console.log(`⚠️ [n8nService] Credential OpenRouter depuis env prioritaire, remplacement du credential trouvé`);
+      adminCreds.OPENROUTER_ID = process.env.OPENROUTER_CREDENTIAL_ID;
+      adminCreds.OPENROUTER_NAME = process.env.OPENROUTER_CREDENTIAL_NAME || 'OpenRouter Admin';
+    } else if (process.env.OPENROUTER_USER_CREDENTIAL_ID && adminCreds.OPENROUTER_ID !== process.env.OPENROUTER_USER_CREDENTIAL_ID) {
+      console.log(`⚠️ [n8nService] Credential OpenRouter utilisateur depuis env prioritaire, remplacement du credential trouvé`);
+      adminCreds.OPENROUTER_ID = process.env.OPENROUTER_USER_CREDENTIAL_ID;
+      adminCreds.OPENROUTER_NAME = process.env.OPENROUTER_USER_CREDENTIAL_NAME || 'Header Auth account 2';
+    } else if (!adminCreds.OPENROUTER_ID) {
+      // Si aucun credential n'a été trouvé, utiliser le credential utilisateur par défaut (accessible)
+      // Essayer d'abord le nouveau ID, puis l'ancien en fallback
+      adminCreds.OPENROUTER_ID = process.env.OPENROUTER_USER_CREDENTIAL_ID || 'hgQk9lN7epSIRRcg';
+      adminCreds.OPENROUTER_NAME = 'Header Auth account 2';
+      console.log(`⚠️ [n8nService] Aucun credential OpenRouter trouvé, utilisation du credential utilisateur par défaut: ${adminCreds.OPENROUTER_ID}`);
     }
     
     console.log('✅ [n8nService] Credentials admin récupérés:', adminCreds);
     return adminCreds;
   } catch (error) {
     console.error('❌ [n8nService] Erreur récupération credentials admin:', error);
+    console.error('❌ [n8nService] Stack:', error.stack);
     return {};
   }
 }

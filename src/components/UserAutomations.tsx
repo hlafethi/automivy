@@ -9,6 +9,8 @@ import { EditEmailWorkflowModal } from './EditEmailWorkflowModal';
 import { TemplateCatalog } from './TemplateCatalog';
 import SmartDeployModal from './SmartDeployModal';
 import PDFFormModal from './PDFFormModal';
+import CVScreeningFormModal from './CVScreeningFormModal';
+import CVAnalysisFormModal from './CVAnalysisFormModal';
 import { UserTickets } from './UserTickets';
 import { UserCommunityView } from './user/UserCommunityComponents';
 import { UserProfileView } from './user/UserProfileComponents';
@@ -26,6 +28,8 @@ export function UserAutomations() {
   const [editingWorkflow, setEditingWorkflow] = useState<UserWorkflow | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showPDFModal, setShowPDFModal] = useState(false);
+  const [showCVModal, setShowCVModal] = useState(false);
+  const [showCVAnalysisModal, setShowCVAnalysisModal] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<UserWorkflow | null>(null);
   const [activeTab, setActiveTab] = useState<'automations' | 'catalog' | 'tickets' | 'community' | 'profile'>('automations');
   const [showSmartDeploy, setShowSmartDeploy] = useState(false);
@@ -241,6 +245,22 @@ export function UserAutomations() {
   const handlePDFForm = (workflow: UserWorkflow) => {
     setSelectedWorkflow(workflow);
     setShowPDFModal(true);
+  };
+
+  const handleCVForm = (workflow: UserWorkflow) => {
+    setSelectedWorkflow(workflow);
+    setShowCVModal(true);
+  };
+
+  const handleCVAnalysisForm = (workflow: UserWorkflow) => {
+    setSelectedWorkflow(workflow);
+    setShowCVAnalysisModal(true);
+  };
+
+  // Fonction pour tronquer les descriptions
+  const truncateDescription = (text: string, maxLength: number = 150): string => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
   };
 
   if (authLoading || loading) {
@@ -509,7 +529,9 @@ export function UserAutomations() {
                           </div>
                           
                           {workflow.description && (
-                            <p className="text-slate-600 mb-3">{workflow.description}</p>
+                            <p className="text-slate-600 mb-3" title={workflow.description}>
+                              {truncateDescription(workflow.description, 150)}
+                            </p>
                           )}
                           
                           <div className="flex items-center space-x-4 text-sm text-slate-500">
@@ -531,6 +553,28 @@ export function UserAutomations() {
                               onClick={() => handlePDFForm(workflow)}
                               className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition"
                               title="Lancer le formulaire PDF"
+                            >
+                              <FileText className="w-5 h-5" />
+                            </button>
+                          )}
+                          
+                          {/* Bouton CV Form - pour CV Screening */}
+                          {workflow.name.includes('CV Screening') && (
+                            <button
+                              onClick={() => handleCVForm(workflow)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                              title="Lancer le formulaire de candidature"
+                            >
+                              <FileText className="w-5 h-5" />
+                            </button>
+                          )}
+                          
+                          {/* Bouton CV Analysis Form - pour CV Analysis and Candidate Evaluation */}
+                          {(workflow.name.includes('CV Analysis') || workflow.name.includes('Candidate Evaluation')) && (
+                            <button
+                              onClick={() => handleCVAnalysisForm(workflow)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                              title="Lancer l'analyse et évaluation de CV"
                             >
                               <FileText className="w-5 h-5" />
                             </button>
@@ -642,6 +686,30 @@ export function UserAutomations() {
           isOpen={showPDFModal}
           onClose={() => {
             setShowPDFModal(false);
+            setSelectedWorkflow(null);
+          }}
+        />
+      )}
+
+      {showCVModal && selectedWorkflow && (
+        <CVScreeningFormModal
+          workflowId={selectedWorkflow.id}
+          workflowName={selectedWorkflow.name}
+          isOpen={showCVModal}
+          onClose={() => {
+            setShowCVModal(false);
+            setSelectedWorkflow(null);
+          }}
+        />
+      )}
+
+      {showCVAnalysisModal && selectedWorkflow && (
+        <CVAnalysisFormModal
+          workflowId={selectedWorkflow.id}
+          workflowName={selectedWorkflow.name}
+          isOpen={showCVAnalysisModal}
+          onClose={() => {
+            setShowCVAnalysisModal(false);
             setSelectedWorkflow(null);
           }}
         />

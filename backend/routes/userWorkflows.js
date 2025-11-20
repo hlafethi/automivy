@@ -193,6 +193,30 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Récupérer les credentials associés à un workflow (pour SmartDeploy)
+router.get('/:id/credentials', authenticateToken, async (req, res) => {
+  try {
+    console.log('🔧 [Backend] GET /user-workflows/:id/credentials');
+    console.log('🔧 [Backend] Workflow ID:', req.params.id);
+    console.log('🔧 [Backend] User ID:', req.user.id);
+
+    // Vérifier que le workflow appartient à l'utilisateur
+    const workflow = await db.getUserWorkflowById(req.params.id, req.user.id);
+    if (!workflow) {
+      return res.status(404).json({ error: 'User workflow not found' });
+    }
+
+    // Récupérer les credentials associés
+    const credentials = await db.getWorkflowCredentials(req.params.id);
+    console.log(`✅ [Backend] ${credentials.length} credential(s) trouvé(s) pour ce workflow`);
+    
+    res.json(credentials);
+  } catch (error) {
+    console.error('❌ [Backend] Get workflow credentials error:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
 // Nettoyer les workflows orphelins (supprimés sur n8n mais encore en BDD)
 router.post('/cleanup-orphaned', authenticateToken, async (req, res) => {
   try {

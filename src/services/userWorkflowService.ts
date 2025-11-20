@@ -333,7 +333,62 @@ class UserWorkflowService {
         throw new Error('User workflow not found');
       }
 
-      // 2. Supprimer le workflow de n8n (ne pas bloquer si erreur 404 - workflow déjà supprimé)
+      // 2. Récupérer les credentials AVANT de supprimer le workflow n8n
+      // (une fois le workflow supprimé, on ne peut plus récupérer ses nœuds)
+      const credentialsToDelete = new Set<string>(); // Utiliser un Set pour éviter les doublons
+      
+      // 2a. Récupérer depuis workflow_credentials
+      try {
+        const workflowCredentials = await apiClient.get(`/user-workflows/${workflowId}/credentials`);
+        if (workflowCredentials && Array.isArray(workflowCredentials) && workflowCredentials.length > 0) {
+          console.log(`🔧 [UserWorkflowService] ${workflowCredentials.length} credential(s) trouvé(s) dans workflow_credentials`);
+          for (const cred of workflowCredentials) {
+            const credId = cred.credential_id || cred.id;
+            if (credId) {
+              credentialsToDelete.add(credId);
+            }
+          }
+        }
+      } catch (credListError: any) {
+        console.warn('⚠️ [UserWorkflowService] Impossible de récupérer les credentials depuis workflow_credentials:', credListError.message);
+      }
+      
+      // 2b. Récupérer aussi depuis le workflow n8n AVANT de le supprimer
+      if (userWorkflow.n8n_workflow_id) {
+        try {
+          const n8nWorkflow = await n8nService.getWorkflow(userWorkflow.n8n_workflow_id);
+          if (n8nWorkflow && n8nWorkflow.nodes) {
+            console.log(`🔧 [UserWorkflowService] Récupération des credentials depuis le workflow n8n (${n8nWorkflow.nodes.length} nœuds)`);
+            for (const node of n8nWorkflow.nodes) {
+              if (node.credentials) {
+                for (const [credType, credValue] of Object.entries(node.credentials)) {
+                  if (credValue && typeof credValue === 'object' && 'id' in credValue) {
+                    const credId = (credValue as any).id;
+                    if (credId && typeof credId === 'string' && credId.length > 0) {
+                      // Ignorer les credentials admin (OpenRouter, SMTP admin) qui ne doivent pas être supprimés
+                      const credName = (credValue as any).name || '';
+                      const isAdminCred = credName.toLowerCase().includes('admin') || 
+                                         credName.toLowerCase().includes('openrouter') ||
+                                         credId.includes('admin');
+                      
+                      if (!isAdminCred) {
+                        credentialsToDelete.add(credId);
+                        console.log(`🔍 [UserWorkflowService] Credential trouvé dans nœud ${node.name}: ${credName} (${credId})`);
+                      } else {
+                        console.log(`ℹ️ [UserWorkflowService] Credential admin ignoré: ${credName} (${credId})`);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (n8nWorkflowError: any) {
+          console.warn('⚠️ [UserWorkflowService] Impossible de récupérer le workflow n8n pour extraire les credentials:', n8nWorkflowError.message);
+        }
+      }
+
+      // 3. Supprimer le workflow de n8n (ne pas bloquer si erreur 404 - workflow déjà supprimé)
       if (userWorkflow.n8n_workflow_id) {
         console.log('🔧 [UserWorkflowService] Suppression workflow n8n:', userWorkflow.n8n_workflow_id);
         try {
@@ -350,24 +405,49 @@ class UserWorkflowService {
         }
       }
 
-      // 3. Supprimer le credential de n8n (ne pas bloquer si erreur)
+      // 4. Ajouter le credential principal (n8n_credential_id) à la liste si présent
       if (userWorkflow.n8n_credential_id) {
-        console.log('🔧 [UserWorkflowService] Suppression credential n8n:', userWorkflow.n8n_credential_id);
-        try {
-          await n8nService.deleteCredential(userWorkflow.n8n_credential_id);
-          console.log('✅ [UserWorkflowService] Credential n8n supprimé');
-        } catch (credError: any) {
-          // Si le credential n'existe plus sur n8n (404), continuer quand même
-          if (credError.message?.includes('404') || credError.message?.includes('Not Found')) {
-            console.warn('⚠️ [UserWorkflowService] Credential n8n déjà supprimé ou introuvable (404), continuation...');
-          } else {
-            console.error('❌ [UserWorkflowService] Erreur suppression credential n8n:', credError);
-            // Ne pas bloquer, continuer quand même
+        credentialsToDelete.add(userWorkflow.n8n_credential_id);
+        console.log('🔧 [UserWorkflowService] Credential n8n principal ajouté à la liste:', userWorkflow.n8n_credential_id);
+      }
+      
+      // 5. Supprimer tous les credentials trouvés (sauf les credentials partagés)
+      if (credentialsToDelete.size > 0) {
+        console.log(`🔧 [UserWorkflowService] ${credentialsToDelete.size} credential(s) unique(s) à vérifier`);
+        
+        // ⚠️ PROTECTION: Ne jamais supprimer le credential "Header Auth account 2" (partagé par tous les workflows)
+        // IDs possibles: o7MztG7VAoDGoDSp (ancien), hgQk9lN7epSIRRcg (nouveau)
+        const SHARED_CREDENTIAL_IDS = ['o7MztG7VAoDGoDSp', 'hgQk9lN7epSIRRcg'];
+        const credentialsToDeleteFiltered = Array.from(credentialsToDelete).filter(credId => {
+          if (SHARED_CREDENTIAL_IDS.includes(credId)) {
+            console.log(`⚠️ [UserWorkflowService] PROTECTION: Credential partagé ignoré (ne sera pas supprimé): ${credId} (Header Auth account 2)`);
+            return false;
           }
+          return true;
+        });
+        
+        if (credentialsToDeleteFiltered.length > 0) {
+          console.log(`🔧 [UserWorkflowService] ${credentialsToDeleteFiltered.length} credential(s) utilisateur(s) à supprimer`);
+          for (const credId of credentialsToDeleteFiltered) {
+            try {
+              await n8nService.deleteCredential(credId);
+              console.log(`✅ [UserWorkflowService] Credential supprimé: ${credId}`);
+            } catch (credError: any) {
+              if (credError.message?.includes('404') || credError.message?.includes('Not Found')) {
+                console.warn(`⚠️ [UserWorkflowService] Credential déjà supprimé (404): ${credId}`);
+              } else {
+                console.error(`❌ [UserWorkflowService] Erreur suppression credential ${credId}:`, credError);
+              }
+            }
+          }
+        } else {
+          console.log('ℹ️ [UserWorkflowService] Aucun credential utilisateur à supprimer (uniquement des credentials partagés/admin)');
         }
+      } else {
+        console.log('ℹ️ [UserWorkflowService] Aucun credential utilisateur à supprimer (peut-être uniquement des credentials admin)');
       }
 
-      // 4. Supprimer de la BDD (TOUJOURS faire, même si n8n a échoué)
+      // 6. Supprimer de la BDD (TOUJOURS faire, même si n8n a échoué)
       console.log('🔧 [UserWorkflowService] Suppression de la base de données...');
       await apiClient.deleteUserWorkflow(workflowId);
       console.log('✅ [UserWorkflowService] Workflow supprimé de la base de données');

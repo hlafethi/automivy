@@ -21,7 +21,8 @@ router.get('/initiate/:provider', async (req, res) => {
     const { provider } = req.params;
     const userId = req.user.id;
     
-    if (provider !== 'gmail') {
+    // Support pour gmail et google_sheets
+    if (provider !== 'gmail' && provider !== 'google_sheets') {
       return res.status(400).json({ error: 'Provider non supporté' });
     }
     
@@ -87,14 +88,25 @@ router.get('/initiate/:provider', async (req, res) => {
       });
     }
     
-    // Scopes Gmail nécessaires + userinfo pour récupérer l'email
-    const scopes = [
-      'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/gmail.modify',
-      'https://www.googleapis.com/auth/gmail.send',
-      'https://www.googleapis.com/auth/userinfo.email',
-      'https://www.googleapis.com/auth/userinfo.profile'
-    ].join(' ');
+    // Scopes selon le provider
+    let scopes = [];
+    if (provider === 'gmail') {
+      scopes = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.modify',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile'
+      ];
+    } else if (provider === 'google_sheets') {
+      scopes = [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile'
+      ];
+    }
+    const scopesString = scopes.join(' ');
     
     // Construire l'URL d'autorisation Google OAuth
     // Note: device_id et device_name ne sont PAS utilisés pour les applications Web
@@ -103,7 +115,7 @@ router.get('/initiate/:provider', async (req, res) => {
       `client_id=${encodeURIComponent(clientId)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&response_type=code` +
-      `&scope=${encodeURIComponent(scopes)}` +
+      `&scope=${encodeURIComponent(scopesString)}` +
       `&access_type=offline` +
       `&prompt=consent` +
       `&state=${encodeURIComponent(state)}`;
@@ -149,8 +161,39 @@ router.get('/callback', async (req, res) => {
       [state]
     );
     
+    let userId, provider;
+    
     if (stateResult.rows.length === 0) {
-      console.error('❌ [OAuth] State invalide ou expiré:', state.substring(0, 20) + '...');
+      // ⚠️ Le state peut avoir été supprimé si le callback a déjà été traité
+      // Dans ce cas, vérifier si un credential existe déjà pour éviter les erreurs
+      console.warn('⚠️ [OAuth] State invalide ou expiré (peut-être déjà utilisé):', state.substring(0, 20) + '...');
+      
+      // Essayer d'extraire le userId du state (format: userId_timestamp_random)
+      const stateParts = state.split('_');
+      if (stateParts.length >= 1) {
+        const possibleUserId = stateParts[0];
+        // Vérifier si c'est un UUID valide
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(possibleUserId)) {
+          userId = possibleUserId;
+          // Essayer de deviner le provider depuis les credentials existants
+          const existingCreds = await db.query(
+            'SELECT provider FROM oauth_credentials WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+            [userId]
+          );
+          if (existingCreds.rows.length > 0) {
+            provider = existingCreds.rows[0].provider;
+            console.log('⚠️ [OAuth] State déjà utilisé, mais credential existant trouvé pour user:', userId);
+            // Retourner un succès pour éviter les erreurs au frontend
+            return res.json({ 
+              success: true, 
+              redirectUrl: `${config.app.frontendUrl}/oauth/callback?oauth_success=${provider}&email=already_connected` 
+            });
+          }
+        }
+      }
+      
+      console.error('❌ [OAuth] State invalide ou expiré et aucun credential trouvé:', state.substring(0, 20) + '...');
       return res.json({ 
         success: false, 
         redirectUrl: `${config.app.frontendUrl}/oauth/callback?oauth_error=invalid_state` 
@@ -158,8 +201,8 @@ router.get('/callback', async (req, res) => {
     }
     
     const stateData = stateResult.rows[0];
-    const userId = stateData.user_id;
-    const provider = stateData.provider;
+    userId = stateData.user_id;
+    provider = stateData.provider;
     
     console.log('✅ [OAuth] State valide pour user:', userId);
     
@@ -194,6 +237,26 @@ router.get('/callback', async (req, res) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('❌ [OAuth] Erreur échange token:', errorText);
+      
+      // ⚠️ Si le code a déjà été utilisé (invalid_grant), vérifier si un credential existe déjà
+      if (errorText.includes('invalid_grant') || errorText.includes('code has been used')) {
+        console.warn('⚠️ [OAuth] Code OAuth déjà utilisé, vérification si credential existe...');
+        const existingCredential = await db.query(
+          'SELECT * FROM oauth_credentials WHERE user_id = $1 AND provider = $2',
+          [userId, provider]
+        );
+        
+        if (existingCredential.rows.length > 0) {
+          console.log('✅ [OAuth] Credential existant trouvé malgré code déjà utilisé');
+          // Supprimer le state même si le code était déjà utilisé
+          await db.query('DELETE FROM oauth_states WHERE state = $1', [state]).catch(() => {});
+          return res.json({ 
+            success: true, 
+            redirectUrl: `${config.app.frontendUrl}/oauth/callback?oauth_success=${provider}&email=already_connected` 
+          });
+        }
+      }
+      
       return res.json({ 
         success: false, 
         redirectUrl: `${config.app.frontendUrl}/oauth/callback?oauth_error=token_exchange_failed` 
@@ -242,27 +305,171 @@ router.get('/callback', async (req, res) => {
       const email = userInfo.email;
       console.log('✅ [OAuth] Email récupéré:', email);
       
-      // Créer le credential dans n8n
-      console.log('🔄 [OAuth] Création du credential dans n8n...');
-      const n8nCredential = await createGmailCredentialInN8n(tokens, email, userId);
-      console.log('✅ [OAuth] Credential n8n créé:', n8nCredential.id);
-      
-      // Stocker le credential OAuth dans notre base de données
-      await db.createOAuthCredential(
-        userId,
-        provider,
-        JSON.stringify(tokens), // Stocker les tokens (à chiffrer en production)
-        n8nCredential.id,
-        email,
-        tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null
+      // ⚠️ VÉRIFICATION: Vérifier si un credential existe déjà pour cet utilisateur et ce provider
+      // pour éviter les doublons si le callback est appelé plusieurs fois
+      const existingCredential = await db.query(
+        'SELECT * FROM oauth_credentials WHERE user_id = $1 AND provider = $2 AND email = $3',
+        [userId, provider, email]
       );
-      console.log('✅ [OAuth] Credential stocké en base de données');
       
-      // Supprimer le state utilisé
+      let n8nCredential;
+      if (existingCredential.rows.length > 0) {
+        console.log('⚠️ [OAuth] Credential existant trouvé dans la base de données, vérification dans n8n...');
+        const existing = existingCredential.rows[0];
+        
+        // ⚠️ CRITIQUE: Vérifier si le credential n8n existe toujours
+        if (existing.n8n_credential_id) {
+          try {
+            const config = require('../config');
+            const n8nUrl = config.n8n.url;
+            const n8nApiKey = config.n8n.apiKey;
+            
+            const checkResponse = await fetch(`${n8nUrl}/api/v1/credentials/${existing.n8n_credential_id}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-N8N-API-KEY': n8nApiKey,
+              },
+            });
+            
+            if (checkResponse.ok) {
+              console.log('✅ [OAuth] Credential n8n existe toujours, mise à jour des tokens...');
+              const existingN8nCred = await checkResponse.json();
+              
+              // Mettre à jour les tokens dans n8n
+              const updateData = {
+                ...existingN8nCred.data,
+                oauthTokenData: {
+                  access_token: tokens.access_token,
+                  refresh_token: tokens.refresh_token,
+                  token_type: tokens.token_type || 'Bearer',
+                  expires_in: tokens.expires_in,
+                  scope: tokens.scope || (provider === 'google_sheets' 
+                    ? 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file'
+                    : 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify'),
+                  expiry_date: tokens.expires_in ? Date.now() + (tokens.expires_in * 1000) : null
+                }
+              };
+              
+              const updateResponse = await fetch(`${n8nUrl}/api/v1/credentials/${existing.n8n_credential_id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-N8N-API-KEY': n8nApiKey,
+                },
+                body: JSON.stringify({
+                  ...existingN8nCred,
+                  data: updateData
+                }),
+              });
+              
+              if (updateResponse.ok) {
+                console.log('✅ [OAuth] Tokens mis à jour dans n8n');
+              } else {
+                console.warn('⚠️ [OAuth] Erreur lors de la mise à jour des tokens dans n8n, mais on continue...');
+              }
+              
+              n8nCredential = { id: existing.n8n_credential_id, name: existingN8nCred.name || `Google ${provider === 'google_sheets' ? 'Sheets' : 'Gmail'} - ${existing.email}` };
+            } else {
+              console.warn('⚠️ [OAuth] Credential n8n n\'existe plus, recréation...');
+              // Le credential n8n n'existe plus, le recréer
+              n8nCredential = provider === 'google_sheets' 
+                ? await createGoogleSheetsCredentialInN8n(tokens, email, userId)
+                : await createGmailCredentialInN8n(tokens, email, userId);
+              console.log('✅ [OAuth] Credential n8n recréé:', n8nCredential.id);
+              
+              // Mettre à jour le n8n_credential_id dans la base de données
+              await db.query(
+                'UPDATE oauth_credentials SET n8n_credential_id = $1, encrypted_data = $2, expires_at = $3, updated_at = NOW() WHERE id = $4',
+                [
+                  n8nCredential.id,
+                  JSON.stringify(tokens),
+                  tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+                  existing.id
+                ]
+              );
+              console.log('✅ [OAuth] Credential mis à jour en base de données avec nouveau n8n_credential_id');
+            }
+          } catch (checkError) {
+            console.error('❌ [OAuth] Erreur lors de la vérification du credential n8n:', checkError);
+            console.warn('⚠️ [OAuth] Recréation du credential n8n par sécurité...');
+            // En cas d'erreur, recréer le credential
+            n8nCredential = provider === 'google_sheets' 
+              ? await createGoogleSheetsCredentialInN8n(tokens, email, userId)
+              : await createGmailCredentialInN8n(tokens, email, userId);
+            console.log('✅ [OAuth] Credential n8n recréé:', n8nCredential.id);
+            
+            // Mettre à jour le n8n_credential_id dans la base de données
+            await db.query(
+              'UPDATE oauth_credentials SET n8n_credential_id = $1, encrypted_data = $2, expires_at = $3, updated_at = NOW() WHERE id = $4',
+              [
+                n8nCredential.id,
+                JSON.stringify(tokens),
+                tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+                existing.id
+              ]
+            );
+            console.log('✅ [OAuth] Credential mis à jour en base de données avec nouveau n8n_credential_id');
+          }
+        } else {
+          console.warn('⚠️ [OAuth] Credential existe mais n8n_credential_id manquant, recréation...');
+          // Le credential existe mais n'a pas de n8n_credential_id, le créer
+          n8nCredential = provider === 'google_sheets' 
+            ? await createGoogleSheetsCredentialInN8n(tokens, email, userId)
+            : await createGmailCredentialInN8n(tokens, email, userId);
+          console.log('✅ [OAuth] Credential n8n créé:', n8nCredential.id);
+          
+          // Mettre à jour le n8n_credential_id dans la base de données
+          await db.query(
+            'UPDATE oauth_credentials SET n8n_credential_id = $1, encrypted_data = $2, expires_at = $3, updated_at = NOW() WHERE id = $4',
+            [
+              n8nCredential.id,
+              JSON.stringify(tokens),
+              tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+              existing.id
+            ]
+          );
+          console.log('✅ [OAuth] Credential mis à jour en base de données avec n8n_credential_id');
+        }
+        
+        // Mettre à jour les tokens dans la base de données (si pas déjà fait)
+        if (!n8nCredential.id || n8nCredential.id === existing.n8n_credential_id) {
+          await db.query(
+            'UPDATE oauth_credentials SET encrypted_data = $1, expires_at = $2, updated_at = NOW() WHERE id = $3',
+            [
+              JSON.stringify(tokens),
+              tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+              existing.id
+            ]
+          );
+          console.log('✅ [OAuth] Credential mis à jour en base de données');
+        }
+      } else {
+        // Créer le credential dans n8n
+        console.log('🔄 [OAuth] Création du credential dans n8n...');
+        n8nCredential = provider === 'google_sheets' 
+          ? await createGoogleSheetsCredentialInN8n(tokens, email, userId)
+          : await createGmailCredentialInN8n(tokens, email, userId);
+        console.log('✅ [OAuth] Credential n8n créé:', n8nCredential.id);
+        
+        // Stocker le credential OAuth dans notre base de données
+        await db.createOAuthCredential(
+          userId,
+          provider,
+          JSON.stringify(tokens), // Stocker les tokens (à chiffrer en production)
+          n8nCredential.id,
+          email,
+          tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null
+        );
+        console.log('✅ [OAuth] Credential stocké en base de données');
+      }
+      
+      // Supprimer le state utilisé (seulement après avoir terminé avec succès)
       await db.query('DELETE FROM oauth_states WHERE state = $1', [state]);
+      console.log('✅ [OAuth] State supprimé après succès');
       
       // Retourner l'URL de redirection au lieu de rediriger directement
-      const redirectUrl = `${config.app.frontendUrl}/oauth/callback?oauth_success=gmail&email=${encodeURIComponent(email)}`;
+      const redirectUrl = `${config.app.frontendUrl}/oauth/callback?oauth_success=${provider}&email=${encodeURIComponent(email)}`;
       console.log('✅ [OAuth] Succès, redirection vers:', redirectUrl);
       return res.json({ 
         success: true, 
@@ -285,6 +492,86 @@ router.get('/callback', async (req, res) => {
     });
   }
 });
+
+// Créer un credential Google Sheets dans n8n avec injection automatique des tokens OAuth
+async function createGoogleSheetsCredentialInN8n(tokens, email, userId) {
+  const config = require('../config');
+  const n8nUrl = config.n8n.url;
+  const n8nApiKey = config.n8n.apiKey;
+  
+  // Pour Google Sheets OAuth2, n8n nécessite clientId et clientSecret
+  const clientId = process.env.GOOGLE_CLIENT_ID || config.google?.clientId;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || config.google?.clientSecret;
+  
+  if (!clientId || !clientSecret) {
+    throw new Error('GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET sont requis pour créer le credential n8n');
+  }
+  
+  console.log('🔄 [OAuth] Création credential Google Sheets avec tokens OAuth injectés directement...');
+  console.log('🔧 [OAuth] Tokens disponibles:', {
+    hasAccessToken: !!tokens.access_token,
+    hasRefreshToken: !!tokens.refresh_token,
+    tokenType: tokens.token_type,
+    expiresIn: tokens.expires_in
+  });
+  
+  const credentialData = {
+    name: `Google Sheets - ${email} - ${userId.substring(0, 8)}`,
+    type: 'googleSheetsOAuth2Api',
+    data: {
+      clientId: clientId,
+      clientSecret: clientSecret,
+      serverUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+      sendAdditionalBodyProperties: false,
+      additionalBodyProperties: '',
+      oauthTokenData: {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        token_type: tokens.token_type || 'Bearer',
+        expires_in: tokens.expires_in,
+        scope: tokens.scope || 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+        expiry_date: tokens.expires_in ? Date.now() + (tokens.expires_in * 1000) : null
+      }
+    }
+  };
+  
+  console.log('🔧 [OAuth] Création credential Google Sheets n8n avec tokens OAuth injectés:');
+  console.log('  - clientId:', clientId ? 'présent' : 'manquant');
+  console.log('  - clientSecret:', clientSecret ? 'présent' : 'manquant');
+  console.log('  - accessToken:', tokens.access_token ? 'présent' : 'manquant');
+  console.log('  - refreshToken:', tokens.refresh_token ? 'présent' : 'manquant');
+  
+  const createResponse = await fetch(`${n8nUrl}/api/v1/credentials`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-N8N-API-KEY': n8nApiKey,
+    },
+    body: JSON.stringify(credentialData),
+  });
+  
+  if (!createResponse.ok) {
+    const errorText = await createResponse.text();
+    console.error('❌ [OAuth] Erreur détaillée n8n pour Google Sheets:', errorText);
+    console.error('❌ [OAuth] Payload envoyé:', JSON.stringify(credentialData, null, 2));
+    throw new Error(`Erreur création credential Google Sheets n8n: ${createResponse.status} - ${errorText}`);
+  }
+  
+  const credential = await createResponse.json();
+  console.log('✅ [OAuth] Credential Google Sheets n8n créé avec succès:', credential.id);
+  console.log('✅ [OAuth] Credential Name:', credential.name);
+  
+  // Vérifier que les tokens sont bien présents dans le credential créé
+  if (credential.data?.oauthTokenData?.access_token) {
+    console.log('✅ [OAuth] Access token présent dans oauthTokenData après création');
+    console.log('✅ [OAuth] Credential Google Sheets créé avec tokens OAuth et prêt à être utilisé');
+    return credential;
+  } else {
+    console.warn('⚠️ [OAuth] Aucun access token trouvé dans oauthTokenData après création');
+    // Retourner quand même le credential, n8n pourra le mettre à jour plus tard
+    return credential;
+  }
+}
 
 // Créer un credential Gmail dans n8n avec injection automatique des tokens OAuth
 async function createGmailCredentialInN8n(tokens, email, userId) {

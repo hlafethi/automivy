@@ -1,0 +1,259 @@
+// Injecteur spécifique pour le template "Template fonctionnel résume email"
+// Ce template nécessite uniquement :
+// - IMAP pour la lecture des emails
+
+const { analyzeWorkflowCredentials, validateFormData } = require('../workflowAnalyzer');
+const { getAdminCredentials } = require('../n8nService');
+const { createImapCredential, createSmtpCredential } = require('../credentialInjector');
+
+/**
+ * Injecte les credentials utilisateur pour le template Resume Email
+ * @param {Object} workflow - Workflow template
+ * @param {Object} userCredentials - Credentials de l'utilisateur
+ * @param {string} userId - ID de l'utilisateur
+ * @param {string} templateId - ID du template
+ * @param {string} templateName - Nom du template
+ * @returns {Object} Workflow avec credentials injectés
+ */
+async function injectUserCredentials(workflow, userCredentials, userId, templateId = null, templateName = null) {
+  console.log('🎯 [ResumeEmailInjector] Injection spécifique pour Template fonctionnel résume email...');
+  console.log('🎯 [ResumeEmailInjector] Template ID:', templateId);
+  console.log('🎯 [ResumeEmailInjector] Template Name:', templateName);
+  
+  // Nettoyer le nom du template pour les noms de credentials
+  const cleanTemplateName = templateName 
+    ? templateName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 40)
+    : null;
+  
+  // Générer un webhook unique
+  let uniqueWebhookPath = null;
+  if (templateId && userId) {
+    const templateIdShort = templateId.replace(/-/g, '').substring(0, 8);
+    const userIdShort = userId.replace(/-/g, '').substring(0, 8);
+    uniqueWebhookPath = `workflow-${templateIdShort}-${userIdShort}`;
+    console.log('🔧 [ResumeEmailInjector] Webhook unique généré:', uniqueWebhookPath);
+  }
+  
+  // Analyser les credentials requis
+  const requiredCredentials = analyzeWorkflowCredentials(workflow);
+  console.log('🔧 [ResumeEmailInjector] Credentials requis:', requiredCredentials.length);
+  
+  // Valider les données
+  const validation = validateFormData(userCredentials, requiredCredentials);
+  if (!validation.isValid) {
+    throw new Error(`Données invalides: ${validation.errors.join(', ')}`);
+  }
+  
+  // Convertir le workflow en string pour remplacer les placeholders
+  let workflowString = JSON.stringify(workflow);
+  const createdCredentials = {};
+  
+  // Récupérer les credentials admin
+  console.log('🔍 [ResumeEmailInjector] Appel de getAdminCredentials()...');
+  let adminCreds = {};
+  try {
+    adminCreds = await getAdminCredentials();
+    console.log('✅ [ResumeEmailInjector] getAdminCredentials() terminé');
+  } catch (error) {
+    console.error('❌ [ResumeEmailInjector] Erreur lors de l\'appel à getAdminCredentials():', error.message);
+    console.error('❌ [ResumeEmailInjector] Stack:', error.stack);
+    // Continuer avec adminCreds vide, on gérera l'erreur plus tard
+  }
+  
+  // ⚠️ IMPORTANT: Pour ce template, utiliser le credential SMTP ADMIN (pas utilisateur)
+  // L'email de résumé doit être envoyé depuis l'email admin
+  console.log('🔍 [ResumeEmailInjector] Vérification credential SMTP admin...');
+  console.log('🔍 [ResumeEmailInjector] adminCreds reçus:', {
+    hasSMTP_ID: !!adminCreds.SMTP_ID,
+    SMTP_ID: adminCreds.SMTP_ID,
+    SMTP_NAME: adminCreds.SMTP_NAME,
+    allKeys: Object.keys(adminCreds),
+    fullObject: JSON.stringify(adminCreds, null, 2)
+  });
+  
+  if (adminCreds.SMTP_ID) {
+    createdCredentials.smtp = {
+      id: adminCreds.SMTP_ID,
+      name: adminCreds.SMTP_NAME || 'SMTP Admin'
+    };
+    console.log('✅ [ResumeEmailInjector] Credential SMTP admin trouvé et utilisé:', createdCredentials.smtp.id, '- Nom:', createdCredentials.smtp.name);
+  } else {
+    // ⚠️ IMPORTANT: Si le credential SMTP admin n'est pas trouvé, le créer
+    // ⚠️ NOUVEAU: Créer un credential SMTP Admin spécifique à ce workflow avec l'email de l'utilisateur
+    console.log('⚠️ [ResumeEmailInjector] Credential SMTP admin non trouvé, création...');
+    const config = require('../../config');
+    const { createCredential } = require('../n8nService');
+    
+    // Construire le nom du credential avec le template name et l'email de l'utilisateur
+    const userEmail = userCredentials.email || '';
+    const templateNamePart = cleanTemplateName ? `-${cleanTemplateName}` : '';
+    const userEmailPart = userEmail ? `-${userEmail}` : '';
+    const smtpCredentialName = `SMTP Admin - admin@heleam.com${templateNamePart}${userEmailPart}`;
+    
+    try {
+      const smtpCredentialData = {
+        name: smtpCredentialName,
+        type: 'smtp',
+        data: {
+          host: config.email.smtpHost,
+          port: config.email.smtpPort || 587,
+          user: config.email.smtpUser || 'admin@heleam.com',
+          password: config.email.smtpPassword,
+          secure: config.email.smtpPort === 465,
+          disableStartTls: config.email.smtpPort === 465
+        }
+      };
+      
+      const smtpCred = await createCredential(smtpCredentialData);
+      createdCredentials.smtp = {
+        id: smtpCred.id,
+        name: smtpCred.name || smtpCredentialName
+      };
+      console.log('✅ [ResumeEmailInjector] Credential SMTP admin créé:', createdCredentials.smtp.id, '- Nom:', createdCredentials.smtp.name);
+      console.log('✅ [ResumeEmailInjector] Ce credential sera supprimé avec le workflow car il contient l\'email de l\'utilisateur');
+    } catch (error) {
+      console.error('❌ [ResumeEmailInjector] Erreur création credential SMTP admin:', error);
+      throw new Error('Impossible de créer le credential SMTP admin. Vérifiez la configuration SMTP dans config.js.');
+    }
+  }
+  
+  // Créer les credentials utilisateur (IMAP uniquement)
+  for (const credConfig of requiredCredentials) {
+    if (credConfig.type === 'imap') {
+      // Créer le credential IMAP
+      const imapCred = await createImapCredential(userCredentials, userId, cleanTemplateName);
+      createdCredentials.imap = imapCred;
+      console.log('✅ [ResumeEmailInjector] Credential IMAP créé:', imapCred.id, '- Nom:', imapCred.name);
+    }
+    
+    // ⚠️ NE PAS créer de credential SMTP utilisateur - utiliser SMTP admin
+    if (credConfig.type === 'smtp') {
+      console.log('⏭️ [ResumeEmailInjector] SMTP ignoré - utilisation du credential SMTP admin');
+    }
+  }
+  
+  // Remplacer les placeholders OpenRouter
+  if (adminCreds.OPENROUTER_ID) {
+    workflowString = workflowString.replace(
+      /"ADMIN_OPENROUTER_PLACEHOLDER"/g,
+      JSON.stringify({ id: adminCreds.OPENROUTER_ID, name: adminCreds.OPENROUTER_NAME || 'OpenRouter Admin' })
+    );
+  }
+  
+  // Parser le workflow
+  const injectedWorkflow = JSON.parse(workflowString);
+  
+  // Injecter les credentials dans les nœuds
+  if (injectedWorkflow.nodes) {
+    injectedWorkflow.nodes = injectedWorkflow.nodes.map(node => {
+      const cleanedNode = { ...node };
+      
+      // Nœuds IMAP - utiliser le credential IMAP utilisateur
+      if (node.type === 'n8n-nodes-imap.imap' || node.type === 'n8n-nodes-base.emailReadImap') {
+        if (createdCredentials.imap) {
+          cleanedNode.credentials = {
+            imap: {
+              id: createdCredentials.imap.id,
+              name: createdCredentials.imap.name
+            }
+          };
+          console.log(`✅ [ResumeEmailInjector] Credential IMAP assigné à ${node.name}`);
+        }
+      }
+      
+      // Nœuds SMTP - TOUJOURS remplacer le credential SMTP (même si hardcodé dans le template)
+      if (node.type === 'n8n-nodes-base.emailSend') {
+        // ⚠️ CRITIQUE: Le credential SMTP admin DOIT être assigné
+        if (!createdCredentials.smtp || !createdCredentials.smtp.id) {
+          console.error(`❌ [ResumeEmailInjector] ERREUR: Aucun credential SMTP admin disponible pour ${node.name}!`);
+          console.error(`❌ [ResumeEmailInjector] createdCredentials.smtp:`, createdCredentials.smtp);
+          console.error(`❌ [ResumeEmailInjector] adminCreds reçus:`, adminCreds);
+          throw new Error('Credential SMTP admin non trouvé. Vérifiez que le credential SMTP admin existe dans n8n avec le type "smtp" ou contenant "smtp" dans son nom.');
+        }
+        
+        // Remplacer le credential SMTP par celui de l'admin
+        if (!cleanedNode.credentials) {
+          cleanedNode.credentials = {};
+        }
+        
+        // Récupérer l'ancien ID pour logging
+        const oldSmtpId = cleanedNode.credentials?.smtp?.id || 'aucun';
+        
+        // Assigner le credential SMTP admin
+        cleanedNode.credentials.smtp = {
+          id: createdCredentials.smtp.id,
+          name: createdCredentials.smtp.name
+        };
+        console.log(`✅ [ResumeEmailInjector] Credential SMTP admin assigné dans ${node.name}:`);
+        console.log(`  - Ancien (template): ${oldSmtpId}`);
+        console.log(`  - Nouveau (admin): ${createdCredentials.smtp.id} (${createdCredentials.smtp.name})`);
+        
+        // ⚠️ IMPORTANT: Modifier le fromEmail pour utiliser l'email admin
+        if (!cleanedNode.parameters) {
+          cleanedNode.parameters = {};
+        }
+        
+        // Remplacer fromEmail par admin@heleam.com (même si c'est une expression)
+        const oldFromEmail = cleanedNode.parameters.fromEmail || 'non défini';
+        cleanedNode.parameters.fromEmail = 'admin@heleam.com';
+        console.log(`✅ [ResumeEmailInjector] From Email modifié dans ${node.name}:`);
+        console.log(`  - Ancien: ${oldFromEmail}`);
+        console.log(`  - Nouveau: admin@heleam.com`);
+      }
+      
+      return cleanedNode;
+    });
+  }
+  
+  // Gérer les webhooks
+  if (uniqueWebhookPath) {
+    const webhookNodes = injectedWorkflow.nodes?.filter(n => 
+      n.type === 'n8n-nodes-base.webhook' || n.type === 'n8n-nodes-base.webhookTrigger'
+    );
+    if (webhookNodes && webhookNodes.length > 0) {
+      webhookNodes.forEach(node => {
+        if (node.parameters && node.parameters.path) {
+          node.parameters.path = uniqueWebhookPath;
+          console.log(`✅ [ResumeEmailInjector] Webhook path mis à jour pour ${node.name}: ${uniqueWebhookPath}`);
+        }
+      });
+    }
+  }
+  
+  // Injecter l'heure dans le Schedule Trigger si fournie
+  if (userCredentials.scheduleTime) {
+    const scheduleNode = injectedWorkflow.nodes?.find(node => 
+      node.type === 'n8n-nodes-base.schedule' || 
+      node.type === 'n8n-nodes-base.scheduleTrigger'
+    );
+    
+    if (scheduleNode) {
+      const [hours, minutes] = userCredentials.scheduleTime.split(':').map(Number);
+      const cronExpression = `${minutes} ${hours} * * *`;
+      
+      if (!scheduleNode.parameters) {
+        scheduleNode.parameters = {};
+      }
+      
+      scheduleNode.parameters.rule = {
+        interval: [{
+          field: 'cronExpression',
+          cronExpression: cronExpression
+        }]
+      };
+      
+      console.log('✅ [ResumeEmailInjector] Schedule Trigger mis à jour avec l\'heure:', userCredentials.scheduleTime);
+    }
+  }
+  
+  return {
+    workflow: injectedWorkflow,
+    webhookPath: uniqueWebhookPath,
+    createdCredentials: createdCredentials // ⚠️ IMPORTANT: Retourner les credentials créés pour stockage dans la BDD
+  };
+}
+
+module.exports = {
+  injectUserCredentials
+};
+

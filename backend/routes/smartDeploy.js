@@ -3,7 +3,7 @@ const router = express.Router();
 const fetch = require('node-fetch');
 const { authenticateToken } = require('../middleware/auth');
 const { analyzeWorkflowCredentials, generateDynamicForm } = require('../services/workflowAnalyzer');
-const { injectUserCredentials } = require('../services/credentialInjector');
+const { injectUserCredentials } = require('../services/injectors');
 const db = require('../database');
 
 /**
@@ -310,15 +310,19 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     }
     
     // Injecter les credentials utilisateur
-    console.log('🔧 [SmartDeploy] Injection des credentials...');
+    console.log('🔧 [SmartDeploy] ===== INJECTION DES CREDENTIALS =====');
     console.log('🔧 [SmartDeploy] Credentials reçus:', Object.keys(credentials));
     console.log('🔧 [SmartDeploy] Détails credentials:', {
       email: credentials.email,
       smtpEmail: credentials.smtpEmail,
       smtpServer: credentials.smtpServer,
       smtpPort: credentials.smtpPort,
-      smtpPasswordLength: credentials.smtpPassword?.length
+      smtpPasswordLength: credentials.smtpPassword?.length,
+      googleSheetsOAuth2: credentials.googleSheetsOAuth2,
+      storageType: credentials.storageType
     });
+    console.log('🔧 [SmartDeploy] Tous les credentials OAuth:', Object.keys(credentials).filter(key => key.includes('OAuth')));
+    console.log('🔧 [SmartDeploy] ===== FIN INJECTION DES CREDENTIALS =====');
     console.log('🔧 [SmartDeploy] Type smtpPort:', typeof credentials.smtpPort);
     console.log('🔧 [SmartDeploy] Valeur smtpPort:', credentials.smtpPort);
     console.log('🔧 [SmartDeploy] Number conversion:', Number(credentials.smtpPort));
@@ -339,11 +343,41 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     
     let injectedWorkflow;
     let webhookPath;
+    let injectionResult = null; // Déclarer injectionResult en dehors du try pour y accéder plus tard
     try {
       console.log('🔧 [SmartDeploy] Appel injectUserCredentials...');
       console.log('🔧 [SmartDeploy] Template ID:', template.id);
-      const injectionResult = await injectUserCredentials(workflowJson, credentials, req.user.id, template.id);
+      console.log('🔧 [SmartDEploy] Admin OpenRouter ID disponible:', process.env.OPENROUTER_API_KEY ? 'OUI (via env)' : 'NON');
+      injectionResult = await injectUserCredentials(workflowJson, credentials, req.user.id, template.id);
       console.log('✅ [SmartDeploy] Injection réussie');
+      console.log('🔍 [SmartDeploy] injectionResult:', {
+        hasWorkflow: !!injectionResult.workflow,
+        hasWebhookPath: !!injectionResult.webhookPath,
+        hasCreatedCredentials: !!injectionResult.createdCredentials,
+        createdCredentialsKeys: injectionResult.createdCredentials ? Object.keys(injectionResult.createdCredentials) : []
+      });
+      
+      // ⚠️ DEBUG: Vérifier les credentials OpenRouter dans le workflow injecté
+      const openRouterNodesInjected = injectionResult.workflow?.nodes?.filter(node => 
+        node.type === 'n8n-nodes-base.httpRequest' && 
+        (node.parameters?.url?.includes('openrouter.ai') || node.name?.toLowerCase().includes('openrouter'))
+      );
+      if (openRouterNodesInjected && openRouterNodesInjected.length > 0) {
+        console.log(`🔍 [SmartDeploy] DEBUG: ${openRouterNodesInjected.length} nœud(s) OpenRouter dans workflow injecté`);
+        openRouterNodesInjected.forEach(node => {
+          const credId = node.credentials?.httpHeaderAuth?.id || node.credentials?.openRouterApi?.id || 'aucun';
+          const hasPlaceholder = credId === 'ADMIN_OPENROUTER_CREDENTIAL_ID' || credId?.includes('ADMIN_OPENROUTER');
+          if (hasPlaceholder) {
+            console.error(`❌ [SmartDeploy] DEBUG: ${node.name} a toujours le placeholder: ${credId}`);
+          } else {
+            console.log(`✅ [SmartDeploy] DEBUG: ${node.name} a le credential: ${credId}`);
+          }
+        });
+      }
+      
+      if (!injectionResult || !injectionResult.workflow) {
+        throw new Error('Injection échouée: injectionResult ou workflow manquant');
+      }
       
       injectedWorkflow = injectionResult.workflow;
       webhookPath = injectionResult.webhookPath;
@@ -457,6 +491,104 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     console.log('  - Connexions:', Object.keys(workflowPayload.connections || {}).length);
     console.log('  - Settings:', Object.keys(workflowPayload.settings || {}).length);
     
+    // ⚠️ VÉRIFICATION CRITIQUE: Vérifier que les connexions LangChain sont présentes AVANT la création
+    console.log('🔍 [SmartDeploy] Vérification des connexions LangChain AVANT création...');
+    const langchainConnectionsBeforeCreate = {
+      ai_languageModel: [],
+      ai_tool: [],
+      ai_memory: []
+    };
+    
+    Object.keys(workflowPayload.connections || {}).forEach(nodeName => {
+      const nodeConnections = workflowPayload.connections[nodeName];
+      if (nodeConnections.ai_languageModel) {
+        langchainConnectionsBeforeCreate.ai_languageModel.push({
+          from: nodeName,
+          to: nodeConnections.ai_languageModel[0]?.[0]?.node || 'NON DÉFINI'
+        });
+      }
+      if (nodeConnections.ai_tool) {
+        langchainConnectionsBeforeCreate.ai_tool.push({
+          from: nodeName,
+          to: nodeConnections.ai_tool[0]?.[0]?.node || 'NON DÉFINI'
+        });
+      }
+      if (nodeConnections.ai_memory) {
+        langchainConnectionsBeforeCreate.ai_memory.push({
+          from: nodeName,
+          to: nodeConnections.ai_memory[0]?.[0]?.node || 'NON DÉFINI'
+        });
+      }
+    });
+    
+    console.log('🔍 [SmartDeploy] Connexions LangChain AVANT création:');
+    console.log(`  - ai_languageModel: ${langchainConnectionsBeforeCreate.ai_languageModel.length} connexion(s)`);
+    langchainConnectionsBeforeCreate.ai_languageModel.forEach(conn => {
+      console.log(`    → ${conn.from} → ${conn.to}`);
+    });
+    console.log(`  - ai_tool: ${langchainConnectionsBeforeCreate.ai_tool.length} connexion(s)`);
+    langchainConnectionsBeforeCreate.ai_tool.forEach(conn => {
+      console.log(`    → ${conn.from} → ${conn.to}`);
+    });
+    console.log(`  - ai_memory: ${langchainConnectionsBeforeCreate.ai_memory.length} connexion(s)`);
+    langchainConnectionsBeforeCreate.ai_memory.forEach(conn => {
+      console.log(`    → ${conn.from} → ${conn.to}`);
+    });
+    
+    if (langchainConnectionsBeforeCreate.ai_languageModel.length === 0) {
+      console.error('❌ [SmartDeploy] CRITIQUE: Aucune connexion ai_languageModel détectée AVANT la création!');
+      console.error('❌ [SmartDeploy] L\'agent IA ne pourra pas fonctionner sans modèle de langage!');
+    }
+    
+    // ⚠️ VÉRIFICATION FINALE: S'assurer qu'aucun placeholder n'est présent dans le payload
+    const payloadString = JSON.stringify(workflowPayload);
+    const hasPlaceholderInPayload = payloadString.includes('ADMIN_OPENROUTER_CREDENTIAL_ID') ||
+                                    payloadString.includes('ADMIN_OPENROUTER_CREDENTIAL_NAME') ||
+                                    payloadString.includes('USER_') && payloadString.includes('_CREDENTIAL_ID');
+    
+    if (hasPlaceholderInPayload) {
+      console.error('❌ [SmartDeploy] ERREUR CRITIQUE: Placeholders détectés dans le payload avant envoi à n8n!');
+      console.error('❌ [SmartDeploy] Payload contient des placeholders - vérification des nœuds...');
+      
+      // Vérifier chaque nœud
+      workflowPayload.nodes?.forEach(node => {
+        if (node.credentials) {
+          Object.keys(node.credentials).forEach(credType => {
+            const cred = node.credentials[credType];
+            // ⚠️ IMPORTANT: Détecter tous les types de placeholders (OpenRouter, Google Sheets avec/sans "SHEETS", etc.)
+            const isPlaceholder = cred?.id?.includes('ADMIN_OPENROUTER') || 
+                                 cred?.id?.includes('ADMIN_SMTP') ||
+                                 (cred?.id?.includes('USER_') && cred?.id?.includes('_CREDENTIAL_ID')) ||
+                                 cred?.id === 'USER_GOOGLE_CREDENTIAL_ID' ||
+                                 cred?.id === 'USER_GOOGLE_SHEETS_CREDENTIAL_ID';
+            if (isPlaceholder) {
+              console.error(`❌ [SmartDeploy] Nœud ${node.name} a un placeholder: ${cred.id}`);
+            }
+          });
+        }
+      });
+      
+      throw new Error('Des placeholders sont encore présents dans le workflow. Les credentials doivent être remplacés avant l\'envoi à n8n.');
+    } else {
+      console.log('✅ [SmartDeploy] Vérification: Aucun placeholder détecté dans le payload');
+      
+      // Vérifier que les credentials OpenRouter sont présents
+      const openRouterNodes = workflowPayload.nodes?.filter(node => 
+        node.type === 'n8n-nodes-base.httpRequest' && 
+        (node.parameters?.url?.includes('openrouter.ai') || node.name?.toLowerCase().includes('openrouter'))
+      );
+      if (openRouterNodes && openRouterNodes.length > 0) {
+        openRouterNodes.forEach(node => {
+          const credId = node.credentials?.httpHeaderAuth?.id;
+          if (!credId || credId.includes('ADMIN_OPENROUTER') || credId.includes('_CREDENTIAL_ID')) {
+            console.error(`❌ [SmartDeploy] Nœud ${node.name} n'a pas de credential OpenRouter valide: ${credId}`);
+          } else {
+            console.log(`✅ [SmartDeploy] Nœud ${node.name} a un credential OpenRouter valide: ${credId}`);
+          }
+        });
+      }
+    }
+    
     const deployResponse = await fetch('http://localhost:3004/api/n8n/workflows', {
       method: 'POST',
       headers: {
@@ -473,6 +605,79 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     const deployedWorkflow = await deployResponse.json();
     console.log('✅ [SmartDeploy] Workflow créé dans n8n:', deployedWorkflow.id);
     console.log('✅ [SmartDeploy] Nom du workflow créé:', deployedWorkflow.name);
+    
+    // ⚠️ VÉRIFICATION CRITIQUE: Vérifier que les connexions LangChain sont présentes APRÈS la création
+    console.log('🔍 [SmartDeploy] Vérification des connexions LangChain APRÈS création...');
+    const langchainConnectionsAfterCreate = {
+      ai_languageModel: [],
+      ai_tool: [],
+      ai_memory: []
+    };
+    
+    Object.keys(deployedWorkflow.connections || {}).forEach(nodeName => {
+      const nodeConnections = deployedWorkflow.connections[nodeName];
+      if (nodeConnections.ai_languageModel) {
+        langchainConnectionsAfterCreate.ai_languageModel.push({
+          from: nodeName,
+          to: nodeConnections.ai_languageModel[0]?.[0]?.node || 'NON DÉFINI'
+        });
+      }
+      if (nodeConnections.ai_tool) {
+        langchainConnectionsAfterCreate.ai_tool.push({
+          from: nodeName,
+          to: nodeConnections.ai_tool[0]?.[0]?.node || 'NON DÉFINI'
+        });
+      }
+      if (nodeConnections.ai_memory) {
+        langchainConnectionsAfterCreate.ai_memory.push({
+          from: nodeName,
+          to: nodeConnections.ai_memory[0]?.[0]?.node || 'NON DÉFINI'
+        });
+      }
+    });
+    
+    console.log('🔍 [SmartDeploy] Connexions LangChain APRÈS création:');
+    console.log(`  - ai_languageModel: ${langchainConnectionsAfterCreate.ai_languageModel.length} connexion(s)`);
+    langchainConnectionsAfterCreate.ai_languageModel.forEach(conn => {
+      console.log(`    → ${conn.from} → ${conn.to}`);
+    });
+    console.log(`  - ai_tool: ${langchainConnectionsAfterCreate.ai_tool.length} connexion(s)`);
+    langchainConnectionsAfterCreate.ai_tool.forEach(conn => {
+      console.log(`    → ${conn.from} → ${conn.to}`);
+    });
+    console.log(`  - ai_memory: ${langchainConnectionsAfterCreate.ai_memory.length} connexion(s)`);
+    langchainConnectionsAfterCreate.ai_memory.forEach(conn => {
+      console.log(`    → ${conn.from} → ${conn.to}`);
+    });
+    
+    if (langchainConnectionsAfterCreate.ai_languageModel.length === 0) {
+      console.error('❌ [SmartDeploy] CRITIQUE: Aucune connexion ai_languageModel détectée APRÈS la création!');
+      console.error('❌ [SmartDeploy] Les connexions LangChain ont été perdues lors de la création!');
+      console.error('❌ [SmartDeploy] Vérification du payload envoyé:');
+      console.error('  - Connexions dans le payload:', JSON.stringify(workflowPayload.connections, null, 2).substring(0, 1000));
+    } else {
+      console.log('✅ [SmartDeploy] Les connexions LangChain sont présentes dans le workflow retourné par n8n après création');
+    }
+    
+    // ⚠️ DEBUG: Vérifier les credentials OpenRouter dans le workflow retourné par n8n APRÈS création (avant mise à jour)
+    const openRouterNodesAfterCreate = deployedWorkflow.nodes?.filter(node => 
+      node.type === 'n8n-nodes-base.httpRequest' && 
+      (node.parameters?.url?.includes('openrouter.ai') || node.name?.toLowerCase().includes('openrouter'))
+    );
+    if (openRouterNodesAfterCreate && openRouterNodesAfterCreate.length > 0) {
+      console.log(`🔍 [SmartDeploy] DEBUG APRÈS CRÉATION (avant update): ${openRouterNodesAfterCreate.length} nœud(s) OpenRouter`);
+      openRouterNodesAfterCreate.forEach(node => {
+        const credId = node.credentials?.httpHeaderAuth?.id || node.credentials?.openRouterApi?.id || 'aucun';
+        const hasPlaceholder = credId === 'ADMIN_OPENROUTER_CREDENTIAL_ID' || credId?.includes('ADMIN_OPENROUTER');
+        if (hasPlaceholder) {
+          console.error(`❌ [SmartDeploy] DEBUG APRÈS CREATE: ${node.name} a toujours le placeholder: ${credId}`);
+        } else if (credId === 'aucun') {
+          console.error(`❌ [SmartDeploy] DEBUG APRÈS CREATE: ${node.name} n'a pas de credential OpenRouter`);
+        } else {
+          console.log(`✅ [SmartDeploy] DEBUG APRÈS CREATE: ${node.name} a le credential: ${credId}`);
+        }
+      });
+    }
     
     // ⚠️ CRITIQUE: Mettre à jour le workflow avec les credentials après création (comme les workflows fonctionnels)
     // Cela garantit que les credentials OpenRouter et autres sont correctement appliqués
@@ -491,6 +696,98 @@ router.post('/deploy', authenticateToken, async (req, res) => {
         // pinData et tags peuvent être ajoutés plus tard si nécessaire
       };
       
+      // ⚠️ VÉRIFICATION CRITIQUE: Vérifier que les connexions LangChain sont présentes
+      console.log('🔍 [SmartDeploy] Vérification des connexions LangChain dans le payload...');
+      const langchainConnections = {
+        ai_languageModel: [],
+        ai_tool: [],
+        ai_memory: []
+      };
+      
+      Object.keys(updatePayload.connections || {}).forEach(nodeName => {
+        const nodeConnections = updatePayload.connections[nodeName];
+        if (nodeConnections.ai_languageModel) {
+          langchainConnections.ai_languageModel.push({
+            from: nodeName,
+            to: nodeConnections.ai_languageModel[0]?.[0]?.node || 'NON DÉFINI'
+          });
+        }
+        if (nodeConnections.ai_tool) {
+          langchainConnections.ai_tool.push({
+            from: nodeName,
+            to: nodeConnections.ai_tool[0]?.[0]?.node || 'NON DÉFINI'
+          });
+        }
+        if (nodeConnections.ai_memory) {
+          langchainConnections.ai_memory.push({
+            from: nodeName,
+            to: nodeConnections.ai_memory[0]?.[0]?.node || 'NON DÉFINI'
+          });
+        }
+      });
+      
+      console.log('🔍 [SmartDeploy] Connexions LangChain détectées:');
+      console.log(`  - ai_languageModel: ${langchainConnections.ai_languageModel.length} connexion(s)`);
+      langchainConnections.ai_languageModel.forEach(conn => {
+        console.log(`    → ${conn.from} → ${conn.to}`);
+      });
+      console.log(`  - ai_tool: ${langchainConnections.ai_tool.length} connexion(s)`);
+      langchainConnections.ai_tool.forEach(conn => {
+        console.log(`    → ${conn.from} → ${conn.to}`);
+      });
+      console.log(`  - ai_memory: ${langchainConnections.ai_memory.length} connexion(s)`);
+      langchainConnections.ai_memory.forEach(conn => {
+        console.log(`    → ${conn.from} → ${conn.to}`);
+      });
+      
+      if (langchainConnections.ai_languageModel.length === 0) {
+        console.error('❌ [SmartDeploy] CRITIQUE: Aucune connexion ai_languageModel détectée!');
+        console.error('❌ [SmartDeploy] L\'agent IA ne pourra pas fonctionner sans modèle de langage!');
+      }
+      
+      // ⚠️ DEBUG: Vérifier les credentials OpenRouter dans les nœuds AVANT la mise à jour
+      const openRouterNodesBeforeUpdate = updatePayload.nodes?.filter(node => 
+        node.type === 'n8n-nodes-base.httpRequest' && 
+        (node.parameters?.url?.includes('openrouter.ai') || node.name?.toLowerCase().includes('openrouter'))
+      );
+      if (openRouterNodesBeforeUpdate && openRouterNodesBeforeUpdate.length > 0) {
+        console.log(`🔍 [SmartDeploy] DEBUG AVANT MISE À JOUR: ${openRouterNodesBeforeUpdate.length} nœud(s) OpenRouter`);
+        openRouterNodesBeforeUpdate.forEach(node => {
+          const credId = node.credentials?.httpHeaderAuth?.id || node.credentials?.openRouterApi?.id || 'aucun';
+          const hasPlaceholder = credId === 'ADMIN_OPENROUTER_CREDENTIAL_ID' || credId?.includes('ADMIN_OPENROUTER');
+          if (hasPlaceholder) {
+            console.error(`❌ [SmartDeploy] DEBUG AVANT UPDATE: ${node.name} a toujours le placeholder: ${credId}`);
+            console.error(`❌ [SmartDeploy] DEBUG: Credentials complets du nœud:`, JSON.stringify(node.credentials, null, 2));
+          } else {
+            console.log(`✅ [SmartDeploy] DEBUG AVANT UPDATE: ${node.name} a le credential: ${credId}`);
+          }
+        });
+      }
+      
+      // ⚠️ DEBUG: Vérifier les credentials Google Sheets dans les nœuds AVANT la mise à jour
+      const googleSheetsNodesBeforeUpdate = updatePayload.nodes?.filter(node => 
+        node.type === 'n8n-nodes-base.googleSheets'
+      );
+      if (googleSheetsNodesBeforeUpdate && googleSheetsNodesBeforeUpdate.length > 0) {
+        console.log(`🔍 [SmartDeploy] DEBUG AVANT MISE À JOUR: ${googleSheetsNodesBeforeUpdate.length} nœud(s) Google Sheets`);
+        googleSheetsNodesBeforeUpdate.forEach(node => {
+          // ⚠️ IMPORTANT: n8n utilise googleSheetsOAuth2Api (avec "Api"), pas googleSheetsOAuth2
+          const credId = node.credentials?.googleSheetsOAuth2Api?.id || node.credentials?.googleSheetsOAuth2?.id || 'aucun';
+          // ⚠️ IMPORTANT: Vérifier les deux variantes du placeholder (avec et sans "SHEETS")
+          const hasPlaceholder = credId === 'USER_GOOGLE_SHEETS_CREDENTIAL_ID' || 
+                                credId === 'USER_GOOGLE_CREDENTIAL_ID' ||
+                                credId?.includes('USER_GOOGLE_SHEETS') ||
+                                credId?.includes('USER_GOOGLE_CREDENTIAL');
+          if (hasPlaceholder) {
+            console.error(`❌ [SmartDeploy] DEBUG AVANT UPDATE: ${node.name} a toujours le placeholder: ${credId}`);
+          } else if (credId === 'aucun') {
+            console.error(`❌ [SmartDeploy] DEBUG AVANT UPDATE: ${node.name} n'a pas de credential Google Sheets`);
+          } else {
+            console.log(`✅ [SmartDeploy] DEBUG AVANT UPDATE: ${node.name} a le credential: ${credId}`);
+          }
+        });
+      }
+      
       console.log('🔧 [SmartDeploy] Mise à jour workflow - Nombre de nœuds:', updatePayload.nodes?.length);
       console.log('🔧 [SmartDeploy] Mise à jour workflow - Connexions:', Object.keys(updatePayload.connections || {}).length);
       
@@ -508,10 +805,250 @@ router.post('/deploy', authenticateToken, async (req, res) => {
         console.log('✅ [SmartDeploy] Workflow mis à jour avec les credentials');
         console.log('✅ [SmartDeploy] Workflow mis à jour - Nombre de nœuds:', updatedWorkflow.nodes?.length);
         console.log('✅ [SmartDeploy] Workflow mis à jour - Connexions:', Object.keys(updatedWorkflow.connections || {}).length);
+        
+        // ⚠️ VÉRIFICATION CRITIQUE: Vérifier que les connexions LangChain sont présentes APRÈS la mise à jour
+        console.log('🔍 [SmartDeploy] Vérification des connexions LangChain APRÈS la mise à jour...');
+        const langchainConnectionsAfterUpdate = {
+          ai_languageModel: [],
+          ai_tool: [],
+          ai_memory: []
+        };
+        
+        Object.keys(updatedWorkflow.connections || {}).forEach(nodeName => {
+          const nodeConnections = updatedWorkflow.connections[nodeName];
+          if (nodeConnections.ai_languageModel) {
+            langchainConnectionsAfterUpdate.ai_languageModel.push({
+              from: nodeName,
+              to: nodeConnections.ai_languageModel[0]?.[0]?.node || 'NON DÉFINI'
+            });
+          }
+          if (nodeConnections.ai_tool) {
+            langchainConnectionsAfterUpdate.ai_tool.push({
+              from: nodeName,
+              to: nodeConnections.ai_tool[0]?.[0]?.node || 'NON DÉFINI'
+            });
+          }
+          if (nodeConnections.ai_memory) {
+            langchainConnectionsAfterUpdate.ai_memory.push({
+              from: nodeName,
+              to: nodeConnections.ai_memory[0]?.[0]?.node || 'NON DÉFINI'
+            });
+          }
+        });
+        
+        console.log('🔍 [SmartDeploy] Connexions LangChain APRÈS mise à jour:');
+        console.log(`  - ai_languageModel: ${langchainConnectionsAfterUpdate.ai_languageModel.length} connexion(s)`);
+        langchainConnectionsAfterUpdate.ai_languageModel.forEach(conn => {
+          console.log(`    → ${conn.from} → ${conn.to}`);
+        });
+        console.log(`  - ai_tool: ${langchainConnectionsAfterUpdate.ai_tool.length} connexion(s)`);
+        langchainConnectionsAfterUpdate.ai_tool.forEach(conn => {
+          console.log(`    → ${conn.from} → ${conn.to}`);
+        });
+        console.log(`  - ai_memory: ${langchainConnectionsAfterUpdate.ai_memory.length} connexion(s)`);
+        langchainConnectionsAfterUpdate.ai_memory.forEach(conn => {
+          console.log(`    → ${conn.from} → ${conn.to}`);
+        });
+        
+        if (langchainConnectionsAfterUpdate.ai_languageModel.length === 0) {
+          console.error('❌ [SmartDeploy] CRITIQUE: Aucune connexion ai_languageModel détectée APRÈS la mise à jour!');
+          console.error('❌ [SmartDeploy] Les connexions LangChain ont été perdues lors de la mise à jour!');
+          console.error('❌ [SmartDeploy] Vérification du payload envoyé:');
+          console.error('  - Connexions dans le payload:', JSON.stringify(updatePayload.connections, null, 2).substring(0, 500));
+        } else {
+          console.log('✅ [SmartDeploy] Les connexions LangChain sont présentes dans le workflow retourné par n8n');
+        }
+        
+        // ⚠️ DEBUG: Vérifier les credentials OpenRouter dans le workflow APRÈS la mise à jour
+        const openRouterNodesAfterUpdate = updatedWorkflow.nodes?.filter(node => 
+          node.type === 'n8n-nodes-base.httpRequest' && 
+          (node.parameters?.url?.includes('openrouter.ai') || node.name?.toLowerCase().includes('openrouter'))
+        );
+        if (openRouterNodesAfterUpdate && openRouterNodesAfterUpdate.length > 0) {
+          console.log(`🔍 [SmartDeploy] DEBUG APRÈS MISE À JOUR: ${openRouterNodesAfterUpdate.length} nœud(s) OpenRouter`);
+          openRouterNodesAfterUpdate.forEach(node => {
+            const credId = node.credentials?.httpHeaderAuth?.id || node.credentials?.openRouterApi?.id || 'aucun';
+            const hasPlaceholder = credId === 'ADMIN_OPENROUTER_CREDENTIAL_ID' || credId?.includes('ADMIN_OPENROUTER');
+            if (hasPlaceholder) {
+              console.error(`❌ [SmartDeploy] DEBUG APRÈS UPDATE: ${node.name} a toujours le placeholder: ${credId}`);
+            } else if (credId === 'aucun') {
+              console.error(`❌ [SmartDeploy] DEBUG APRÈS UPDATE: ${node.name} n'a pas de credential OpenRouter`);
+            } else {
+              console.log(`✅ [SmartDeploy] DEBUG APRÈS UPDATE: ${node.name} a le credential: ${credId}`);
+            }
+          });
+        }
+        
+        // ⚠️ DEBUG: Vérifier les credentials Google Sheets dans le workflow APRÈS la mise à jour
+      const googleSheetsNodesAfterUpdate = updatedWorkflow.nodes?.filter(node => 
+        node.type === 'n8n-nodes-base.googleSheets'
+      );
+      if (googleSheetsNodesAfterUpdate && googleSheetsNodesAfterUpdate.length > 0) {
+        console.log(`🔍 [SmartDeploy] DEBUG APRÈS MISE À JOUR: ${googleSheetsNodesAfterUpdate.length} nœud(s) Google Sheets`);
+        googleSheetsNodesAfterUpdate.forEach(node => {
+          // ⚠️ IMPORTANT: n8n utilise googleSheetsOAuth2Api (avec "Api"), pas googleSheetsOAuth2
+          const credId = node.credentials?.googleSheetsOAuth2Api?.id || node.credentials?.googleSheetsOAuth2?.id || 'aucun';
+          const hasPlaceholder = credId === 'USER_GOOGLE_SHEETS_CREDENTIAL_ID' || credId?.includes('USER_GOOGLE_SHEETS');
+          if (hasPlaceholder) {
+            console.error(`❌ [SmartDeploy] DEBUG APRÈS UPDATE: ${node.name} a toujours le placeholder: ${credId}`);
+          } else if (credId === 'aucun') {
+            console.error(`❌ [SmartDeploy] DEBUG APRÈS UPDATE: ${node.name} n'a pas de credential Google Sheets`);
+          } else {
+            console.log(`✅ [SmartDeploy] DEBUG APRÈS UPDATE: ${node.name} a le credential: ${credId}`);
+          }
+        });
+      }
+        
+        // ⚠️ VÉRIFICATION CRITIQUE: Si les credentials OpenRouter ne sont pas présents après la mise à jour,
+        // forcer leur assignation en faisant une deuxième mise à jour
+        const { getAdminCredentials } = require('../services/n8nService');
+        const adminCreds = await getAdminCredentials();
+        
+        // Liste des credentials OpenRouter valides (ancien et nouveau)
+        const VALID_OPENROUTER_CREDENTIAL_IDS = [
+          'hgQk9lN7epSIRRcg', // Nouveau credential créé
+          'o7MztG7VAoDGoDSp'  // Ancien credential (peut ne plus exister)
+        ];
+        
+        // Utiliser le credential utilisateur accessible par défaut si adminCreds.OPENROUTER_ID n'est pas disponible
+        // Nouveau ID: hgQk9lN7epSIRRcg (ancien: o7MztG7VAoDGoDSp)
+        const expectedCredId = adminCreds.OPENROUTER_ID || 'hgQk9lN7epSIRRcg';
+        const expectedCredName = adminCreds.OPENROUTER_NAME || 'Header Auth account 2';
+        
+        const openRouterNodesAfterUpdateCheck = updatedWorkflow.nodes?.filter(node => 
+          node.type === 'n8n-nodes-base.httpRequest' && 
+          (node.parameters?.url?.includes('openrouter.ai') || node.name?.toLowerCase().includes('openrouter'))
+        );
+        
+        let needsSecondUpdate = false;
+        if (openRouterNodesAfterUpdateCheck && openRouterNodesAfterUpdateCheck.length > 0) {
+          openRouterNodesAfterUpdateCheck.forEach(node => {
+            const credId = node.credentials?.httpHeaderAuth?.id;
+            
+            // Vérifier si le credential actuel est valide (dans la liste des credentials valides)
+            const isCurrentCredValid = credId && VALID_OPENROUTER_CREDENTIAL_IDS.includes(credId);
+            
+            // Si le credential actuel est valide, ne pas le changer
+            if (isCurrentCredValid) {
+              console.log(`✅ [SmartDeploy] ${node.name} a déjà un credential OpenRouter valide: ${credId}`);
+              return; // Ne pas forcer le changement
+            }
+            
+            // Si le credential n'est pas valide ou manquant, forcer l'assignation
+            if (!credId || !isCurrentCredValid) {
+              console.warn(`⚠️ [SmartDeploy] ${node.name} a un credential OpenRouter invalide ou manquant: ${credId || 'AUCUN'}, assignation de ${expectedCredId}`);
+              if (!node.credentials) {
+                node.credentials = {};
+              }
+              node.credentials.httpHeaderAuth = {
+                id: expectedCredId,
+                name: expectedCredName
+              };
+              needsSecondUpdate = true;
+              console.log(`✅ [SmartDeploy] Credential OpenRouter FORCÉ pour ${node.name}: ${expectedCredId}`);
+            }
+          });
+        }
+        
+        // Si des credentials ont été forcés, faire une deuxième mise à jour
+        if (needsSecondUpdate) {
+          console.log('🔧 [SmartDeploy] Deuxième mise à jour nécessaire pour forcer les credentials OpenRouter...');
+          const secondUpdatePayload = {
+            name: updatedWorkflow.name,
+            nodes: updatedWorkflow.nodes,
+            connections: updatedWorkflow.connections,
+            settings: updatedWorkflow.settings || {}
+          };
+          
+          const secondUpdateResponse = await fetch(`${n8nUrl}/api/v1/workflows/${deployedWorkflow.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-N8N-API-KEY': n8nApiKey,
+            },
+            body: JSON.stringify(secondUpdatePayload)
+          });
+          
+          if (secondUpdateResponse.ok) {
+            const secondUpdatedWorkflow = await secondUpdateResponse.json();
+            console.log('✅ [SmartDeploy] Deuxième mise à jour réussie - credentials OpenRouter forcés');
+            
+            // Vérifier que les credentials sont bien présents après la deuxième mise à jour
+            const openRouterNodesAfterSecondUpdate = secondUpdatedWorkflow.nodes?.filter(node => 
+              node.type === 'n8n-nodes-base.httpRequest' && 
+              (node.parameters?.url?.includes('openrouter.ai') || node.name?.toLowerCase().includes('openrouter'))
+            );
+            if (openRouterNodesAfterSecondUpdate && openRouterNodesAfterSecondUpdate.length > 0) {
+              // Liste des credentials OpenRouter valides (réutilisée pour la vérification)
+              const validCredIds = ['hgQk9lN7epSIRRcg', 'o7MztG7VAoDGoDSp'];
+              
+              openRouterNodesAfterSecondUpdate.forEach(node => {
+                const credId = node.credentials?.httpHeaderAuth?.id;
+                const isCredValid = credId && validCredIds.includes(credId);
+                
+                if (isCredValid) {
+                  console.log(`✅ [SmartDeploy] VÉRIFICATION FINALE: ${node.name} a un credential OpenRouter valide: ${credId}`);
+                } else {
+                  console.error(`❌ [SmartDeploy] VÉRIFICATION FINALE: ${node.name} a un credential OpenRouter invalide: ${credId || 'AUCUN'}`);
+                  console.error(`❌ [SmartDeploy] Cela peut indiquer que le credential n'est pas accessible par l'utilisateur dans n8n.`);
+                  console.error(`❌ [SmartDeploy] Credentials valides: ${validCredIds.join(', ')}`);
+                }
+              });
+            }
+            
+            updatedWorkflow = secondUpdatedWorkflow;
+          } else {
+            const errorText = await secondUpdateResponse.text();
+            console.error(`❌ [SmartDeploy] Erreur lors de la deuxième mise à jour: ${errorText}`);
+          }
+        }
+        
+        // Mettre à jour deployedWorkflow avec la version mise à jour pour avoir les credentials injectés
+        deployedWorkflow.nodes = updatedWorkflow.nodes;
+        deployedWorkflow.connections = updatedWorkflow.connections;
+        
+        // ⚠️ VÉRIFICATION FINALE: Valider que tous les nœuds critiques ont des credentials
+        console.log('🔍 [SmartDeploy] Vérification finale des credentials dans le workflow...');
+        const criticalNodes = updatedWorkflow.nodes?.filter(node => {
+          const needsCreds = (node.type === 'n8n-nodes-base.httpRequest' && 
+                             (node.parameters?.url?.includes('openrouter.ai') || node.name?.toLowerCase().includes('openrouter'))) ||
+                            node.type === 'n8n-nodes-base.googleSheets' ||
+                            node.type === 'n8n-nodes-base.emailSend';
+          return needsCreds;
+        });
+        
+        if (criticalNodes && criticalNodes.length > 0) {
+          criticalNodes.forEach(node => {
+            const hasCreds = node.credentials && Object.keys(node.credentials).length > 0;
+            if (!hasCreds) {
+              console.error(`❌ [SmartDeploy] ATTENTION: Nœud "${node.name}" (${node.type}) n'a pas de credentials assignés!`);
+            } else {
+              console.log(`✅ [SmartDeploy] Nœud "${node.name}" a des credentials:`, Object.keys(node.credentials).join(', '));
+            }
+          });
+        }
       } else {
         const errorText = await updateResponse.text();
         console.warn('⚠️ [SmartDeploy] Impossible de mettre à jour le workflow:', errorText);
         console.warn('⚠️ [SmartDeploy] Status:', updateResponse.status);
+        // Si la mise à jour échoue, récupérer le workflow depuis n8n pour avoir les nodes
+        try {
+          const getResponse = await fetch(`${n8nUrl}/api/v1/workflows/${deployedWorkflow.id}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-N8N-API-KEY': n8nApiKey
+            }
+          });
+          if (getResponse.ok) {
+            const fetchedWorkflow = await getResponse.json();
+            deployedWorkflow.nodes = fetchedWorkflow.nodes;
+            deployedWorkflow.connections = fetchedWorkflow.connections;
+            console.log('✅ [SmartDeploy] Workflow récupéré depuis n8n pour extraction des credentials');
+          }
+        } catch (getError) {
+          console.warn('⚠️ [SmartDeploy] Impossible de récupérer le workflow depuis n8n:', getError.message);
+        }
       }
     } catch (updateError) {
       console.warn('⚠️ [SmartDeploy] Erreur mise à jour workflow:', updateError.message);
@@ -519,7 +1056,7 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     }
     
     // Attendre un peu pour que n8n traite la mise à jour avant l'activation
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Augmenté à 2 secondes pour plus de stabilité
     
     // Vérifier si le workflow a un trigger node (requis pour l'activation)
     const triggerNode = injectedWorkflow.nodes?.find(node => {
@@ -527,15 +1064,104 @@ router.post('/deploy', authenticateToken, async (req, res) => {
         'n8n-nodes-base.manualTrigger',
         'n8n-nodes-base.schedule',
         'n8n-nodes-base.webhook',
-        'n8n-nodes-base.scheduleTrigger'
+        'n8n-nodes-base.scheduleTrigger',
+        'n8n-nodes-base.webhookTrigger' // Ajout pour webhookTrigger
       ];
+      const nodeTypeLower = node.type?.toLowerCase() || '';
+      const nodeNameLower = node.name?.toLowerCase() || '';
       return triggerTypes.includes(node.type) || 
-             node.type?.includes('trigger') || 
-             node.name?.toLowerCase().includes('trigger');
+             nodeTypeLower.includes('trigger') || 
+             nodeTypeLower.includes('webhook') ||
+             nodeNameLower.includes('trigger') ||
+             nodeNameLower.includes('webhook');
     });
     
     const hasTriggerNode = !!triggerNode;
-    console.log('🔧 [SmartDeploy] Vérification trigger node:', hasTriggerNode ? `✅ Présent (${triggerNode?.type})` : '❌ Absent');
+    console.log('🔧 [SmartDeploy] Vérification trigger node:', hasTriggerNode ? `✅ Présent (${triggerNode?.type} - ${triggerNode?.name})` : '❌ Absent');
+    if (triggerNode) {
+      console.log('🔧 [SmartDeploy] Détails trigger:', {
+        type: triggerNode.type,
+        name: triggerNode.name,
+        id: triggerNode.id,
+        webhookPath: triggerNode.parameters?.path,
+        webhookId: triggerNode.webhookId
+      });
+      
+      // Vérifier que le webhook trigger a un path configuré
+      if (triggerNode.type === 'n8n-nodes-base.webhook' || triggerNode.type === 'n8n-nodes-base.webhookTrigger') {
+        if (!triggerNode.parameters?.path && !triggerNode.webhookId) {
+          console.error('❌ [SmartDeploy] ATTENTION: Le webhook trigger n\'a pas de path configuré!');
+          console.error('❌ [SmartDeploy] Cela peut empêcher le workflow de s\'exécuter correctement.');
+        } else {
+          console.log(`✅ [SmartDeploy] Webhook trigger configuré avec path: ${triggerNode.parameters?.path || triggerNode.webhookId}`);
+        }
+      }
+    }
+    
+    // ⚠️ VÉRIFICATION CRITIQUE: Vérifier que les connexions LangChain sont présentes AVANT l'activation
+    // Seulement si le workflow contient des nœuds LangChain
+    const hasLangChainNodes = deployedWorkflow.nodes?.some(node => 
+      node.type?.includes('langchain') || 
+      node.type?.includes('agent') ||
+      node.type === '@n8n/n8n-nodes-langchain.agent'
+    );
+    
+    if (hasLangChainNodes) {
+      console.log('🔍 [SmartDeploy] Workflow contient des nœuds LangChain - Vérification des connexions AVANT activation...');
+      const langchainConnectionsBeforeActivation = {
+        ai_languageModel: [],
+        ai_tool: [],
+        ai_memory: []
+      };
+      
+      // Utiliser deployedWorkflow.connections qui contient les connexions après mise à jour
+      Object.keys(deployedWorkflow.connections || {}).forEach(nodeName => {
+        const nodeConnections = deployedWorkflow.connections[nodeName];
+        if (nodeConnections.ai_languageModel) {
+          langchainConnectionsBeforeActivation.ai_languageModel.push({
+            from: nodeName,
+            to: nodeConnections.ai_languageModel[0]?.[0]?.node || 'NON DÉFINI'
+          });
+        }
+        if (nodeConnections.ai_tool) {
+          langchainConnectionsBeforeActivation.ai_tool.push({
+            from: nodeName,
+            to: nodeConnections.ai_tool[0]?.[0]?.node || 'NON DÉFINI'
+          });
+        }
+        if (nodeConnections.ai_memory) {
+          langchainConnectionsBeforeActivation.ai_memory.push({
+            from: nodeName,
+            to: nodeConnections.ai_memory[0]?.[0]?.node || 'NON DÉFINI'
+          });
+        }
+      });
+      
+      console.log('🔍 [SmartDeploy] Connexions LangChain AVANT activation:');
+      console.log(`  - ai_languageModel: ${langchainConnectionsBeforeActivation.ai_languageModel.length} connexion(s)`);
+      langchainConnectionsBeforeActivation.ai_languageModel.forEach(conn => {
+        console.log(`    → ${conn.from} → ${conn.to}`);
+      });
+      console.log(`  - ai_tool: ${langchainConnectionsBeforeActivation.ai_tool.length} connexion(s)`);
+      langchainConnectionsBeforeActivation.ai_tool.forEach(conn => {
+        console.log(`    → ${conn.from} → ${conn.to}`);
+      });
+      console.log(`  - ai_memory: ${langchainConnectionsBeforeActivation.ai_memory.length} connexion(s)`);
+      langchainConnectionsBeforeActivation.ai_memory.forEach(conn => {
+        console.log(`    → ${conn.from} → ${conn.to}`);
+      });
+      
+      if (langchainConnectionsBeforeActivation.ai_languageModel.length === 0) {
+        console.error('❌ [SmartDeploy] CRITIQUE: Aucune connexion ai_languageModel détectée AVANT l\'activation!');
+        console.error('❌ [SmartDeploy] Le workflow ne pourra pas fonctionner sans modèle de langage!');
+        console.error('❌ [SmartDeploy] Vérification des connexions dans deployedWorkflow:');
+        console.error('  - Connexions disponibles:', Object.keys(deployedWorkflow.connections || {}).join(', '));
+      } else {
+        console.log('✅ [SmartDeploy] Les connexions LangChain sont présentes AVANT l\'activation');
+      }
+    } else {
+      console.log('ℹ️ [SmartDeploy] Workflow ne contient pas de nœuds LangChain - Vérification des connexions LangChain ignorée');
+    }
     
     // ACTIVATION AUTOMATIQUE du workflow dans n8n (TOUJOURS activer)
     console.log('🔧 [SmartDeploy] Activation automatique du workflow...');
@@ -550,13 +1176,18 @@ router.post('/deploy', authenticateToken, async (req, res) => {
       const n8nApiKey = config.n8n.apiKey;
       
       console.log('🔧 [SmartDeploy] Appel API activation:', `${n8nUrl}/api/v1/workflows/${deployedWorkflow.id}/activate`);
+      console.log('🔧 [SmartDeploy] Headers:', {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': n8nApiKey ? 'PRÉSENT' : 'MANQUANT'
+      });
       
       const activateResponse = await fetch(`${n8nUrl}/api/v1/workflows/${deployedWorkflow.id}/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-N8N-API-KEY': n8nApiKey
-        }
+        },
+        body: JSON.stringify({}) // Certaines versions de n8n nécessitent un body vide
       });
       
       console.log('🔧 [SmartDeploy] Réponse activation:', activateResponse.status, activateResponse.statusText);
@@ -569,7 +1200,7 @@ router.post('/deploy', authenticateToken, async (req, res) => {
         
         // Vérifier le statut final du workflow pour confirmer l'activation
         try {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 1 seconde pour que n8n mette à jour
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Attendre 2 secondes pour que n8n mette à jour
           
           const statusResponse = await fetch(`${n8nUrl}/api/v1/workflows/${deployedWorkflow.id}`, {
             method: 'GET',
@@ -587,8 +1218,137 @@ router.post('/deploy', authenticateToken, async (req, res) => {
               console.error('❌ [SmartDeploy] CRITIQUE: Le workflow n\'est PAS actif dans n8n après activation!');
               console.error('❌ [SmartDeploy] ID workflow:', deployedWorkflow.id);
               console.error('❌ [SmartDeploy] Nom workflow:', deployedWorkflow.name);
+              
+              // ⚠️ FORCER UNE DEUXIÈME ACTIVATION
+              console.log('🔧 [SmartDeploy] Tentative de réactivation forcée...');
+              try {
+                const reactivateResponse = await fetch(`${n8nUrl}/api/v1/workflows/${deployedWorkflow.id}/activate`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-N8N-API-KEY': n8nApiKey
+                  },
+                  body: JSON.stringify({})
+                });
+                
+                if (reactivateResponse.ok) {
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  const finalStatusResponse = await fetch(`${n8nUrl}/api/v1/workflows/${deployedWorkflow.id}`, {
+                    method: 'GET',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-N8N-API-KEY': n8nApiKey
+                    }
+                  });
+                  
+                  if (finalStatusResponse.ok) {
+                    const finalStatus = await finalStatusResponse.json();
+                    if (finalStatus.active) {
+                      console.log('✅ [SmartDeploy] Workflow activé après réactivation forcée');
+                      workflowActivated = true;
+                    } else {
+                      console.error('❌ [SmartDeploy] Le workflow est toujours inactif après réactivation forcée');
+                    }
+                  }
+                }
+              } catch (reactivateError) {
+                console.error('❌ [SmartDeploy] Erreur lors de la réactivation forcée:', reactivateError.message);
+              }
             } else {
               console.log('✅ [SmartDeploy] ✅✅✅ WORKFLOW CONFIRMÉ ACTIF DANS N8N ✅✅✅');
+              
+              // ⚠️ VÉRIFICATION CRITIQUE: Vérifier que les connexions LangChain sont présentes APRÈS l'activation
+              // Seulement si le workflow contient des nœuds LangChain
+              const hasLangChainNodesAfter = statusResult.nodes?.some(node => 
+                node.type?.includes('langchain') || 
+                node.type?.includes('agent') ||
+                node.type === '@n8n/n8n-nodes-langchain.agent'
+              );
+              
+              if (hasLangChainNodesAfter) {
+                console.log('🔍 [SmartDeploy] Workflow contient des nœuds LangChain - Vérification des connexions APRÈS activation...');
+                const langchainConnectionsAfterActivation = {
+                  ai_languageModel: [],
+                  ai_tool: [],
+                  ai_memory: []
+                };
+                
+                Object.keys(statusResult.connections || {}).forEach(nodeName => {
+                  const nodeConnections = statusResult.connections[nodeName];
+                  if (nodeConnections.ai_languageModel) {
+                    langchainConnectionsAfterActivation.ai_languageModel.push({
+                      from: nodeName,
+                      to: nodeConnections.ai_languageModel[0]?.[0]?.node || 'NON DÉFINI'
+                    });
+                  }
+                  if (nodeConnections.ai_tool) {
+                    langchainConnectionsAfterActivation.ai_tool.push({
+                      from: nodeName,
+                      to: nodeConnections.ai_tool[0]?.[0]?.node || 'NON DÉFINI'
+                    });
+                  }
+                  if (nodeConnections.ai_memory) {
+                    langchainConnectionsAfterActivation.ai_memory.push({
+                      from: nodeName,
+                      to: nodeConnections.ai_memory[0]?.[0]?.node || 'NON DÉFINI'
+                    });
+                  }
+                });
+                
+                console.log('🔍 [SmartDeploy] Connexions LangChain APRÈS activation:');
+                console.log(`  - ai_languageModel: ${langchainConnectionsAfterActivation.ai_languageModel.length} connexion(s)`);
+                langchainConnectionsAfterActivation.ai_languageModel.forEach(conn => {
+                  console.log(`    → ${conn.from} → ${conn.to}`);
+                });
+                console.log(`  - ai_tool: ${langchainConnectionsAfterActivation.ai_tool.length} connexion(s)`);
+                langchainConnectionsAfterActivation.ai_tool.forEach(conn => {
+                  console.log(`    → ${conn.from} → ${conn.to}`);
+                });
+                console.log(`  - ai_memory: ${langchainConnectionsAfterActivation.ai_memory.length} connexion(s)`);
+                langchainConnectionsAfterActivation.ai_memory.forEach(conn => {
+                  console.log(`    → ${conn.from} → ${conn.to}`);
+                });
+                
+                if (langchainConnectionsAfterActivation.ai_languageModel.length === 0) {
+                  console.error('❌ [SmartDeploy] CRITIQUE: Aucune connexion ai_languageModel détectée APRÈS l\'activation!');
+                  console.error('❌ [SmartDeploy] Les connexions LangChain ont été perdues lors de l\'activation!');
+                } else {
+                  console.log('✅ [SmartDeploy] Les connexions LangChain sont présentes APRÈS l\'activation');
+                }
+              } else {
+                console.log('ℹ️ [SmartDeploy] Workflow ne contient pas de nœuds LangChain - Vérification des connexions LangChain ignorée');
+              }
+              
+              // Vérifier que le webhook trigger est correctement configuré
+              const webhookNode = statusResult.nodes?.find(node => 
+                node.type === 'n8n-nodes-base.webhook' || 
+                node.type === 'n8n-nodes-base.webhookTrigger'
+              );
+              
+              if (webhookNode) {
+                const webhookPath = webhookNode.parameters?.path || webhookNode.webhookId;
+                console.log('🔍 [SmartDeploy] Vérification webhook trigger dans le workflow actif:');
+                console.log(`  - Path: ${webhookPath || 'NON DÉFINI'}`);
+                console.log(`  - WebhookId: ${webhookNode.webhookId || 'NON DÉFINI'}`);
+                console.log(`  - Type: ${webhookNode.type}`);
+                
+                if (!webhookPath && !webhookNode.webhookId) {
+                  console.error('❌ [SmartDeploy] ATTENTION: Le webhook trigger n\'a pas de path configuré dans le workflow actif!');
+                  console.error('❌ [SmartDeploy] Cela peut empêcher le workflow de recevoir des données via webhook.');
+                }
+                
+                // Vérifier les connexions du webhook trigger
+                const webhookConnections = statusResult.connections?.[webhookNode.name];
+                if (webhookConnections && webhookConnections.main && webhookConnections.main.length > 0) {
+                  console.log(`✅ [SmartDeploy] Webhook trigger connecté à ${webhookConnections.main[0].length} nœud(s)`);
+                  webhookConnections.main[0].forEach(conn => {
+                    console.log(`  - → ${conn.node}`);
+                  });
+                } else {
+                  console.error('❌ [SmartDeploy] ATTENTION: Le webhook trigger n\'a pas de connexions!');
+                  console.error('❌ [SmartDeploy] Le workflow ne peut pas s\'exécuter sans connexions depuis le webhook.');
+                }
+              }
             }
           }
         } catch (statusError) {
@@ -634,7 +1394,53 @@ router.post('/deploy', authenticateToken, async (req, res) => {
         for (const existingWorkflow of existingWorkflows.rows) {
           console.log(`🗑️ [SmartDeploy] Suppression de l'ancien workflow: ${existingWorkflow.name} (ID: ${existingWorkflow.id})`);
           
-          // Supprimer de n8n si l'ID n8n existe
+          // 1. Supprimer les credentials associés au workflow depuis n8n
+          try {
+            const workflowCredentials = await db.getWorkflowCredentials(existingWorkflow.id);
+            if (workflowCredentials && workflowCredentials.length > 0) {
+              console.log(`🔍 [SmartDeploy] ${workflowCredentials.length} credential(s) trouvé(s) pour ce workflow`);
+              const n8nUrl = config.n8n.url;
+              const n8nApiKey = config.n8n.apiKey;
+              
+              for (const cred of workflowCredentials) {
+                if (cred.credential_id) {
+                  // ⚠️ PROTECTION: Ne jamais supprimer le credential "Header Auth account 2" (partagé par tous les workflows)
+                  // IDs possibles: o7MztG7VAoDGoDSp (ancien), hgQk9lN7epSIRRcg (nouveau)
+                  const isSharedCredential = cred.credential_id === 'o7MztG7VAoDGoDSp' || 
+                                             cred.credential_id === 'hgQk9lN7epSIRRcg' ||
+                                             cred.credential_name?.toLowerCase().includes('header auth account 2');
+                  
+                  if (isSharedCredential) {
+                    console.log(`⚠️ [SmartDeploy] PROTECTION: Credential partagé ignoré (ne sera pas supprimé): ${cred.credential_name} (${cred.credential_id})`);
+                    continue;
+                  }
+                  
+                  try {
+                    const deleteCredResponse = await fetch(`${n8nUrl}/api/v1/credentials/${cred.credential_id}`, {
+                      method: 'DELETE',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-N8N-API-KEY': n8nApiKey
+                      }
+                    });
+                    
+                    if (deleteCredResponse.ok) {
+                      console.log(`✅ [SmartDeploy] Credential supprimé de n8n: ${cred.credential_name} (${cred.credential_id})`);
+                    } else {
+                      const errorText = await deleteCredResponse.text();
+                      console.warn(`⚠️ [SmartDeploy] Impossible de supprimer le credential ${cred.credential_id}:`, errorText);
+                    }
+                  } catch (credError) {
+                    console.warn(`⚠️ [SmartDeploy] Erreur suppression credential ${cred.credential_id}:`, credError.message);
+                  }
+                }
+              }
+            }
+          } catch (credError) {
+            console.warn('⚠️ [SmartDeploy] Erreur lors de la récupération des credentials:', credError.message);
+          }
+          
+          // 2. Supprimer de n8n si l'ID n8n existe
           if (existingWorkflow.n8n_workflow_id) {
             try {
               const n8nUrl = config.n8n.url;
@@ -657,7 +1463,7 @@ router.post('/deploy', authenticateToken, async (req, res) => {
             }
           }
           
-          // Supprimer de la base de données
+          // 3. Supprimer de la base de données (les credentials seront supprimés en cascade si FK CASCADE)
           await db.query(
             'DELETE FROM user_workflows WHERE id = $1',
             [existingWorkflow.id]
@@ -680,6 +1486,104 @@ router.post('/deploy', authenticateToken, async (req, res) => {
       isActive: true,
       webhookPath: webhookPath // Stocker le webhook unique pour ce workflow
     });
+    
+    // Sauvegarder les credentials créés dans workflow_credentials pour pouvoir les supprimer plus tard
+    try {
+      if (!injectionResult) {
+        console.error('❌ [SmartDeploy] injectionResult est null - impossible de sauvegarder les credentials');
+        throw new Error('injectionResult est null');
+      }
+      
+      const credentialsToSave = [];
+      
+      // Récupérer les credentials créés depuis injectionResult
+      if (injectionResult.createdCredentials) {
+        console.log('🔍 [SmartDeploy] Credentials créés trouvés:', Object.keys(injectionResult.createdCredentials));
+        console.log('🔍 [SmartDeploy] Détails createdCredentials:', JSON.stringify(injectionResult.createdCredentials, null, 2));
+        for (const [credType, cred] of Object.entries(injectionResult.createdCredentials)) {
+          if (cred && cred.id) {
+            credentialsToSave.push({
+              id: cred.id,
+              name: cred.name || `${credType} - ${req.user.email}`,
+              type: credType
+            });
+            console.log(`✅ [SmartDeploy] Credential à sauvegarder: ${credType} - ${cred.id} (${cred.name})`);
+          } else {
+            console.warn(`⚠️ [SmartDeploy] Credential ${credType} sans ID ou invalide:`, cred);
+          }
+        }
+      } else {
+        console.warn('⚠️ [SmartDeploy] Aucun createdCredentials dans injectionResult');
+        console.warn('⚠️ [SmartDeploy] injectionResult keys:', injectionResult ? Object.keys(injectionResult) : 'null');
+      }
+      
+      // Aussi extraire les credentials depuis le workflow déployé pour être sûr de tous les capturer
+      // (certains credentials peuvent être réutilisés et ne pas être dans createdCredentials)
+      if (deployedWorkflow && deployedWorkflow.nodes) {
+        console.log('🔍 [SmartDeploy] Extraction des credentials depuis le workflow déployé...');
+        const extractedCreds = new Map(); // Utiliser une Map pour éviter les doublons
+        
+        // Ajouter ceux déjà trouvés
+        for (const cred of credentialsToSave) {
+          extractedCreds.set(cred.id, cred);
+        }
+        
+        // Extraire depuis les nœuds
+        for (const node of deployedWorkflow.nodes) {
+          if (node.credentials) {
+            for (const [credType, credValue] of Object.entries(node.credentials)) {
+              if (credValue && typeof credValue === 'object' && 'id' in credValue) {
+                const credId = credValue.id;
+                const credName = credValue.name || `${credType} - ${req.user.email}`;
+                
+                // Ignorer les credentials admin (OpenRouter, SMTP admin) qui ne doivent pas être supprimés
+                const isAdminCred = credName.toLowerCase().includes('admin') || 
+                                   credName.toLowerCase().includes('openrouter') ||
+                                   credId.includes('admin');
+                
+                if (!isAdminCred && credId && typeof credId === 'string' && credId.length > 0) {
+                  // Vérifier si ce credential n'est pas déjà dans la liste
+                  if (!extractedCreds.has(credId)) {
+                    extractedCreds.set(credId, {
+                      id: credId,
+                      name: credName,
+                      type: credType
+                    });
+                    console.log(`🔍 [SmartDeploy] Credential extrait depuis nœud ${node.name}: ${credType} - ${credId} (${credName})`);
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        // Convertir la Map en tableau
+        const finalCredentialsToSave = Array.from(extractedCreds.values());
+        
+        // Si des credentials ont été trouvés, les sauvegarder
+        if (finalCredentialsToSave.length > 0) {
+          await db.saveWorkflowCredentials(userWorkflow.id, finalCredentialsToSave);
+          console.log(`✅ [SmartDeploy] ${finalCredentialsToSave.length} credential(s) sauvegardé(s) pour ce workflow`);
+          finalCredentialsToSave.forEach(cred => {
+            console.log(`  - ${cred.type}: ${cred.name} (${cred.id})`);
+          });
+        } else {
+          console.log('ℹ️ [SmartDeploy] Aucun credential utilisateur à sauvegarder (peut-être uniquement des credentials admin)');
+        }
+      } else {
+        // Fallback: sauvegarder ceux trouvés dans createdCredentials
+        if (credentialsToSave.length > 0) {
+          await db.saveWorkflowCredentials(userWorkflow.id, credentialsToSave);
+          console.log(`✅ [SmartDeploy] ${credentialsToSave.length} credential(s) sauvegardé(s) pour ce workflow`);
+        } else {
+          console.log('ℹ️ [SmartDeploy] Aucun credential à sauvegarder');
+        }
+      }
+    } catch (credSaveError) {
+      console.error('❌ [SmartDeploy] Erreur lors de la sauvegarde des credentials:', credSaveError);
+      console.error('❌ [SmartDeploy] Stack:', credSaveError.stack);
+      // Ne pas bloquer le déploiement si la sauvegarde des credentials échoue
+    }
     
     console.log('✅ [SmartDeploy] Workflow déployé et activé avec succès:', deployedWorkflow.id);
     
@@ -762,3 +1666,4 @@ router.get('/workflows', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+

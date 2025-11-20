@@ -3,11 +3,12 @@ import { apiClient } from '../lib/api';
 export interface CredentialField {
   name: string;
   label: string;
-  type: 'email' | 'password' | 'text' | 'number' | 'oauth' | 'time';
+  type: 'email' | 'password' | 'text' | 'number' | 'oauth' | 'time' | 'select';
   required: boolean;
   placeholder?: string;
   defaultValue?: any;
   provider?: string; // Pour les champs OAuth (gmail, google_sheets, etc.)
+  options?: Array<{ value: string; label: string }>; // Pour les champs select
 }
 
 export interface CredentialConfig {
