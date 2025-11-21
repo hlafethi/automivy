@@ -93,7 +93,8 @@ export function UserAutomations() {
     // Filtre par catégorie (via le template associé)
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(workflow => {
-        const template = templatesMap.get(workflow.templateId);
+        const templateId = (workflow as any).template_id || (workflow as any).templateId;
+        const template = templatesMap.get(templateId);
         return template?.category === categoryFilter;
       });
     }
@@ -101,7 +102,8 @@ export function UserAutomations() {
     // Filtre par sous-catégorie (via le template associé)
     if (subcategoryFilter !== 'all') {
       filtered = filtered.filter(workflow => {
-        const template = templatesMap.get(workflow.templateId);
+        const templateId = (workflow as any).template_id || (workflow as any).templateId;
+        const template = templatesMap.get(templateId);
         return template?.subcategory === subcategoryFilter;
       });
     }
@@ -681,7 +683,7 @@ export function UserAutomations() {
 
       {showPDFModal && selectedWorkflow && (
         <PDFFormModal
-          workflowId={selectedWorkflow.id}
+          workflowId={selectedWorkflow.template_id || selectedWorkflow.templateId}
           workflowName={selectedWorkflow.name}
           isOpen={showPDFModal}
           onClose={() => {

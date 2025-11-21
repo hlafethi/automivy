@@ -5,8 +5,11 @@
  * @param {Object} workflow - Le workflow JSON à analyser
  * @returns {Array} Liste des credentials requis avec leurs types et métadonnées
  */
-function analyzeWorkflowCredentials(workflow) {
+function analyzeWorkflowCredentials(workflow, templateId = null) {
   console.log('🔍 [WorkflowAnalyzer] Analyse du workflow:', workflow.name);
+  if (templateId) {
+    console.log('🔍 [WorkflowAnalyzer] Template ID:', templateId);
+  }
   
   const requiredCredentials = [];
   const credentialTypes = new Set();
@@ -65,7 +68,7 @@ function analyzeWorkflowCredentials(workflow) {
     // Détecter automatiquement les nœuds qui nécessitent des credentials utilisateur
     // IMPORTANT: Cette détection se fait TOUJOURS, même si le nœud a déjà des credentials
     // car l'utilisateur doit pouvoir fournir ses propres credentials
-    const userCredentialTypes = detectUserCredentialTypes(node, isReportWorkflow);
+    const userCredentialTypes = detectUserCredentialTypes(node, isReportWorkflow, templateId);
     console.log(`  🔍 [WorkflowAnalyzer] Types de credentials détectés pour ${node.name}:`, Array.from(userCredentialTypes));
     userCredentialTypes.forEach(credType => {
       console.log(`  ✅ Credential utilisateur détecté: ${credType}`);
@@ -272,33 +275,39 @@ function analyzeWorkflowCredentials(workflow) {
  * @param {boolean} isReportWorkflow - Si true, c'est un workflow de rapport (Gmail/AI) qui utilise SMTP admin
  * @returns {Array} Liste des types de credentials requis
  */
-function detectUserCredentialTypes(node, isReportWorkflow = false) {
+function detectUserCredentialTypes(node, isReportWorkflow = false, templateId = null) {
   const credentialTypes = [];
   
-  // PRIORITÉ 1: Détecter les nœuds IMAP (y compris emailReadImap avec "gmail" dans le nom)
-  // Les nœuds emailReadImap nécessitent des credentials IMAP, même pour Gmail
-  // IMPORTANT: Vérifier IMAP AVANT Gmail OAuth2 pour éviter les conflits
+  // ⚠️ EXCEPTION: Pour le template Gmail Tri (5114f297-e56e-4fec-be2b-1afbb5ea8619), 
+  // ne jamais demander IMAP - utiliser uniquement Gmail OAuth2
+  const isGmailTriTemplate = templateId === '5114f297-e56e-4fec-be2b-1afbb5ea8619';
+  
   const nodeNameLower = node.name?.toLowerCase() || '';
   const isEmailReadImap = node.type === 'n8n-nodes-base.emailReadImap';
   const isImapNode = node.type === 'n8n-nodes-imap.imap' || (node.type && node.type.includes('imap'));
   const hasGmailInName = nodeNameLower.includes('gmail');
   const hasImapInName = nodeNameLower.includes('imap');
   
-  // Détecter IMAP si c'est un nœud emailReadImap ou IMAP (même avec "gmail" dans le nom)
-  if (isEmailReadImap || isImapNode || hasImapInName || (hasGmailInName && isEmailReadImap)) {
-    if (!credentialTypes.includes('imap')) {
-      credentialTypes.push('imap');
-      console.log(`  ✅ [WorkflowAnalyzer] IMAP détecté pour nœud: ${node.name} (type: ${node.type})`);
-      console.log(`    - isEmailReadImap: ${isEmailReadImap}`);
-      console.log(`    - isImapNode: ${isImapNode}`);
-      console.log(`    - hasGmailInName: ${hasGmailInName}`);
-      console.log(`    - hasImapInName: ${hasImapInName}`);
+  // PRIORITÉ 1: Détecter les nœuds IMAP (y compris emailReadImap avec "gmail" dans le nom)
+  // SAUF pour le template Gmail Tri qui utilise uniquement Gmail OAuth2
+  if (!isGmailTriTemplate) {
+    if (isEmailReadImap || isImapNode || hasImapInName || (hasGmailInName && isEmailReadImap)) {
+      if (!credentialTypes.includes('imap')) {
+        credentialTypes.push('imap');
+        console.log(`  ✅ [WorkflowAnalyzer] IMAP détecté pour nœud: ${node.name} (type: ${node.type})`);
+        console.log(`    - isEmailReadImap: ${isEmailReadImap}`);
+        console.log(`    - isImapNode: ${isImapNode}`);
+        console.log(`    - hasGmailInName: ${hasGmailInName}`);
+        console.log(`    - hasImapInName: ${hasImapInName}`);
+      }
     }
+  } else {
+    console.log(`  ⏭️ [WorkflowAnalyzer] Template Gmail Tri détecté - IMAP ignoré, utilisation de Gmail OAuth2 uniquement`);
   }
   
   // PRIORITÉ 2: Détecter les nœuds Gmail
-  // Pour les nœuds de lecture (avec "Lire", "Read", "INBOX" dans le nom), utiliser IMAP uniquement
-  // Pour les autres nœuds Gmail (création labels, etc.), utiliser Gmail OAuth2
+  // Pour le template Gmail Tri: TOUJOURS utiliser Gmail OAuth2 (même pour la lecture)
+  // Pour les autres templates: utiliser IMAP pour la lecture, Gmail OAuth2 pour le reste
   if (node.type === 'n8n-nodes-base.gmail' || 
       (node.type && node.type.includes('gmail') && !node.type.includes('emailReadImap'))) {
     // Vérifier si c'est un nœud de lecture d'emails
@@ -307,18 +316,21 @@ function detectUserCredentialTypes(node, isReportWorkflow = false) {
                        nodeNameLower.includes('inbox') ||
                        (nodeNameLower.includes('email') && !nodeNameLower.includes('send'));
     
-    if (isReadNode) {
-      // Pour les nœuds de lecture Gmail, utiliser IMAP uniquement (pas OAuth2)
+    if (isGmailTriTemplate || !isReadNode) {
+      // Pour le template Gmail Tri OU pour les nœuds non-lecture: utiliser Gmail OAuth2
+      if (!credentialTypes.includes('gmailOAuth2')) {
+        credentialTypes.push('gmailOAuth2');
+        console.log(`  ✅ [WorkflowAnalyzer] Gmail OAuth2 détecté pour nœud: ${node.name} (type: ${node.type})`);
+        if (isGmailTriTemplate) {
+          console.log(`  ℹ️ [WorkflowAnalyzer] Template Gmail Tri - Gmail OAuth2 utilisé même pour la lecture`);
+        }
+      }
+    } else {
+      // Pour les autres templates avec nœuds de lecture Gmail: utiliser IMAP uniquement
       if (!credentialTypes.includes('imap')) {
         credentialTypes.push('imap');
         console.log(`  ✅ [WorkflowAnalyzer] IMAP détecté pour nœud de lecture Gmail: ${node.name} (type: ${node.type})`);
         console.log(`  ⏭️ [WorkflowAnalyzer] Gmail OAuth2 ignoré pour ce nœud de lecture (IMAP uniquement)`);
-      }
-    } else {
-      // Pour les autres nœuds Gmail (création labels, etc.), utiliser Gmail OAuth2
-      if (!credentialTypes.includes('gmailOAuth2')) {
-        credentialTypes.push('gmailOAuth2');
-        console.log(`  ✅ [WorkflowAnalyzer] Gmail OAuth2 détecté pour nœud: ${node.name} (type: ${node.type})`);
       }
     }
   }

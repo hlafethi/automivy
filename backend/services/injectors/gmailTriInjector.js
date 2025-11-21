@@ -36,8 +36,8 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
     console.log('🔧 [GmailTriInjector] Webhook unique généré:', uniqueWebhookPath);
   }
   
-  // Analyser les credentials requis
-  const requiredCredentials = analyzeWorkflowCredentials(workflow);
+  // Analyser les credentials requis (passer le templateId pour exclure IMAP)
+  const requiredCredentials = analyzeWorkflowCredentials(workflow, templateId);
   console.log('🔧 [GmailTriInjector] Credentials requis:', requiredCredentials.length);
   
   // Valider les données
@@ -139,11 +139,11 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
       }
     }
     
+    // ⚠️ IMPORTANT: Pour le template Gmail Tri, on n'utilise PLUS IMAP
+    // Tous les nœuds utilisent Gmail OAuth2 uniquement
     if (credConfig.type === 'imap') {
-      // Créer le credential IMAP pour le premier nœud
-      const imapCred = await createImapCredential(userCredentials, userId, cleanTemplateName);
-      createdCredentials.imap = imapCred;
-      console.log('✅ [GmailTriInjector] Credential IMAP créé:', imapCred.id, '- Nom:', imapCred.name);
+      console.log('⏭️ [GmailTriInjector] IMAP ignoré - ce template utilise uniquement Gmail OAuth2');
+      // Ne pas créer de credential IMAP pour ce template
     }
     
     // ⚠️ NE PAS créer de credential SMTP utilisateur - utiliser SMTP admin
@@ -168,24 +168,11 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
     injectedWorkflow.nodes = injectedWorkflow.nodes.map((node, index) => {
       const cleanedNode = { ...node };
       
-      // Règle spécifique : Le PREMIER nœud IMAP/emailReadImap utilise IMAP
-      // Les autres nœuds Gmail utilisent Gmail OAuth2
-      const isFirstImapNode = index === injectedWorkflow.nodes.findIndex(n => 
-        n.type === 'n8n-nodes-imap.imap' || n.type === 'n8n-nodes-base.emailReadImap'
-      );
-      
-      if ((node.type === 'n8n-nodes-imap.imap' || node.type === 'n8n-nodes-base.emailReadImap') && isFirstImapNode) {
-        // Premier nœud IMAP - utiliser le credential IMAP
-        if (createdCredentials.imap) {
-          cleanedNode.credentials = {
-            imap: {
-              id: createdCredentials.imap.id,
-              name: createdCredentials.imap.name
-            }
-          };
-          console.log(`✅ [GmailTriInjector] Credential IMAP assigné au premier nœud: ${node.name}`);
-        }
-      } else if (node.type === 'n8n-nodes-base.gmail') {
+      // ⚠️ IMPORTANT: Pour le template Gmail Tri, TOUS les nœuds utilisent Gmail OAuth2
+      // Plus besoin de gérer IMAP - le template a été mis à jour pour utiliser uniquement Gmail API
+      if (node.type === 'n8n-nodes-base.gmail' || 
+          node.type === 'n8n-nodes-base.emailReadImap' ||
+          node.type === 'n8n-nodes-imap.imap') {
         // Nœuds Gmail - utiliser Gmail OAuth2 utilisateur
         if (createdCredentials.gmailOAuth2) {
           cleanedNode.credentials = {
@@ -199,6 +186,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
           // Supprimer le credential template si aucun credential utilisateur n'est disponible
           if (cleanedNode.credentials) {
             delete cleanedNode.credentials.gmailOAuth2;
+            delete cleanedNode.credentials.imap; // Supprimer aussi IMAP s'il existe
             console.error(`❌ [GmailTriInjector] Credential Gmail OAuth2 template supprimé de ${node.name} - aucun credential utilisateur disponible`);
           }
         }

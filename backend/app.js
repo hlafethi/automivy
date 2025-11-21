@@ -116,6 +116,148 @@ app.post('/api/process-pdf', async (req, res) => {
     console.log('📋 [Process PDF] Client:', req.body.clientName);
     console.log('📋 [Process PDF] Email:', req.body.clientEmail);
     console.log('📋 [Process PDF] Files:', req.body.files?.length || 0);
+    console.log('📋 [Process PDF] Template:', req.body.template);
+    
+    // Récupérer le webhook path depuis la base de données
+    let webhookPath = null;
+    let userId = null;
+    const db = require('./database');
+    const config = require('./config');
+    const jwt = require('jsonwebtoken');
+    
+    // Essayer d'extraire l'utilisateur depuis le token JWT
+    if (req.body.token) {
+      try {
+        const decoded = jwt.verify(req.body.token, config.jwt.secret);
+        userId = decoded.id;
+        console.log('✅ [Process PDF] Utilisateur identifié depuis token JWT:', userId);
+      } catch (tokenError) {
+        // Le token n'est peut-être pas un JWT (peut être un token de déploiement)
+        console.warn('⚠️ [Process PDF] Token n\'est pas un JWT valide:', tokenError.message);
+      }
+    }
+    
+    // Si userId n'est pas trouvé, essayer de le récupérer depuis le paramètre user de l'URL
+    // ou depuis le template ID directement (chercher tous les workflows pour ce template)
+    if (!userId && req.body.template) {
+      console.log('🔍 [Process PDF] Recherche du webhook path sans userId, utilisation du template ID uniquement');
+    }
+    
+    // Récupérer le webhook path depuis la base de données
+    if (req.body.template) {
+      try {
+        let workflowResult;
+        
+        // Si on a un userId, chercher spécifiquement pour cet utilisateur
+        if (userId) {
+          workflowResult = await db.query(
+            'SELECT webhook_path, n8n_workflow_id FROM user_workflows WHERE user_id = $1 AND template_id = $2 AND is_active = true ORDER BY created_at DESC LIMIT 1',
+            [userId, req.body.template]
+          );
+        } else {
+          // Sinon, chercher le workflow le plus récent pour ce template (n'importe quel utilisateur)
+          // Cela permet de fonctionner même si le token n'est pas un JWT valide
+          console.log('🔍 [Process PDF] Recherche du workflow le plus récent pour le template:', req.body.template);
+          workflowResult = await db.query(
+            'SELECT webhook_path, n8n_workflow_id FROM user_workflows WHERE template_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1',
+            [req.body.template]
+          );
+        }
+        
+        if (workflowResult.rows && workflowResult.rows.length > 0) {
+          const userWorkflow = workflowResult.rows[0];
+          webhookPath = userWorkflow.webhook_path;
+          const n8nWorkflowId = userWorkflow.n8n_workflow_id;
+          console.log('✅ [Process PDF] Webhook path trouvé dans la BDD:', webhookPath);
+          console.log('✅ [Process PDF] n8n Workflow ID:', n8nWorkflowId);
+          
+          // Vérifier si le workflow est actif dans n8n
+          if (n8nWorkflowId) {
+            try {
+              const n8nBaseUrl = config.n8n.url || 'https://n8n.globalsaas.eu';
+              const n8nApiKey = config.n8n.apiKey;
+              
+              const workflowStatusResponse = await fetch(`${n8nBaseUrl}/api/v1/workflows/${n8nWorkflowId}`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-N8N-API-KEY': n8nApiKey
+                }
+              });
+              
+              if (workflowStatusResponse.ok) {
+                const workflowStatus = await workflowStatusResponse.json();
+                console.log('📊 [Process PDF] Statut workflow n8n:', workflowStatus.active ? '✅ ACTIF' : '❌ INACTIF');
+                
+                if (!workflowStatus.active) {
+                  console.warn('⚠️ [Process PDF] Le workflow n8n est INACTIF - Tentative d\'activation...');
+                  
+                  // Essayer d'activer le workflow
+                  const activateResponse = await fetch(`${n8nBaseUrl}/api/v1/workflows/${n8nWorkflowId}/activate`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-N8N-API-KEY': n8nApiKey
+                    },
+                    body: JSON.stringify({})
+                  });
+                  
+                  if (activateResponse.ok) {
+                    console.log('✅ [Process PDF] Workflow activé avec succès');
+                    // Attendre un peu pour que l'activation prenne effet
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                  } else {
+                    const activateError = await activateResponse.text();
+                    console.error('❌ [Process PDF] Impossible d\'activer le workflow:', activateError);
+                    throw new Error('Le workflow n8n est inactif et n\'a pas pu être activé automatiquement. Veuillez l\'activer manuellement dans n8n.');
+                  }
+                }
+              } else {
+                console.warn('⚠️ [Process PDF] Impossible de vérifier le statut du workflow dans n8n');
+              }
+            } catch (statusError) {
+              console.warn('⚠️ [Process PDF] Erreur lors de la vérification du statut:', statusError.message);
+            }
+          }
+        } else {
+          console.warn('⚠️ [Process PDF] Aucun workflow actif trouvé pour cet utilisateur et ce template');
+          console.warn('⚠️ [Process PDF] Template ID recherché:', req.body.template);
+          console.warn('⚠️ [Process PDF] User ID recherché:', userId || 'NON TROUVÉ');
+          
+          // Afficher tous les workflows disponibles pour ce template (pour debug)
+          try {
+            const allWorkflowsResult = await db.query(
+              'SELECT id, name, user_id, template_id, n8n_workflow_id, webhook_path, is_active, created_at FROM user_workflows WHERE template_id = $1 ORDER BY created_at DESC LIMIT 5',
+              [req.body.template]
+            );
+            
+            if (allWorkflowsResult.rows && allWorkflowsResult.rows.length > 0) {
+              console.log('📋 [Process PDF] Workflows trouvés pour ce template (sans filtre user_id):');
+              allWorkflowsResult.rows.forEach((wf, idx) => {
+                console.log(`  ${idx + 1}. ${wf.name} - User: ${wf.user_id} - Actif: ${wf.is_active} - Webhook: ${wf.webhook_path || 'NON DÉFINI'}`);
+              });
+            } else {
+              console.warn('⚠️ [Process PDF] Aucun workflow trouvé pour ce template dans la BDD');
+            }
+          } catch (debugError) {
+            console.warn('⚠️ [Process PDF] Erreur lors de la recherche de debug:', debugError.message);
+          }
+        }
+      } catch (dbError) {
+        console.error('❌ [Process PDF] Erreur lors de la récupération du webhook path:', dbError);
+      }
+    }
+    
+    // Si pas de webhook path trouvé, utiliser le fallback hardcodé (pour compatibilité)
+    if (!webhookPath) {
+      console.warn('⚠️ [Process PDF] Webhook path non trouvé, utilisation du fallback hardcodé');
+      webhookPath = 'pdf-upload-analysis';
+    }
+    
+    // Construire l'URL du webhook n8n
+    const n8nBaseUrl = config.n8n.url || 'https://n8n.globalsaas.eu';
+    const n8nWebhookUrl = `${n8nBaseUrl}/webhook/${webhookPath}`;
+    console.log('🔗 [Process PDF] URL webhook n8n:', n8nWebhookUrl);
     
     // Envoyer vers le webhook n8n réel
     console.log('🔄 [Process PDF] Envoi vers n8n webhook...');
@@ -123,16 +265,25 @@ app.post('/api/process-pdf', async (req, res) => {
     try {
       // Restructurer les données pour n8n
       const n8nData = {
-        sessionId: `pdf-analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        clientName: req.body.clientName,
-        clientEmail: req.body.clientEmail,
-        files: req.body.files,
-        token: req.body.token,
-        template: req.body.template,
-        timestamp: new Date().toISOString()
+        body: {
+          sessionId: `pdf-analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          clientName: req.body.clientName,
+          clientEmail: req.body.clientEmail,
+          files: req.body.files,
+          token: req.body.token,
+          template: req.body.template,
+          timestamp: new Date().toISOString()
+        }
       };
       
-      const n8nResponse = await fetch('https://n8n.globalsaas.eu/webhook/pdf-upload-analysis', {
+      console.log('📤 [Process PDF] Données envoyées à n8n:', JSON.stringify({
+        clientName: n8nData.body.clientName,
+        clientEmail: n8nData.body.clientEmail,
+        filesCount: n8nData.body.files?.length || 0,
+        sessionId: n8nData.body.sessionId
+      }, null, 2));
+      
+      const n8nResponse = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -140,15 +291,32 @@ app.post('/api/process-pdf', async (req, res) => {
         body: JSON.stringify(n8nData)
       });
       
+      console.log('📥 [Process PDF] Réponse n8n - Status:', n8nResponse.status, n8nResponse.statusText);
+      
       if (n8nResponse.ok) {
-        const result = await n8nResponse.json();
-        console.log('✅ [Process PDF] n8n a traité avec succès');
-        console.log('📧 [Process PDF] Email envoyé par n8n à:', req.body.clientEmail);
+        let result;
+        try {
+          result = await n8nResponse.json();
+          console.log('✅ [Process PDF] n8n a traité avec succès');
+          console.log('📧 [Process PDF] Email envoyé par n8n à:', req.body.clientEmail);
+        } catch (jsonError) {
+          // Si la réponse n'est pas du JSON, c'est peut-être normal (n8n peut retourner vide)
+          console.log('⚠️ [Process PDF] Réponse n8n non-JSON (peut être normal):', await n8nResponse.text());
+          result = { success: true, message: 'Workflow déclenché avec succès' };
+        }
         return res.json(result);
       } else {
-        const error = await n8nResponse.text();
-        console.error('❌ [Process PDF] Erreur n8n:', error);
-        throw new Error('Erreur lors du traitement par n8n');
+        const errorText = await n8nResponse.text();
+        console.error('❌ [Process PDF] Erreur n8n - Status:', n8nResponse.status);
+        console.error('❌ [Process PDF] Erreur n8n - Body:', errorText);
+        
+        // Si c'est une erreur 404, le webhook n'existe peut-être pas ou le workflow n'est pas actif
+        if (n8nResponse.status === 404) {
+          console.error('❌ [Process PDF] Webhook non trouvé (404) - Le workflow est peut-être inactif dans n8n');
+          throw new Error('Webhook non trouvé. Vérifiez que le workflow est actif dans n8n.');
+        }
+        
+        throw new Error(`Erreur lors du traitement par n8n: ${n8nResponse.status} - ${errorText}`);
       }
       
     } catch (n8nError) {

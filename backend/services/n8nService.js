@@ -108,6 +108,14 @@ async function getAdminCredentials() {
   
   const adminCreds = {};
   
+  // ⚠️ CRITIQUE: Récupérer la clé API OpenRouter pour créer de nouveaux credentials
+  adminCreds.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!adminCreds.OPENROUTER_API_KEY) {
+    console.warn('⚠️ [n8nService] OPENROUTER_API_KEY est manquant dans .env. La création de nouveaux credentials OpenRouter échouera.');
+  } else {
+    console.log('✅ [n8nService] OPENROUTER_API_KEY trouvée (sera utilisée pour créer des credentials httpHeaderAuth)');
+  }
+  
   // Si un ID OpenRouter est défini dans les variables d'environnement, l'utiliser en priorité
   if (process.env.OPENROUTER_CREDENTIAL_ID) {
     adminCreds.OPENROUTER_ID = process.env.OPENROUTER_CREDENTIAL_ID;
@@ -158,7 +166,10 @@ async function getAdminCredentials() {
                                       adminCreds.OPENROUTER_NAME?.toLowerCase().includes('openrouter');
             
             // Prioriser le credential "Header Auth account 2" (accessible par l'utilisateur)
-            const isHeaderAuthAccount2 = credId === 'o7MztG7VAoDGoDSp' || credName.toLowerCase().includes('header auth account 2');
+            // ⚠️ IMPORTANT: L'ID réel du credential "Header Auth account 2" dans n8n est hgQk9lN7epSIRRcg
+            const isHeaderAuthAccount2 = credId === 'hgQk9lN7epSIRRcg' || 
+                                         credId === 'o7MztG7VAoDGoDSp' || 
+                                         credName.toLowerCase().includes('header auth account 2');
             
             // Si on n'a pas encore de credential OpenRouter, ou si celui-ci est "Header Auth account 2" (accessible)
             if (!adminCreds.OPENROUTER_ID || isHeaderAuthAccount2) {
@@ -226,11 +237,22 @@ async function getAdminCredentials() {
       adminCreds.OPENROUTER_ID = process.env.OPENROUTER_USER_CREDENTIAL_ID;
       adminCreds.OPENROUTER_NAME = process.env.OPENROUTER_USER_CREDENTIAL_NAME || 'Header Auth account 2';
     } else if (!adminCreds.OPENROUTER_ID) {
-      // Si aucun credential n'a été trouvé, utiliser le credential utilisateur par défaut (accessible)
-      // Essayer d'abord le nouveau ID, puis l'ancien en fallback
+      // Si aucun credential n'a été trouvé, utiliser le credential "Header Auth account 2" par défaut
+      // ⚠️ IMPORTANT: L'ID réel du credential "Header Auth account 2" dans n8n est hgQk9lN7epSIRRcg
       adminCreds.OPENROUTER_ID = process.env.OPENROUTER_USER_CREDENTIAL_ID || 'hgQk9lN7epSIRRcg';
-      adminCreds.OPENROUTER_NAME = 'Header Auth account 2';
-      console.log(`⚠️ [n8nService] Aucun credential OpenRouter trouvé, utilisation du credential utilisateur par défaut: ${adminCreds.OPENROUTER_ID}`);
+      adminCreds.OPENROUTER_NAME = process.env.OPENROUTER_USER_CREDENTIAL_NAME || 'Header Auth account 2';
+      console.log(`⚠️ [n8nService] Aucun credential OpenRouter trouvé dans les workflows, utilisation du credential "Header Auth account 2" par défaut: ${adminCreds.OPENROUTER_ID}`);
+    }
+    
+    // ⚠️ CRITIQUE: Vérifier si le credential trouvé est bien "Header Auth account 2" et utiliser l'ID correct
+    // L'ID réel du credential "Header Auth account 2" dans n8n est hgQk9lN7epSIRRcg
+    if (adminCreds.OPENROUTER_NAME && adminCreds.OPENROUTER_NAME.toLowerCase().includes('header auth account 2')) {
+      // Si on a trouvé "Header Auth account 2" mais avec un mauvais ID, utiliser le bon ID
+      if (adminCreds.OPENROUTER_ID !== 'hgQk9lN7epSIRRcg' && !process.env.OPENROUTER_USER_CREDENTIAL_ID) {
+        console.log(`🔄 [n8nService] Correction de l'ID du credential "Header Auth account 2": ${adminCreds.OPENROUTER_ID} -> hgQk9lN7epSIRRcg`);
+        adminCreds.OPENROUTER_ID = 'hgQk9lN7epSIRRcg';
+        adminCreds.OPENROUTER_NAME = 'Header Auth account 2';
+      }
     }
     
     console.log('✅ [n8nService] Credentials admin récupérés:', adminCreds);

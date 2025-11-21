@@ -85,10 +85,10 @@ router.post('/analyze', authenticateToken, async (req, res) => {
     
     console.log('🔍 [SmartDeploy] Début analyse des credentials...');
     
-    // Analyser les credentials requis
+    // Analyser les credentials requis (passer le templateId pour exclure IMAP si nécessaire)
     let requiredCredentials;
     try {
-      requiredCredentials = analyzeWorkflowCredentials(workflowJson);
+      requiredCredentials = analyzeWorkflowCredentials(workflowJson, template.id);
       console.log('✅ [SmartDeploy] Credentials analysés:', requiredCredentials.length);
     } catch (analyzeErr) {
       console.error('❌ [SmartDeploy] Erreur analyse des credentials:', analyzeErr);

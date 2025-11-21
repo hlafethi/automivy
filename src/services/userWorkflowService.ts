@@ -336,16 +336,34 @@ class UserWorkflowService {
       // 2. Récupérer les credentials AVANT de supprimer le workflow n8n
       // (une fois le workflow supprimé, on ne peut plus récupérer ses nœuds)
       const credentialsToDelete = new Set<string>(); // Utiliser un Set pour éviter les doublons
+      const credentialsWithInfo = new Map<string, { name: string; type: string }>(); // Stocker nom et type
       
-      // 2a. Récupérer depuis workflow_credentials
+      // 2a. Récupérer depuis workflow_credentials (PRIORITAIRE - contient les credentials créés pour ce workflow)
       try {
-        const workflowCredentials = await apiClient.get(`/user-workflows/${workflowId}/credentials`);
+        const response = await fetch(`http://localhost:3004/api/user-workflows/${workflowId}/credentials`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const workflowCredentials = await response.json();
         if (workflowCredentials && Array.isArray(workflowCredentials) && workflowCredentials.length > 0) {
           console.log(`🔧 [UserWorkflowService] ${workflowCredentials.length} credential(s) trouvé(s) dans workflow_credentials`);
           for (const cred of workflowCredentials) {
             const credId = cred.credential_id || cred.id;
             if (credId) {
               credentialsToDelete.add(credId);
+              // Stocker les infos du credential
+              if (cred.credential_name || cred.name) {
+                credentialsWithInfo.set(credId, {
+                  name: cred.credential_name || cred.name || '',
+                  type: cred.credential_type || cred.type || ''
+                });
+              }
             }
           }
         }
@@ -353,7 +371,7 @@ class UserWorkflowService {
         console.warn('⚠️ [UserWorkflowService] Impossible de récupérer les credentials depuis workflow_credentials:', credListError.message);
       }
       
-      // 2b. Récupérer aussi depuis le workflow n8n AVANT de le supprimer
+      // 2b. Récupérer aussi depuis le workflow n8n AVANT de le supprimer (pour les credentials non enregistrés)
       if (userWorkflow.n8n_workflow_id) {
         try {
           const n8nWorkflow = await n8nService.getWorkflow(userWorkflow.n8n_workflow_id);
@@ -365,17 +383,23 @@ class UserWorkflowService {
                   if (credValue && typeof credValue === 'object' && 'id' in credValue) {
                     const credId = (credValue as any).id;
                     if (credId && typeof credId === 'string' && credId.length > 0) {
-                      // Ignorer les credentials admin (OpenRouter, SMTP admin) qui ne doivent pas être supprimés
-                      const credName = (credValue as any).name || '';
-                      const isAdminCred = credName.toLowerCase().includes('admin') || 
-                                         credName.toLowerCase().includes('openrouter') ||
-                                         credId.includes('admin');
-                      
-                      if (!isAdminCred) {
-                        credentialsToDelete.add(credId);
-                        console.log(`🔍 [UserWorkflowService] Credential trouvé dans nœud ${node.name}: ${credName} (${credId})`);
-                      } else {
-                        console.log(`ℹ️ [UserWorkflowService] Credential admin ignoré: ${credName} (${credId})`);
+                      // Ne pas ajouter si déjà dans la liste (depuis workflow_credentials)
+                      if (!credentialsToDelete.has(credId)) {
+                        const credName = (credValue as any).name || '';
+                        // Ignorer les credentials admin partagés (OpenRouter, SMTP admin) qui ne doivent pas être supprimés
+                        // Mais inclure les credentials spécifiques au workflow (ex: "OpenRouter - CV-Analysis-user@...")
+                        const isSharedAdminCred = (credName.toLowerCase().includes('admin') || 
+                                                   credName.toLowerCase().includes('openrouter account') ||
+                                                   credName.toLowerCase().includes('header auth account 2')) &&
+                                                   !credName.includes('-'); // Les credentials spécifiques ont un "-" dans le nom
+                        
+                        if (!isSharedAdminCred) {
+                          credentialsToDelete.add(credId);
+                          credentialsWithInfo.set(credId, { name: credName, type: credType });
+                          console.log(`🔍 [UserWorkflowService] Credential trouvé dans nœud ${node.name}: ${credName} (${credId})`);
+                        } else {
+                          console.log(`ℹ️ [UserWorkflowService] Credential partagé/admin ignoré: ${credName} (${credId})`);
+                        }
                       }
                     }
                   }
@@ -415,23 +439,65 @@ class UserWorkflowService {
       if (credentialsToDelete.size > 0) {
         console.log(`🔧 [UserWorkflowService] ${credentialsToDelete.size} credential(s) unique(s) à vérifier`);
         
-        // ⚠️ PROTECTION: Ne jamais supprimer le credential "Header Auth account 2" (partagé par tous les workflows)
-        // IDs possibles: o7MztG7VAoDGoDSp (ancien), hgQk9lN7epSIRRcg (nouveau)
-        const SHARED_CREDENTIAL_IDS = ['o7MztG7VAoDGoDSp', 'hgQk9lN7epSIRRcg'];
+        // ⚠️ PROTECTION: Ne jamais supprimer les credentials partagés
+        // - "Header Auth account 2" (partagé par tous les workflows)
+        // - IDs possibles: o7MztG7VAoDGoDSp (ancien), hgQk9lN7epSIRRcg (nouveau)
+        // - Credentials avec "OpenRouter account" ou "Header Auth account 2" dans le nom (sans template/user spécifique)
+        const SHARED_CREDENTIAL_IDS = ['o7MztG7VAoDGoDSp', 'hgQk9lN7epSIRRcg', 'DJ4JtAswl4vKWvdI'];
+        
+        // Récupérer les noms des credentials depuis n8n si pas déjà dans credentialsWithInfo
+        for (const credId of credentialsToDelete) {
+          if (!credentialsWithInfo.has(credId)) {
+            try {
+              const cred = await n8nService.getCredential(credId).catch(() => null);
+              if (cred && cred.name) {
+                credentialsWithInfo.set(credId, { name: cred.name, type: cred.type || '' });
+              }
+            } catch (e) {
+              // Ignorer si on ne peut pas récupérer le nom
+            }
+          }
+        }
+        
         const credentialsToDeleteFiltered = Array.from(credentialsToDelete).filter(credId => {
+          // Protéger les IDs partagés connus
           if (SHARED_CREDENTIAL_IDS.includes(credId)) {
-            console.log(`⚠️ [UserWorkflowService] PROTECTION: Credential partagé ignoré (ne sera pas supprimé): ${credId} (Header Auth account 2)`);
+            console.log(`⚠️ [UserWorkflowService] PROTECTION: Credential partagé ignoré (ne sera pas supprimé): ${credId}`);
             return false;
           }
+          
+          // Protéger les credentials avec des noms partagés (sans template/user spécifique)
+          const credInfo = credentialsWithInfo.get(credId);
+          const credName = credInfo?.name || '';
+          
+          // Un credential est partagé si :
+          // - Il contient "Header Auth account 2" dans le nom
+          // - Il contient "OpenRouter account" SANS "-" (les credentials spécifiques ont un "-" dans le nom)
+          const isSharedName = credName.toLowerCase().includes('header auth account 2') ||
+                              (credName.toLowerCase().includes('openrouter account') && 
+                               !credName.includes('-') && // Les credentials spécifiques ont un "-" dans le nom
+                               !credName.toLowerCase().includes('cv-analysis') &&
+                               !credName.toLowerCase().includes('pdf-analysis') &&
+                               !credName.toLowerCase().includes('gmail-tri'));
+          
+          if (isSharedName) {
+            console.log(`⚠️ [UserWorkflowService] PROTECTION: Credential partagé ignoré (ne sera pas supprimé): ${credId} (${credName})`);
+            return false;
+          }
+          
+          // ✅ Supprimer les credentials spécifiques au workflow (ex: "OpenRouter - CV-Analysis-user@...")
+          // Ces credentials ont un nom avec "-" et contiennent le template/user
           return true;
         });
         
         if (credentialsToDeleteFiltered.length > 0) {
-          console.log(`🔧 [UserWorkflowService] ${credentialsToDeleteFiltered.length} credential(s) utilisateur(s) à supprimer`);
+          console.log(`🔧 [UserWorkflowService] ${credentialsToDeleteFiltered.length} credential(s) spécifique(s) au workflow à supprimer`);
           for (const credId of credentialsToDeleteFiltered) {
             try {
+              const credInfo = credentialsWithInfo.get(credId);
+              const credName = credInfo?.name || credId;
               await n8nService.deleteCredential(credId);
-              console.log(`✅ [UserWorkflowService] Credential supprimé: ${credId}`);
+              console.log(`✅ [UserWorkflowService] Credential supprimé: ${credName} (${credId})`);
             } catch (credError: any) {
               if (credError.message?.includes('404') || credError.message?.includes('Not Found')) {
                 console.warn(`⚠️ [UserWorkflowService] Credential déjà supprimé (404): ${credId}`);
@@ -441,7 +507,7 @@ class UserWorkflowService {
             }
           }
         } else {
-          console.log('ℹ️ [UserWorkflowService] Aucun credential utilisateur à supprimer (uniquement des credentials partagés/admin)');
+          console.log('ℹ️ [UserWorkflowService] Aucun credential spécifique au workflow à supprimer (uniquement des credentials partagés/admin)');
         }
       } else {
         console.log('ℹ️ [UserWorkflowService] Aucun credential utilisateur à supprimer (peut-être uniquement des credentials admin)');
