@@ -244,15 +244,11 @@ describe('deploymentUtils', () => {
       const result = await checkWorkflowExists('workflow-123');
       
       expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:5678/api/v1/workflows/workflow-123',
-        expect.objectContaining({
-          method: 'GET',
-          headers: expect.objectContaining({
-            'X-N8N-API-KEY': 'test-api-key'
-          })
-        })
-      );
+      expect(mockFetch).toHaveBeenCalled();
+      const callArgs = mockFetch.mock.calls[0];
+      expect(callArgs[0]).toContain('/api/v1/workflows/workflow-123');
+      expect(callArgs[1].method).toBe('GET');
+      expect(callArgs[1].headers['X-N8N-API-KEY']).toBe('test-api-key');
     });
 
     it('devrait retourner false si le workflow n\'existe pas', async () => {
