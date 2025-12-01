@@ -2,6 +2,7 @@
 // Si aucun injecteur spécifique n'est trouvé, utilise l'injecteur générique
 
 const genericInjector = require('../credentialInjector');
+const logger = require('../../utils/logger');
 
 // Mapping des templates vers leurs injecteurs spécifiques
 const TEMPLATE_INJECTORS = {
@@ -41,31 +42,33 @@ const TEMPLATE_INJECTORS = {
  * @returns {Object} Workflow avec credentials injectés
  */
 async function injectUserCredentials(workflow, userCredentials, userId, templateId = null, templateName = null) {
-  console.log('🔀 [InjectorRouter] Routing vers l\'injecteur approprié...');
-  console.log('🔀 [InjectorRouter] Template ID:', templateId);
-  console.log('🔀 [InjectorRouter] Template Name:', templateName);
+  logger.debug('Routing vers l\'injecteur approprié', {
+    templateId,
+    templateName,
+    userId
+  });
   
   // Chercher l'injecteur spécifique par ID (priorité)
   let specificInjector = null;
   if (templateId && TEMPLATE_INJECTORS[templateId]) {
     specificInjector = TEMPLATE_INJECTORS[templateId];
-    console.log('✅ [InjectorRouter] Injecteur spécifique trouvé par ID:', templateId);
+    logger.debug('Injecteur spécifique trouvé par ID', { templateId });
   }
   
   // Si pas trouvé par ID, chercher par nom (fallback)
   if (!specificInjector && templateName && TEMPLATE_INJECTORS[templateName]) {
     specificInjector = TEMPLATE_INJECTORS[templateName];
-    console.log('✅ [InjectorRouter] Injecteur spécifique trouvé par nom:', templateName);
+    logger.debug('Injecteur spécifique trouvé par nom', { templateName });
   }
   
   // Si un injecteur spécifique est trouvé, l'utiliser
   if (specificInjector && specificInjector.injectUserCredentials) {
-    console.log('🎯 [InjectorRouter] Utilisation de l\'injecteur spécifique');
+    logger.info('Utilisation de l\'injecteur spécifique', { templateId, templateName });
     return await specificInjector.injectUserCredentials(workflow, userCredentials, userId, templateId, templateName);
   }
   
   // Sinon, utiliser l'injecteur générique
-  console.log('🔧 [InjectorRouter] Aucun injecteur spécifique trouvé, utilisation de l\'injecteur générique');
+  logger.info('Aucun injecteur spécifique trouvé, utilisation de l\'injecteur générique', { templateId, templateName });
   return await genericInjector.injectUserCredentials(workflow, userCredentials, userId, templateId);
 }
 
