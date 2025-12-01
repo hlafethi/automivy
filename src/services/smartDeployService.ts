@@ -62,7 +62,12 @@ export interface WorkflowListItem {
 
 export interface WorkflowsResponse {
   success: boolean;
-  workflows: WorkflowListItem[];
+  data: {
+    workflows: WorkflowListItem[];
+  };
+  metadata?: {
+    retrievedAt?: string;
+  };
 }
 
 export const smartDeployService = {
@@ -118,7 +123,9 @@ export const smartDeployService = {
         method: 'GET'
       });
       
-      console.log('✅ [SmartDeployService] Workflows récupérés:', response.workflows.length);
+      // Le format standardisé est { success: true, data: { workflows: [...] }, metadata: {...} }
+      const workflows = response.data?.workflows || [];
+      console.log('✅ [SmartDeployService] Workflows récupérés:', workflows.length);
       return response;
     } catch (error) {
       console.error('❌ [SmartDeployService] Erreur récupération workflows:', error);

@@ -41,11 +41,13 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
     try {
       setLoading(true);
       const response = await smartDeployService.getAvailableWorkflows();
-      setWorkflows(response.workflows);
+      // Le format standardisé est { success: true, data: { workflows: [...] } }
+      const workflows = response.data?.workflows || [];
+      setWorkflows(workflows);
       
       // Si un templateId initial est fourni, sélectionner automatiquement le workflow
-      if (initialTemplateId && response.workflows.length > 0) {
-        const matchingWorkflow = response.workflows.find(w => w.id === initialTemplateId);
+      if (initialTemplateId && workflows.length > 0) {
+        const matchingWorkflow = workflows.find(w => w.id === initialTemplateId);
         if (matchingWorkflow) {
           console.log('🔧 [SmartDeployModal] Sélection automatique du workflow:', matchingWorkflow.name);
           // Attendre un peu pour que les workflows soient chargés, puis sélectionner
