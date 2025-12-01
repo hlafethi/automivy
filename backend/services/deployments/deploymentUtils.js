@@ -15,34 +15,101 @@ function cleanSettings(settings) {
 
 /**
  * Vérifie qu'aucun placeholder n'est présent dans le payload
+ * Détecte tous les patterns de placeholders connus
  */
 function verifyNoPlaceholders(workflowPayload) {
   const payloadString = JSON.stringify(workflowPayload);
-  const hasPlaceholder = payloadString.includes('ADMIN_OPENROUTER_CREDENTIAL_ID') ||
-                        payloadString.includes('ADMIN_OPENROUTER_CREDENTIAL_NAME') ||
-                        (payloadString.includes('USER_') && payloadString.includes('_CREDENTIAL_ID'));
   
-  if (hasPlaceholder) {
-    // Vérifier chaque nœud pour identifier le problème
-    workflowPayload.nodes?.forEach(node => {
-      if (node.credentials) {
-        Object.keys(node.credentials).forEach(credType => {
-          const cred = node.credentials[credType];
-          const isPlaceholder = cred?.id?.includes('ADMIN_OPENROUTER') ||
-                               cred?.id?.includes('ADMIN_SMTP') ||
-                               (cred?.id?.includes('USER_') && cred?.id?.includes('_CREDENTIAL_ID')) ||
-                               cred?.id === 'USER_GOOGLE_CREDENTIAL_ID' ||
-                               cred?.id === 'USER_GOOGLE_SHEETS_CREDENTIAL_ID';
-          if (isPlaceholder) {
-            logger.error('Placeholder détecté dans le workflow', { 
-              nodeName: node.name, 
-              credentialId: cred.id 
-            });
+  // Patterns de placeholders à détecter (regex)
+  const placeholderPatterns = [
+    /ADMIN_OPENROUTER_CREDENTIAL_ID/,
+    /ADMIN_OPENROUTER_CREDENTIAL_NAME/,
+    /ADMIN_SMTP_CREDENTIAL_ID/,
+    /ADMIN_SMTP_CREDENTIAL_NAME/,
+    /USER_[A-Z_]+_CREDENTIAL_ID/,
+    /USER_[A-Z_]+_CREDENTIAL_NAME/,
+    /USER_GOOGLE_CREDENTIAL_ID/,
+    /USER_GOOGLE_SHEETS_CREDENTIAL_ID/,
+    /USER_IMAP_CREDENTIAL_ID/,
+    /USER_IMAP_CREDENTIAL_NAME/,
+    /USER_SMTP_CREDENTIAL_ID/,
+    /USER_SMTP_CREDENTIAL_NAME/,
+  ];
+  
+  // Détecter les placeholders dans la string
+  const foundPlaceholders = [];
+  placeholderPatterns.forEach(pattern => {
+    const matches = payloadString.match(pattern);
+    if (matches) {
+      foundPlaceholders.push(...matches);
+    }
+  });
+  
+  // Détecter aussi dans les credentials des nœuds (format objet)
+  const nodePlaceholders = [];
+  workflowPayload.nodes?.forEach(node => {
+    if (node.credentials) {
+      Object.keys(node.credentials).forEach(credType => {
+        const cred = node.credentials[credType];
+        if (cred && typeof cred === 'object') {
+          // Vérifier l'ID
+          if (cred.id && typeof cred.id === 'string') {
+            const isPlaceholder = placeholderPatterns.some(pattern => 
+              pattern.test(cred.id)
+            );
+            if (isPlaceholder) {
+              nodePlaceholders.push({
+                nodeName: node.name,
+                nodeType: node.type,
+                credType,
+                placeholder: cred.id
+              });
+            }
           }
-        });
-      }
+          // Vérifier le name (peut aussi contenir des placeholders)
+          if (cred.name && typeof cred.name === 'string') {
+            const isPlaceholder = placeholderPatterns.some(pattern => 
+              pattern.test(cred.name)
+            );
+            if (isPlaceholder) {
+              nodePlaceholders.push({
+                nodeName: node.name,
+                nodeType: node.type,
+                credType,
+                placeholder: cred.name
+              });
+            }
+          }
+        }
+      });
+    }
+  });
+  
+  // Si des placeholders sont trouvés, logger les détails et lancer une erreur
+  if (foundPlaceholders.length > 0 || nodePlaceholders.length > 0) {
+    const uniquePlaceholders = [...new Set(foundPlaceholders)];
+    
+    logger.error('Placeholders détectés dans le workflow', {
+      placeholdersInString: uniquePlaceholders,
+      nodePlaceholders: nodePlaceholders,
+      nodeCount: workflowPayload.nodes?.length || 0
     });
-    throw new Error('Des placeholders sont encore présents dans le workflow. Les credentials doivent être remplacés avant l\'envoi à n8n.');
+    
+    // Construire un message d'erreur détaillé
+    let errorMessage = 'Des placeholders sont encore présents dans le workflow. Les credentials doivent être remplacés avant l\'envoi à n8n.\n\n';
+    
+    if (uniquePlaceholders.length > 0) {
+      errorMessage += `Placeholders trouvés dans le JSON: ${uniquePlaceholders.join(', ')}\n`;
+    }
+    
+    if (nodePlaceholders.length > 0) {
+      errorMessage += '\nPlaceholders trouvés dans les nœuds:\n';
+      nodePlaceholders.forEach(({ nodeName, nodeType, credType, placeholder }) => {
+        errorMessage += `  - Nœud "${nodeName}" (${nodeType}): ${credType} = ${placeholder}\n`;
+      });
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
