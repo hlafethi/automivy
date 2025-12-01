@@ -6,6 +6,7 @@ const { analyzeWorkflowCredentials, generateDynamicForm } = require('../services
 const { deployWorkflow } = require('../services/deployments');
 const db = require('../database');
 const logger = require('../utils/logger');
+const { sendSuccess, sendError, sendValidationError, sendNotFound } = require('../utils/apiResponse');
 
 /**
  * Analyser un workflow et retourner le formulaire dynamique
@@ -18,7 +19,7 @@ router.post('/analyze', authenticateToken, async (req, res) => {
     const { workflowId } = req.body;
     
     if (!workflowId) {
-      return res.status(400).json({ error: 'Workflow ID requis' });
+      return sendValidationError(res, 'Workflow ID requis');
     }
     
     logger.debug('Recherche du template', { workflowId, userId: req.user.id });
@@ -27,7 +28,7 @@ router.post('/analyze', authenticateToken, async (req, res) => {
     
     if (!template) {
       logger.warn('Template non trouvé', { workflowId, userId: req.user.id });
-      return res.status(404).json({ error: 'Template non trouvé' });
+      return sendNotFound(res, 'Template non trouvé', { workflowId });
     }
     
     logger.info('Template trouvé', { templateName: template.name, templateId: template.id });
@@ -41,16 +42,12 @@ router.post('/analyze', authenticateToken, async (req, res) => {
       logger.debug('JSON parsé avec succès');
     } catch (parseErr) {
       logger.error('Erreur parsing JSON workflow', { error: parseErr.message, templateId: template.id });
-      return res.status(400).json({ 
-        error: 'JSON du workflow invalide', 
-        details: parseErr.message,
-        templateId: template.id
-      });
+      return sendValidationError(res, 'JSON du workflow invalide', parseErr.message, { templateId: template.id });
     }
     
     if (!workflowJson) {
       logger.error('Template JSON manquant après parsing', { templateId: template.id });
-      return res.status(500).json({ error: 'Template JSON manquant' });
+      return sendError(res, 'Template JSON manquant', null, { templateId: template.id }, 500);
     }
     
     // Analyser les credentials requis (passer le templateId pour exclure IMAP si nécessaire)
@@ -60,20 +57,15 @@ router.post('/analyze', authenticateToken, async (req, res) => {
       logger.info('Credentials analysés', { count: requiredCredentials.length });
     } catch (analyzeErr) {
       logger.error('Erreur analyse des credentials', { error: analyzeErr.message, templateId: template.id });
-      return res.status(400).json({ 
-        error: 'Erreur analyse credentials', 
-        details: analyzeErr.message,
-        templateId: template.id
-      });
+      return sendValidationError(res, 'Erreur analyse credentials', analyzeErr.message, { templateId: template.id });
     }
     
     // Générer le formulaire dynamique
     const formConfig = generateDynamicForm(requiredCredentials);
     
-    logger.success('Analyse terminée', { credentialsCount: requiredCredentials.length });
+    logger.info('Analyse terminée', { credentialsCount: requiredCredentials.length });
     
-    res.json({
-      success: true,
+    return sendSuccess(res, {
       workflow: {
         id: template.id,
         name: template.name,
@@ -81,6 +73,8 @@ router.post('/analyze', authenticateToken, async (req, res) => {
       },
       requiredCredentials: requiredCredentials,
       formConfig: formConfig
+    }, {
+      analyzedAt: new Date().toISOString()
     });
     
   } catch (error) {
@@ -89,10 +83,7 @@ router.post('/analyze', authenticateToken, async (req, res) => {
       stack: error.stack,
       userId: req.user?.id 
     });
-    res.status(500).json({ 
-      error: 'Erreur lors de l\'analyse du workflow',
-      details: error.message
-    });
+    return sendError(res, 'Erreur lors de l\'analyse du workflow', error.message, { userId: req.user?.id });
   }
 });
 
@@ -107,7 +98,7 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     const { workflowId, credentials } = req.body;
     
     if (!workflowId || !credentials) {
-      return res.status(400).json({ error: 'Workflow ID et credentials requis' });
+      return sendValidationError(res, 'Workflow ID et credentials requis');
     }
     
     // Récupérer le template depuis la base de données
@@ -115,7 +106,7 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     
     if (!template) {
       logger.error('Template non trouvé', { workflowId, userId: req.user.id });
-      return res.status(404).json({ error: 'Template non trouvé' });
+      return sendNotFound(res, 'Template non trouvé', { workflowId });
     }
     
     logger.info('Template trouvé', { templateName: template.name, templateId: template.id });
@@ -123,22 +114,23 @@ router.post('/deploy', authenticateToken, async (req, res) => {
     // Vérifier que l'ID correspond bien
     if (template.id !== workflowId) {
       logger.error('Template ID mismatch', { requestedId: workflowId, foundId: template.id });
-      return res.status(400).json({ 
-        error: 'Template ID mismatch',
-        message: `Le template récupéré (ID: ${template.id}) ne correspond pas à l'ID demandé (${workflowId}).`,
-        details: {
+      return sendValidationError(res, 'Template ID mismatch', 
+        `Le template récupéré (ID: ${template.id}) ne correspond pas à l'ID demandé (${workflowId}).`,
+        {
           requestedId: workflowId,
           foundId: template.id,
           foundName: template.name
         }
-      });
+      );
     }
     
     // Déployer via le router de déploiements (qui appelle le bon déploiement spécifique ou générique)
     const result = await deployWorkflow(template, credentials, req.user.id, req.user.email);
     
-    logger.success('Déploiement réussi', { workflowId, templateName: template.name });
-    res.json(result);
+    logger.info('Déploiement réussi', { workflowId, templateName: template.name });
+    return sendSuccess(res, result, {
+      deployedAt: new Date().toISOString()
+    });
     
   } catch (error) {
     logger.error('Erreur déploiement du workflow', { 
@@ -147,9 +139,9 @@ router.post('/deploy', authenticateToken, async (req, res) => {
       workflowId: req.body?.workflowId,
       userId: req.user?.id 
     });
-    res.status(500).json({ 
-      error: 'Erreur lors du déploiement du workflow',
-      details: error.message 
+    return sendError(res, 'Erreur lors du déploiement du workflow', error.message, {
+      workflowId: req.body?.workflowId,
+      userId: req.user?.id
     });
   }
 });
@@ -179,9 +171,8 @@ router.get('/workflows', authenticateToken, async (req, res) => {
     
     logger.debug('Workflows retournés', { count: workflows.length });
     
-    res.json({
-      success: true,
-      workflows: workflows
+    return sendSuccess(res, { workflows }, {
+      retrievedAt: new Date().toISOString()
     });
     
   } catch (error) {
@@ -190,9 +181,8 @@ router.get('/workflows', authenticateToken, async (req, res) => {
       stack: error.stack,
       userId: req.user?.id 
     });
-    res.status(500).json({ 
-      error: 'Erreur lors de la récupération des workflows',
-      details: error.message 
+    return sendError(res, 'Erreur lors de la récupération des workflows', error.message, {
+      userId: req.user?.id
     });
   }
 });

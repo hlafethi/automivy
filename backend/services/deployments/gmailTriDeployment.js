@@ -71,14 +71,14 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   // Le log est déjà fait dans createWorkflowInN8n
   
   // 8. Mettre à jour le workflow avec les credentials (si nécessaire)
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // La fonction updateWorkflowInN8n gère maintenant les retries intelligents
   const updatedWorkflow = await deploymentUtils.updateWorkflowInN8n(deployedWorkflow.id, injectedWorkflow);
   if (updatedWorkflow) {
     Object.assign(deployedWorkflow, updatedWorkflow);
   }
   
   // 9. Activer le workflow
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  // La fonction activateWorkflow gère maintenant les retries intelligents
   const workflowActivated = await deploymentUtils.activateWorkflow(deployedWorkflow.id);
   
   if (!workflowActivated) {

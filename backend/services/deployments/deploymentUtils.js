@@ -7,6 +7,82 @@ const db = require('../../database');
 const logger = require('../../utils/logger');
 
 /**
+ * Attend que la condition soit vraie avec retry et backoff exponentiel
+ * @param {Function} checkCondition - Fonction qui retourne true quand la condition est remplie
+ * @param {Object} options - Options de retry
+ * @param {number} options.maxAttempts - Nombre maximum de tentatives (défaut: 5)
+ * @param {number} options.initialDelay - Délai initial en ms (défaut: 500)
+ * @param {number} options.maxDelay - Délai maximum en ms (défaut: 5000)
+ * @param {number} options.multiplier - Multiplicateur pour backoff exponentiel (défaut: 2)
+ * @returns {Promise<boolean>} true si la condition est remplie, false sinon
+ */
+async function waitForCondition(checkCondition, options = {}) {
+  const {
+    maxAttempts = 5,
+    initialDelay = 500,
+    maxDelay = 5000,
+    multiplier = 2
+  } = options;
+  
+  let delay = initialDelay;
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await checkCondition();
+      if (result) {
+        return true;
+      }
+      
+      if (attempt < maxAttempts) {
+        logger.debug('Condition non remplie, attente avant retry', {
+          attempt,
+          maxAttempts,
+          delay
+        });
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(delay * multiplier, maxDelay);
+      }
+    } catch (error) {
+      logger.warn('Erreur lors de la vérification de la condition', {
+        attempt,
+        maxAttempts,
+        error: error.message
+      });
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(delay * multiplier, maxDelay);
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Vérifie que le workflow existe et est accessible dans n8n
+ * @param {string} workflowId - ID du workflow
+ * @returns {Promise<boolean>} true si le workflow existe
+ */
+async function checkWorkflowExists(workflowId) {
+  const n8nUrl = config.n8n.url;
+  const n8nApiKey = config.n8n.apiKey;
+  
+  try {
+    const response = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': n8nApiKey
+      }
+    });
+    
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
  * Nettoie l'objet settings pour n8n (n'accepte que {} lors de la création)
  */
 function cleanSettings(settings) {
@@ -147,10 +223,22 @@ async function createWorkflowInN8n(workflowPayload) {
 
 /**
  * Met à jour le workflow dans n8n avec les credentials
+ * Utilise un retry intelligent pour s'assurer que le workflow est prêt
  */
 async function updateWorkflowInN8n(workflowId, injectedWorkflow) {
   const n8nUrl = config.n8n.url;
   const n8nApiKey = config.n8n.apiKey;
+  
+  // Attendre que le workflow soit accessible avant de le mettre à jour
+  const workflowReady = await waitForCondition(
+    () => checkWorkflowExists(workflowId),
+    { maxAttempts: 3, initialDelay: 500, maxDelay: 2000 }
+  );
+  
+  if (!workflowReady) {
+    logger.warn('Workflow non accessible pour mise à jour', { workflowId });
+    // Continuer quand même, n8n peut parfois accepter la mise à jour
+  }
   
   try {
     // Vérifier les credentials dans les nœuds HTTP Request avant update
@@ -365,36 +453,42 @@ async function activateWorkflow(workflowId) {
     const activateResult = await activateResponse.json();
     logger.debug('Commande d\'activation envoyée', { workflowId, result: activateResult });
     
-    // Vérifier le statut final après un délai (n8n peut prendre du temps)
-    let attempts = 0;
-    const maxAttempts = 5;
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const statusResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-N8N-API-KEY': n8nApiKey
+    // Vérifier le statut final avec retry intelligent (n8n peut prendre du temps)
+    const isActive = await waitForCondition(
+      async () => {
+        try {
+          const statusResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-N8N-API-KEY': n8nApiKey
+            }
+          });
+          
+          if (statusResponse.ok) {
+            const statusResult = await statusResponse.json();
+            return statusResult.active === true;
+          }
+          return false;
+        } catch (error) {
+          logger.debug('Erreur lors de la vérification du statut', { workflowId, error: error.message });
+          return false;
         }
-      });
-      
-      if (statusResponse.ok) {
-        const statusResult = await statusResponse.json();
-        if (statusResult.active) {
-          logger.info('Workflow confirmé actif dans n8n après activation', { workflowId });
-          return true;
-        } else {
-          attempts++;
-          logger.debug('Workflow non encore actif', { workflowId, attempt: attempts, maxAttempts });
-        }
-      } else {
-        attempts++;
-        logger.warn('Impossible de vérifier le statut', { workflowId, attempt: attempts, maxAttempts, status: statusResponse.status });
+      },
+      {
+        maxAttempts: 5,
+        initialDelay: 1000,
+        maxDelay: 4000,
+        multiplier: 1.5
       }
+    );
+    
+    if (isActive) {
+      logger.info('Workflow confirmé actif dans n8n après activation', { workflowId });
+      return true;
     }
     
-    logger.warn('Workflow non actif après plusieurs tentatives', { workflowId, maxAttempts });
+    logger.warn('Workflow non actif après plusieurs tentatives', { workflowId });
     return false;
     
   } catch (activateError) {
@@ -542,6 +636,8 @@ module.exports = {
   validateWorkflow,
   activateWorkflow,
   cleanupExistingWorkflows,
-  saveWorkflowCredentials
+  saveWorkflowCredentials,
+  waitForCondition,
+  checkWorkflowExists
 };
 
