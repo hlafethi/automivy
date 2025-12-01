@@ -25,6 +25,10 @@ const TEMPLATE_INJECTORS = {
   // IMAP Tri Automatique BAL
   'c1bd6bd6-8a2b-4beb-89ee-1cd734a907a2': require('./imapTriInjector'),
   'IMAP Tri Automatique BAL': require('./imapTriInjector'),
+  
+  // Microsoft Tri Automatique BAL (version Microsoft du template IMAP Tri)
+  'a3b5ba35-aeea-48f4-83d7-34e964a6a8b6': require('./microsoftTriInjector'),
+  'Microsoft Tri Automatique BAL': require('./microsoftTriInjector'),
 };
 
 /**

@@ -102,62 +102,98 @@ class SimpleScheduler {
 
   /**
    * Récupérer l'URL webhook d'un workflow n8n
+   * Vérifie d'abord le path réel dans n8n pour s'assurer qu'il correspond
    */
   async getWebhookUrl(n8nWorkflowId, userWorkflowId = null) {
     try {
       const db = require('../database');
       
-      // Si on a un userWorkflowId, récupérer le webhook path depuis la base de données
+      // ⚠️ PRIORITÉ: Récupérer le path réel depuis n8n pour garantir qu'il est correct
+      console.log(`🔍 [SimpleScheduler] Récupération du webhook path réel depuis n8n pour workflow ${n8nWorkflowId}...`);
+      const response = await fetch(`${config.n8n.url}/api/v1/workflows/${n8nWorkflowId}`, {
+        headers: { 'X-N8N-API-KEY': config.n8n.apiKey }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Le workflow n'existe plus dans n8n - nettoyer l'entrée en BDD
+          console.warn(`⚠️ [SimpleScheduler] Workflow ${n8nWorkflowId} n'existe plus dans n8n (404), nettoyage de la BDD...`);
+          
+          if (userWorkflowId) {
+            await db.query('DELETE FROM user_workflows WHERE id = $1', [userWorkflowId]);
+            console.log(`✅ [SimpleScheduler] Entrée workflow supprimée de la BDD (userWorkflowId: ${userWorkflowId})`);
+          } else {
+            await db.query('DELETE FROM user_workflows WHERE n8n_workflow_id = $1', [n8nWorkflowId]);
+            console.log(`✅ [SimpleScheduler] Entrée workflow supprimée de la BDD (n8nWorkflowId: ${n8nWorkflowId})`);
+          }
+          
+          throw new Error(`Workflow ${n8nWorkflowId} n'existe plus dans n8n. L'entrée a été nettoyée de la base de données.`);
+        }
+        throw new Error(`Failed to get workflow from n8n: ${response.status}`);
+      }
+      
+      const workflow = await response.json();
+      
+      // Vérifier que le workflow est actif
+      if (!workflow.active) {
+        throw new Error(`Workflow ${n8nWorkflowId} n'est pas actif dans n8n`);
+      }
+      
+      const webhookNode = workflow.nodes?.find(node => 
+        node.type === 'n8n-nodes-base.webhook' || node.type === 'n8n-nodes-base.webhookTrigger'
+      );
+      
+      if (!webhookNode) {
+        throw new Error(`Aucun nœud webhook trouvé dans le workflow ${n8nWorkflowId}`);
+      }
+      
+      // Utiliser le path du webhook depuis le nœud (source de vérité)
+      const webhookPath = webhookNode.parameters?.path;
+      
+      if (!webhookPath) {
+        throw new Error(`Le nœud webhook n'a pas de path configuré dans le workflow ${n8nWorkflowId}`);
+      }
+      
+      const webhookUrl = `${config.n8n.url}/webhook/${webhookPath}`;
+      console.log(`✅ [SimpleScheduler] URL webhook récupérée depuis n8n: ${webhookUrl}`);
+      
+      // Vérifier si le path en BDD correspond et le mettre à jour si nécessaire
       if (userWorkflowId) {
         const userWorkflow = await db.query(
           'SELECT webhook_path FROM user_workflows WHERE id = $1',
           [userWorkflowId]
         );
         
-        if (userWorkflow.rows.length > 0 && userWorkflow.rows[0].webhook_path) {
-          const webhookPath = userWorkflow.rows[0].webhook_path;
-          const webhookUrl = `${config.n8n.url}/webhook/${webhookPath}`;
-          console.log(`🔗 [SimpleScheduler] URL webhook unique depuis BDD (userWorkflowId): ${webhookUrl}`);
-          return webhookUrl;
+        if (userWorkflow.rows.length > 0) {
+          const dbWebhookPath = userWorkflow.rows[0].webhook_path;
+          if (dbWebhookPath !== webhookPath) {
+            console.warn(`⚠️ [SimpleScheduler] Webhook path en BDD (${dbWebhookPath}) ne correspond pas au path réel (${webhookPath}), mise à jour...`);
+            await db.query(
+              'UPDATE user_workflows SET webhook_path = $1 WHERE id = $2',
+              [webhookPath, userWorkflowId]
+            );
+            console.log(`✅ [SimpleScheduler] Webhook path mis à jour en BDD`);
+          }
+        }
+      } else {
+        // Mettre à jour par n8nWorkflowId
+        const userWorkflowByN8n = await db.query(
+          'SELECT id, webhook_path FROM user_workflows WHERE n8n_workflow_id = $1 ORDER BY created_at DESC LIMIT 1',
+          [n8nWorkflowId]
+        );
+        
+        if (userWorkflowByN8n.rows.length > 0) {
+          const dbWebhookPath = userWorkflowByN8n.rows[0].webhook_path;
+          if (dbWebhookPath !== webhookPath) {
+            console.warn(`⚠️ [SimpleScheduler] Webhook path en BDD (${dbWebhookPath}) ne correspond pas au path réel (${webhookPath}), mise à jour...`);
+            await db.query(
+              'UPDATE user_workflows SET webhook_path = $1 WHERE id = $2',
+              [webhookPath, userWorkflowByN8n.rows[0].id]
+            );
+            console.log(`✅ [SimpleScheduler] Webhook path mis à jour en BDD`);
+          }
         }
       }
-      
-      // Sinon, chercher par n8nWorkflowId dans la base de données
-      const userWorkflowByN8n = await db.query(
-        'SELECT webhook_path FROM user_workflows WHERE n8n_workflow_id = $1 ORDER BY created_at DESC LIMIT 1',
-        [n8nWorkflowId]
-      );
-      
-      if (userWorkflowByN8n.rows.length > 0 && userWorkflowByN8n.rows[0].webhook_path) {
-        const webhookPath = userWorkflowByN8n.rows[0].webhook_path;
-        const webhookUrl = `${config.n8n.url}/webhook/${webhookPath}`;
-        console.log(`🔗 [SimpleScheduler] URL webhook unique depuis BDD (n8nWorkflowId): ${webhookUrl}`);
-        return webhookUrl;
-      }
-      
-      // Fallback: récupérer depuis n8n (ancienne méthode - ne devrait plus être utilisée)
-      console.warn('⚠️ [SimpleScheduler] Webhook path non trouvé en BDD, récupération depuis n8n (fallback)');
-      const response = await fetch(`${config.n8n.url}/api/v1/workflows/${n8nWorkflowId}`, {
-        headers: { 'X-N8N-API-KEY': config.n8n.apiKey }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get workflow: ${response.status}`);
-      }
-      
-      const workflow = await response.json();
-      const webhookNode = workflow.nodes?.find(node => 
-        node.type === 'n8n-nodes-base.webhook'
-      );
-      
-      if (!webhookNode) {
-        throw new Error('Webhook node not found');
-      }
-      
-      // Utiliser le path du webhook depuis le nœud si disponible
-      const webhookPath = webhookNode.parameters?.path || 'email-summary-trigger';
-      const webhookUrl = `${config.n8n.url}/webhook/${webhookPath}`;
-      console.log(`🔗 [SimpleScheduler] URL webhook depuis n8n (fallback): ${webhookUrl}`);
       
       return webhookUrl;
       

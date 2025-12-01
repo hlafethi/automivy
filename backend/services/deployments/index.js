@@ -24,6 +24,10 @@ const TEMPLATE_DEPLOYMENTS = {
   // IMAP Tri Automatique BAL
   'c1bd6bd6-8a2b-4beb-89ee-1cd734a907a2': require('./imapTriDeployment'),
   'IMAP Tri Automatique BAL': require('./imapTriDeployment'),
+  
+  // Microsoft Tri Automatique BAL (version Microsoft du template IMAP Tri)
+  'a3b5ba35-aeea-48f4-83d7-34e964a6a8b6': require('./microsoftTriDeployment'),
+  'Microsoft Tri Automatique BAL': require('./microsoftTriDeployment'),
 };
 
 /**

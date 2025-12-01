@@ -18,18 +18,30 @@ export function OAuthCallback() {
 
         // Le backend gère déjà le callback et redirige ici avec les paramètres
         if (oauthError) {
-          throw new Error(decodeURIComponent(oauthError));
+          let errorMessage = decodeURIComponent(oauthError);
+          // Messages d'erreur plus clairs
+          if (oauthError === 'code_expired') {
+            errorMessage = 'Le code d\'autorisation a expiré. Veuillez réessayer en cliquant à nouveau sur "Connecter Microsoft Outlook".';
+          } else if (oauthError === 'token_exchange_failed') {
+            errorMessage = 'Échec de l\'échange du code d\'autorisation. Veuillez réessayer.';
+          } else if (oauthError === 'config_missing') {
+            errorMessage = 'Configuration OAuth manquante. Veuillez contacter l\'administrateur.';
+          }
+          throw new Error(errorMessage);
         }
 
         if (oauthSuccess) {
           setStatus('success');
-          setMessage(`Gmail connecté avec succès${email ? ` : ${decodeURIComponent(email)}` : ''} !`);
+          const provider = oauthSuccess; // oauthSuccess contient le nom du provider (gmail, google_sheets, microsoft)
+          const providerName = provider === 'microsoft' ? 'Microsoft Outlook' : 
+                              provider === 'google_sheets' ? 'Google Sheets' : 'Gmail';
+          setMessage(`${providerName} connecté avec succès${email ? ` : ${decodeURIComponent(email)}` : ''} !`);
           
           setTimeout(() => {
             // Envoyer un message à la fenêtre parente si elle existe
             if (window.opener) {
               window.opener.postMessage(
-                { type: 'oauth_success', provider: 'gmail', email: email ? decodeURIComponent(email) : null },
+                { type: 'oauth_success', provider: provider, email: email ? decodeURIComponent(email) : null },
                 window.location.origin
               );
             }

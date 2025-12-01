@@ -162,13 +162,132 @@ async function updateWorkflowInN8n(workflowId, injectedWorkflow) {
 /**
  * Active le workflow dans n8n
  */
+/**
+ * Valide que le workflow peut être exécuté (vérifie les paramètres requis)
+ */
+async function validateWorkflow(workflowId) {
+  const n8nUrl = config.n8n.url;
+  const n8nApiKey = config.n8n.apiKey;
+  
+  console.log(`🔍 [DeploymentUtils] Validation du workflow ${workflowId}...`);
+  
+  try {
+    const response = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': n8nApiKey
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Impossible de récupérer le workflow: ${response.status}`);
+    }
+    
+    const workflow = await response.json();
+    const issues = [];
+    
+    // Vérifier les nœuds Microsoft Outlook
+    const outlookNodes = workflow.nodes?.filter(n => n.type === 'n8n-nodes-base.microsoftOutlook') || [];
+    outlookNodes.forEach(node => {
+      // Pour les nœuds "Get many folder messages", vérifier que folderId est configuré
+      // SAUF pour les nœuds qui vérifient les dossiers créés dynamiquement (nœud 4)
+      const nodeNameLower = (node.name || '').toLowerCase();
+      const isDynamicFolderNode = nodeNameLower.includes('get many folder messages2') || 
+                                   nodeNameLower.includes('messages2') ||
+                                   nodeNameLower.includes('check folders') ||
+                                   nodeNameLower.includes('vérifier tous');
+      
+      if (node.parameters?.resource === 'folderMessage') {
+        const folderId = node.parameters?.folderId;
+        
+        if (isDynamicFolderNode) {
+          // Pour les nœuds avec paramètres dynamiques, vérifier juste que la structure folderId existe
+          if (!node.parameters?.folderId) {
+            issues.push(`Nœud "${node.name}" (Microsoft Outlook): La structure folderId est requise (sera remplie dynamiquement par le workflow).`);
+          } else {
+            console.log(`ℹ️ [DeploymentUtils] Nœud "${node.name}" a des paramètres dynamiques (folderId sera défini par le workflow)`);
+          }
+        } else {
+          // Pour les autres nœuds, folderId doit être configuré
+          const isFolderIdEmpty = !folderId || 
+                                   (typeof folderId === 'object' && (!folderId.value || folderId.value === '')) ||
+                                   (typeof folderId === 'string' && folderId === '');
+          if (isFolderIdEmpty) {
+            issues.push(`Nœud "${node.name}" (Microsoft Outlook): Le paramètre "folder" est requis mais n'est pas configuré. Veuillez sélectionner un dossier dans n8n.`);
+          }
+        }
+      }
+      
+      // Vérifier que le credential est présent
+      if (!node.credentials?.microsoftOutlookOAuth2Api) {
+        issues.push(`Nœud "${node.name}" (Microsoft Outlook): Credential Microsoft Outlook OAuth2 manquant`);
+      }
+    });
+    
+    // Vérifier les nœuds emailSend
+    const emailNodes = workflow.nodes?.filter(n => n.type === 'n8n-nodes-base.emailSend') || [];
+    emailNodes.forEach(node => {
+      if (!node.credentials?.smtp) {
+        issues.push(`Nœud "${node.name}" (Email Send): Credential SMTP manquant`);
+      }
+    });
+    
+    // Vérifier les connexions
+    if (!workflow.connections || Object.keys(workflow.connections).length === 0) {
+      issues.push('Aucune connexion entre les nœuds');
+    }
+    
+    if (issues.length > 0) {
+      console.error('❌ [DeploymentUtils] Problèmes détectés dans le workflow:');
+      issues.forEach(issue => console.error(`  - ${issue}`));
+      throw new Error(`Le workflow a des problèmes et ne peut pas être exécuté:\n${issues.join('\n')}`);
+    }
+    
+    console.log('✅ [DeploymentUtils] Workflow validé avec succès');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ [DeploymentUtils] Erreur validation workflow:', error.message);
+    throw error;
+  }
+}
+
 async function activateWorkflow(workflowId) {
   const n8nUrl = config.n8n.url;
   const n8nApiKey = config.n8n.apiKey;
   
-  console.log('🔧 [DeploymentUtils] Activation automatique du workflow...');
+  console.log(`🔧 [DeploymentUtils] Activation automatique du workflow ${workflowId}...`);
   
   try {
+    // Vérifier d'abord si le workflow existe
+    const checkResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': n8nApiKey
+      }
+    });
+    
+    if (!checkResponse.ok) {
+      const errorText = await checkResponse.text();
+      console.error(`❌ [DeploymentUtils] Workflow ${workflowId} non trouvé dans n8n:`, errorText);
+      throw new Error(`Workflow ${workflowId} non trouvé dans n8n (${checkResponse.status})`);
+    }
+    
+    const workflowData = await checkResponse.json();
+    console.log(`🔍 [DeploymentUtils] Workflow trouvé: ${workflowData.name}, actif: ${workflowData.active}`);
+    
+    // Valider le workflow avant activation
+    await validateWorkflow(workflowId);
+    
+    // Si déjà actif, retourner true
+    if (workflowData.active) {
+      console.log('✅ [DeploymentUtils] Workflow déjà actif');
+      return true;
+    }
+    
+    // Activer le workflow
     const activateResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}/activate`, {
       method: 'POST',
       headers: {
@@ -178,11 +297,19 @@ async function activateWorkflow(workflowId) {
       body: JSON.stringify({})
     });
     
-    if (activateResponse.ok) {
-      const activateResult = await activateResponse.json();
-      console.log('✅ [DeploymentUtils] Workflow activé:', activateResult.active);
-      
-      // Vérifier le statut final après un délai
+    if (!activateResponse.ok) {
+      const errorText = await activateResponse.text();
+      console.error('❌ [DeploymentUtils] Impossible d\'activer le workflow:', errorText);
+      throw new Error(`Impossible d'activer le workflow: ${errorText}`);
+    }
+    
+    const activateResult = await activateResponse.json();
+    console.log('✅ [DeploymentUtils] Commande d\'activation envoyée, résultat:', activateResult);
+    
+    // Vérifier le statut final après un délai (n8n peut prendre du temps)
+    let attempts = 0;
+    const maxAttempts = 5;
+    while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const statusResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
@@ -196,24 +323,25 @@ async function activateWorkflow(workflowId) {
       if (statusResponse.ok) {
         const statusResult = await statusResponse.json();
         if (statusResult.active) {
-          console.log('✅ [DeploymentUtils] Workflow confirmé actif dans n8n');
+          console.log('✅ [DeploymentUtils] Workflow confirmé actif dans n8n après activation');
           return true;
         } else {
-          console.warn('⚠️ [DeploymentUtils] Workflow non actif après activation');
-          return false;
+          attempts++;
+          console.log(`⏳ [DeploymentUtils] Workflow non encore actif, tentative ${attempts}/${maxAttempts}...`);
         }
+      } else {
+        attempts++;
+        console.warn(`⚠️ [DeploymentUtils] Impossible de vérifier le statut (tentative ${attempts}/${maxAttempts})`);
       }
-    } else {
-      const errorText = await activateResponse.text();
-      console.error('❌ [DeploymentUtils] Impossible d\'activer le workflow:', errorText);
-      return false;
     }
+    
+    console.warn('⚠️ [DeploymentUtils] Workflow non actif après plusieurs tentatives');
+    return false;
+    
   } catch (activateError) {
     console.error('❌ [DeploymentUtils] Erreur activation:', activateError.message);
-    return false;
+    throw activateError; // Propager l'erreur au lieu de retourner false silencieusement
   }
-  
-  return false;
 }
 
 /**
@@ -329,6 +457,7 @@ module.exports = {
   verifyNoPlaceholders,
   createWorkflowInN8n,
   updateWorkflowInN8n,
+  validateWorkflow,
   activateWorkflow,
   cleanupExistingWorkflows,
   saveWorkflowCredentials

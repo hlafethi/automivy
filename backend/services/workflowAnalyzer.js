@@ -282,6 +282,10 @@ function detectUserCredentialTypes(node, isReportWorkflow = false, templateId = 
   // ne jamais demander IMAP - utiliser uniquement Gmail OAuth2
   const isGmailTriTemplate = templateId === '5114f297-e56e-4fec-be2b-1afbb5ea8619';
   
+  // ⚠️ EXCEPTION: Pour le template Microsoft Tri (a3b5ba35-aeea-48f4-83d7-34e964a6a8b6),
+  // ne jamais demander IMAP - utiliser uniquement Microsoft Outlook OAuth2
+  const isMicrosoftTriTemplate = templateId === 'a3b5ba35-aeea-48f4-83d7-34e964a6a8b6';
+  
   const nodeNameLower = node.name?.toLowerCase() || '';
   const isEmailReadImap = node.type === 'n8n-nodes-base.emailReadImap';
   const isImapNode = node.type === 'n8n-nodes-imap.imap' || (node.type && node.type.includes('imap'));
@@ -289,8 +293,8 @@ function detectUserCredentialTypes(node, isReportWorkflow = false, templateId = 
   const hasImapInName = nodeNameLower.includes('imap');
   
   // PRIORITÉ 1: Détecter les nœuds IMAP (y compris emailReadImap avec "gmail" dans le nom)
-  // SAUF pour le template Gmail Tri qui utilise uniquement Gmail OAuth2
-  if (!isGmailTriTemplate) {
+  // SAUF pour le template Gmail Tri et Microsoft Tri qui utilisent uniquement OAuth2
+  if (!isGmailTriTemplate && !isMicrosoftTriTemplate) {
     if (isEmailReadImap || isImapNode || hasImapInName || (hasGmailInName && isEmailReadImap)) {
       if (!credentialTypes.includes('imap')) {
         credentialTypes.push('imap');
@@ -302,7 +306,12 @@ function detectUserCredentialTypes(node, isReportWorkflow = false, templateId = 
       }
     }
   } else {
-    console.log(`  ⏭️ [WorkflowAnalyzer] Template Gmail Tri détecté - IMAP ignoré, utilisation de Gmail OAuth2 uniquement`);
+    if (isGmailTriTemplate) {
+      console.log(`  ⏭️ [WorkflowAnalyzer] Template Gmail Tri détecté - IMAP ignoré, utilisation de Gmail OAuth2 uniquement`);
+    }
+    if (isMicrosoftTriTemplate) {
+      console.log(`  ⏭️ [WorkflowAnalyzer] Template Microsoft Tri détecté - IMAP ignoré, utilisation de Microsoft Outlook OAuth2 uniquement`);
+    }
   }
   
   // PRIORITÉ 2: Détecter les nœuds Gmail
@@ -387,6 +396,20 @@ function detectUserCredentialTypes(node, isReportWorkflow = false, templateId = 
     if (!credentialTypes.includes('postgres')) {
       credentialTypes.push('postgres');
       console.log(`  ✅ [WorkflowAnalyzer] PostgreSQL détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Microsoft Outlook
+  // PRIORITÉ: Pour le template Microsoft Tri, TOUJOURS utiliser Microsoft Outlook OAuth2
+  // Pour les autres templates: détecter normalement
+  if (node.type === 'n8n-nodes-base.microsoftOutlook' || 
+      (node.type && node.type.includes('microsoftOutlook'))) {
+    if (!credentialTypes.includes('microsoftOutlookOAuth2')) {
+      credentialTypes.push('microsoftOutlookOAuth2');
+      console.log(`  ✅ [WorkflowAnalyzer] Microsoft Outlook OAuth2 détecté pour nœud: ${node.name} (type: ${node.type})`);
+      if (isMicrosoftTriTemplate) {
+        console.log(`  ℹ️ [WorkflowAnalyzer] Template Microsoft Tri - Microsoft Outlook OAuth2 utilisé pour tous les nœuds`);
+      }
     }
   }
   
@@ -476,6 +499,16 @@ function getCredentialConfig(credType) {
         { name: 'password', label: 'Mot de passe', type: 'password', required: true },
         { name: 'port', label: 'Port', type: 'number', required: false, defaultValue: 5432 }
       ]
+    },
+    'microsoftOutlookOAuth2': {
+      type: 'microsoftOutlookOAuth2',
+      name: 'Microsoft Outlook OAuth2',
+      description: 'Connexion à votre compte Microsoft Outlook/Hotmail via OAuth2',
+      fields: [
+        { name: 'microsoftOutlookOAuth2', label: 'Connecter Microsoft Outlook', type: 'oauth', required: true, provider: 'microsoft' }
+      ],
+      oauth: true,
+      provider: 'microsoft'
     }
   };
   
@@ -620,7 +653,7 @@ function validateFormData(formData, requiredCredentials) {
             const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
             if (!timeRegex.test(value)) {
               errors.push(`${field.label} doit être au format HH:MM (ex: 09:00)`);
-            } else {
+        } else {
               validatedData[field.name] = value;
             }
           }
@@ -634,7 +667,7 @@ function validateFormData(formData, requiredCredentials) {
   });
   
   console.log('✅ [WorkflowAnalyzer] Validation terminée:', errors.length, 'erreurs');
-  return {
+    return {
     isValid: errors.length === 0,
     errors: errors,
     data: validatedData
