@@ -194,6 +194,7 @@ function verifyNoPlaceholders(workflowPayload) {
  */
 async function createWorkflowInN8n(workflowPayload) {
   const n8nUrl = config.n8n.url;
+  const n8nErrorHandler = require('../../utils/n8nErrorHandler');
   
   logger.info('Création du workflow dans n8n', {
     workflowName: workflowPayload.name,
@@ -201,24 +202,24 @@ async function createWorkflowInN8n(workflowPayload) {
     connectionsCount: Object.keys(workflowPayload.connections || {}).length
   });
   
-  const deployResponse = await fetch(`${n8nUrl}/api/v1/workflows`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-N8N-API-KEY': config.n8n.apiKey
-    },
-    body: JSON.stringify(workflowPayload)
-  });
-  
-  if (!deployResponse.ok) {
-    const error = await deployResponse.text();
-    logger.error('Erreur déploiement n8n', { error, status: deployResponse.status });
-    throw new Error(`Erreur déploiement n8n: ${error}`);
-  }
-  
-  const result = await deployResponse.json();
-  logger.info('Workflow créé dans n8n', { workflowId: result.id, workflowName: result.name });
-  return result;
+  return await n8nErrorHandler.handleN8nApiCall(async () => {
+    const deployResponse = await fetch(`${n8nUrl}/api/v1/workflows`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': config.n8n.apiKey
+      },
+      body: JSON.stringify(workflowPayload)
+    });
+    
+    if (!deployResponse.ok) {
+      throw deployResponse; // Sera parsé par handleN8nApiCall
+    }
+    
+    const result = await deployResponse.json();
+    logger.info('Workflow créé dans n8n', { workflowId: result.id, workflowName: result.name });
+    return result;
+  }, 'create');
 }
 
 /**
@@ -403,10 +404,11 @@ async function validateWorkflow(workflowId) {
 async function activateWorkflow(workflowId) {
   const n8nUrl = config.n8n.url;
   const n8nApiKey = config.n8n.apiKey;
+  const n8nErrorHandler = require('../../utils/n8nErrorHandler');
   
-  logger.info('Activation automatique du workflow', { workflowId });
-  
-  try {
+  return await n8nErrorHandler.handleN8nApiCall(async () => {
+    logger.info('Activation automatique du workflow', { workflowId });
+    
     // Vérifier d'abord si le workflow existe
     const checkResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
       method: 'GET',
@@ -417,9 +419,7 @@ async function activateWorkflow(workflowId) {
     });
     
     if (!checkResponse.ok) {
-      const errorText = await checkResponse.text();
-      logger.error('Workflow non trouvé dans n8n', { workflowId, error: errorText, status: checkResponse.status });
-      throw new Error(`Workflow ${workflowId} non trouvé dans n8n (${checkResponse.status})`);
+      throw checkResponse; // Sera parsé par handleN8nApiCall
     }
     
     const workflowData = await checkResponse.json();
@@ -445,9 +445,7 @@ async function activateWorkflow(workflowId) {
     });
     
     if (!activateResponse.ok) {
-      const errorText = await activateResponse.text();
-      logger.error('Impossible d\'activer le workflow', { workflowId, error: errorText, status: activateResponse.status });
-      throw new Error(`Impossible d'activer le workflow: ${errorText}`);
+      throw activateResponse; // Sera parsé par handleN8nApiCall
     }
     
     const activateResult = await activateResponse.json();
@@ -490,11 +488,7 @@ async function activateWorkflow(workflowId) {
     
     logger.warn('Workflow non actif après plusieurs tentatives', { workflowId });
     return false;
-    
-  } catch (activateError) {
-    logger.error('Erreur activation', { workflowId, error: activateError.message });
-    throw activateError;
-  }
+  }, 'activate');
 }
 
 /**
