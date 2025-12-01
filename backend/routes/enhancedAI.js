@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const EnhancedAIGenerator = require('../services/enhancedAIGenerator');
 const ApplicationContextService = require('../services/applicationContextService');
 const N8nNodeValidator = require('../services/n8nNodeValidator');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -20,8 +21,7 @@ const router = express.Router();
         });
       }
       
-      console.log('🤖 [EnhancedAI] Génération intelligente demandée:', description);
-      console.log('🤖 [EnhancedAI] Provider:', aiProvider, 'Model:', aiModel);
+      logger.info('Génération intelligente demandée', { description, aiProvider, aiModel, userId: req.user.id });
       
       // Générer le workflow intelligent
       const workflow = await EnhancedAIGenerator.generateIntelligentWorkflow(description, aiProvider, aiModel);
@@ -48,8 +48,11 @@ const router = express.Router();
     });
     
   } catch (error) {
-    console.error('❌ [EnhancedAI] Erreur lors de la génération intelligente:', error);
-    console.error('❌ [EnhancedAI] Stack:', error.stack);
+    logger.error('Erreur lors de la génération intelligente', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id
+    });
     res.status(500).json({
       success: false,
       error: 'Erreur lors de la génération du workflow intelligent',
@@ -71,7 +74,7 @@ router.post('/generate-optimized', authenticateToken, async (req, res) => {
       });
     }
     
-    console.log('🎯 [EnhancedAI] Génération optimisée demandée pour utilisateur:', userId);
+    logger.info('Génération optimisée demandée', { userId, description });
     
     // Générer le workflow optimisé
     const workflow = await EnhancedAIGenerator.generateOptimizedWorkflow(description, userId, aiProvider);
@@ -100,10 +103,15 @@ router.post('/generate-optimized', authenticateToken, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ [EnhancedAI] Erreur lors de la génération optimisée:', error);
+    logger.error('Erreur lors de la génération optimisée', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id
+    });
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la génération du workflow optimisé'
+      error: 'Erreur lors de la génération du workflow optimisé',
+      details: error.message
     });
   }
 });
@@ -120,7 +128,7 @@ router.post('/generate-from-template', authenticateToken, async (req, res) => {
       });
     }
     
-    console.log('📋 [EnhancedAI] Génération depuis template:', templateId);
+    logger.info('Génération depuis template', { templateId, userId: req.user.id });
     
     // Générer le workflow depuis le template
     const workflow = await EnhancedAIGenerator.generateFromTemplate(templateId, customizations);
@@ -147,10 +155,16 @@ router.post('/generate-from-template', authenticateToken, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ [EnhancedAI] Erreur lors de la génération depuis template:', error);
+    logger.error('Erreur lors de la génération depuis template', {
+      error: error.message,
+      stack: error.stack,
+      templateId: req.body?.templateId,
+      userId: req.user?.id
+    });
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la génération depuis le template'
+      error: 'Erreur lors de la génération depuis le template',
+      details: error.message
     });
   }
 });
@@ -158,7 +172,7 @@ router.post('/generate-from-template', authenticateToken, async (req, res) => {
 // Obtenir le contexte de l'application
 router.get('/context', authenticateToken, async (req, res) => {
   try {
-    console.log('🧠 [EnhancedAI] Récupération du contexte de l\'application...');
+    logger.debug('Récupération du contexte de l\'application', { userId: req.user.id });
     
     const context = await ApplicationContextService.getFullContext();
     
@@ -173,10 +187,15 @@ router.get('/context', authenticateToken, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ [EnhancedAI] Erreur lors de la récupération du contexte:', error);
+    logger.error('Erreur lors de la récupération du contexte', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id
+    });
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la récupération du contexte'
+      error: 'Erreur lors de la récupération du contexte',
+      details: error.message
     });
   }
 });
@@ -193,7 +212,7 @@ router.post('/validate', authenticateToken, async (req, res) => {
       });
     }
     
-    console.log('🔍 [EnhancedAI] Validation du workflow...');
+    logger.debug('Validation du workflow', { userId: req.user.id });
     
     const validation = N8nNodeValidator.validateWorkflow(workflow);
     
@@ -208,10 +227,15 @@ router.post('/validate', authenticateToken, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ [EnhancedAI] Erreur lors de la validation:', error);
+    logger.error('Erreur lors de la validation', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id
+    });
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la validation du workflow'
+      error: 'Erreur lors de la validation du workflow',
+      details: error.message
     });
   }
 });
@@ -228,7 +252,7 @@ router.post('/fix', authenticateToken, async (req, res) => {
       });
     }
     
-    console.log('🔧 [EnhancedAI] Correction du workflow...');
+    logger.info('Correction du workflow', { userId: req.user.id });
     
     const fixedWorkflow = N8nNodeValidator.fixWorkflow(workflow);
     const validation = N8nNodeValidator.validateWorkflow(fixedWorkflow);
@@ -251,10 +275,15 @@ router.post('/fix', authenticateToken, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ [EnhancedAI] Erreur lors de la correction:', error);
+    logger.error('Erreur lors de la correction', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id
+    });
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la correction du workflow'
+      error: 'Erreur lors de la correction du workflow',
+      details: error.message
     });
   }
 });
