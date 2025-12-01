@@ -4,14 +4,18 @@
 const pdfAnalysisInjector = require('../injectors/pdfAnalysisInjector');
 const db = require('../../database');
 const deploymentUtils = require('./deploymentUtils');
+const logger = require('../../utils/logger');
 
 /**
  * Déploie le workflow "PDF Analysis" avec sa logique spécifique
  */
 async function deployWorkflow(template, credentials, userId, userEmail) {
-  console.log('🚀 [PDFAnalysisDeployment] Déploiement spécifique du workflow PDF Analysis...');
-  console.log('🚀 [PDFAnalysisDeployment] Template:', template.name);
-  console.log('🚀 [PDFAnalysisDeployment] User:', userEmail);
+  logger.info('Déploiement spécifique du workflow PDF Analysis', {
+    templateName: template.name,
+    templateId: template.id,
+    userEmail,
+    userId
+  });
   
   // 1. Parser le JSON du template
   let workflowJson;
@@ -31,7 +35,7 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   const workflowName = `${template.name} - ${userEmail}`;
   
   // 3. Injecter les credentials avec l'injecteur spécifique PDF Analysis
-  console.log('🔧 [PDFAnalysisDeployment] Injection des credentials avec pdfAnalysisInjector...');
+  logger.debug('Injection des credentials avec pdfAnalysisInjector', { templateId: template.id });
   const injectionResult = await pdfAnalysisInjector.injectUserCredentials(
     workflowJson, 
     credentials, 
@@ -64,7 +68,7 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   
   // 7. Créer le workflow dans n8n
   const deployedWorkflow = await deploymentUtils.createWorkflowInN8n(workflowPayload);
-  console.log('✅ [PDFAnalysisDeployment] Workflow créé dans n8n:', deployedWorkflow.id);
+  // Le log est déjà fait dans createWorkflowInN8n
   
   // 8. Mettre à jour le workflow avec les credentials (si nécessaire)
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -78,7 +82,10 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   const workflowActivated = await deploymentUtils.activateWorkflow(deployedWorkflow.id);
   
   if (!workflowActivated) {
-    console.warn('⚠️ [PDFAnalysisDeployment] Le workflow n\'a pas pu être activé automatiquement');
+    logger.warn('Le workflow n\'a pas pu être activé automatiquement', {
+      workflowId: deployedWorkflow.id,
+      templateId: template.id
+    });
   }
   
   // 10. Enregistrer dans user_workflows
@@ -95,7 +102,12 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   // 11. Sauvegarder les credentials créés
   await deploymentUtils.saveWorkflowCredentials(userWorkflow.id, injectionResult, userEmail);
   
-  console.log('✅ [PDFAnalysisDeployment] Workflow déployé avec succès:', deployedWorkflow.id);
+  logger.info('Workflow PDF Analysis déployé avec succès', {
+    workflowId: userWorkflow.id,
+    n8nWorkflowId: deployedWorkflow.id,
+    templateId: template.id,
+    userEmail
+  });
   
   return {
     success: true,

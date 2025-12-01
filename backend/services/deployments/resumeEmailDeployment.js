@@ -4,14 +4,18 @@
 const resumeEmailInjector = require('../injectors/resumeEmailInjector');
 const db = require('../../database');
 const deploymentUtils = require('./deploymentUtils');
+const logger = require('../../utils/logger');
 
 /**
  * Déploie le workflow "Résume Email" avec sa logique spécifique
  */
 async function deployWorkflow(template, credentials, userId, userEmail) {
-  console.log('🚀 [ResumeEmailDeployment] Déploiement spécifique du workflow Résume Email...');
-  console.log('🚀 [ResumeEmailDeployment] Template:', template.name);
-  console.log('🚀 [ResumeEmailDeployment] User:', userEmail);
+  logger.info('Déploiement spécifique du workflow Résume Email', {
+    templateName: template.name,
+    templateId: template.id,
+    userEmail,
+    userId
+  });
   
   // 1. Parser le JSON du template
   let workflowJson;
@@ -31,7 +35,7 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   const workflowName = `${template.name} - ${userEmail}`;
   
   // 3. Injecter les credentials avec l'injecteur spécifique Resume Email
-  console.log('🔧 [ResumeEmailDeployment] Injection des credentials avec resumeEmailInjector...');
+  logger.debug('Injection des credentials avec resumeEmailInjector', { templateId: template.id });
   const injectionResult = await resumeEmailInjector.injectUserCredentials(
     workflowJson, 
     credentials, 
@@ -64,7 +68,7 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   
   // 7. Créer le workflow dans n8n
   const deployedWorkflow = await deploymentUtils.createWorkflowInN8n(workflowPayload);
-  console.log('✅ [ResumeEmailDeployment] Workflow créé dans n8n:', deployedWorkflow.id);
+  // Le log est déjà fait dans createWorkflowInN8n
   
   // 8. Mettre à jour le workflow avec les credentials (si nécessaire)
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -78,7 +82,10 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   const workflowActivated = await deploymentUtils.activateWorkflow(deployedWorkflow.id);
   
   if (!workflowActivated) {
-    console.warn('⚠️ [ResumeEmailDeployment] Le workflow n\'a pas pu être activé automatiquement');
+    logger.warn('Le workflow n\'a pas pu être activé automatiquement', {
+      workflowId: deployedWorkflow.id,
+      templateId: template.id
+    });
   }
   
   // 10. Enregistrer dans user_workflows
@@ -95,7 +102,12 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   // 11. Sauvegarder les credentials créés
   await deploymentUtils.saveWorkflowCredentials(userWorkflow.id, injectionResult, userEmail);
   
-  console.log('✅ [ResumeEmailDeployment] Workflow déployé avec succès:', deployedWorkflow.id);
+  logger.info('Workflow Résume Email déployé avec succès', {
+    workflowId: userWorkflow.id,
+    n8nWorkflowId: deployedWorkflow.id,
+    templateId: template.id,
+    userEmail
+  });
   
   return {
     success: true,

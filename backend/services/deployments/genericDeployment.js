@@ -4,12 +4,18 @@
 const { injectUserCredentials } = require('../injectors');
 const db = require('../../database');
 const deploymentUtils = require('./deploymentUtils');
+const logger = require('../../utils/logger');
 
 /**
  * Déploie un workflow de manière générique
  */
 async function deployWorkflow(template, credentials, userId, userEmail) {
-  console.log('🚀 [GenericDeployment] Déploiement générique du workflow:', template.name);
+  logger.info('Déploiement générique du workflow', {
+    templateName: template.name,
+    templateId: template.id,
+    userEmail,
+    userId
+  });
   
   // 1. Parser le JSON du template
   let workflowJson;
@@ -29,7 +35,7 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   const workflowName = `${template.name} - ${userEmail}`;
   
   // 3. Injecter les credentials
-  console.log('🔧 [GenericDeployment] Injection des credentials...');
+  logger.debug('Injection des credentials', { templateId: template.id });
   const injectionResult = await injectUserCredentials(workflowJson, credentials, userId, template.id, template.name);
   
   if (!injectionResult || !injectionResult.workflow) {
@@ -48,30 +54,23 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
     settings: deploymentUtils.cleanSettings(injectedWorkflow.settings)
   };
   
-  // 4.1. DEBUG: Vérifier la configuration des nœuds HTTP Request avant envoi
+  // 4.1. Vérifier la configuration des nœuds HTTP Request avant envoi
   const httpNodes = workflowPayload.nodes.filter(n => 
     n.type === 'n8n-nodes-base.httpRequest' && 
     (n.parameters?.url?.includes('openrouter.ai') || n.name?.toLowerCase().includes('openrouter'))
   );
-  httpNodes.forEach(node => {
-    console.log(`🔍 [GenericDeployment] Nœud ${node.name} - Configuration avant envoi:`);
-    console.log(`  - Authentication: ${node.parameters?.authentication || 'non défini'}`);
-    console.log(`  - Credentials:`, node.credentials ? Object.keys(node.credentials) : 'aucun');
-    if (node.parameters?.options?.headerParameters?.parameters) {
-      const authHeader = node.parameters.options.headerParameters.parameters.find(p => p.name === 'Authorization');
-      if (authHeader) {
-        console.log(`  - Header Authorization: ${authHeader.value}`);
-      }
-    }
-    if (node.credentials?.openRouterApi) {
-      console.log(`  - openRouterApi ID: ${node.credentials.openRouterApi.id}`);
-      console.log(`  - openRouterApi Name: ${node.credentials.openRouterApi.name}`);
-    }
-    if (node.credentials?.httpHeaderAuth) {
-      console.log(`  - httpHeaderAuth ID: ${node.credentials.httpHeaderAuth.id}`);
-      console.log(`  - httpHeaderAuth Name: ${node.credentials.httpHeaderAuth.name}`);
-    }
-  });
+  if (httpNodes.length > 0) {
+    logger.debug('Vérification des nœuds HTTP Request', {
+      nodesCount: httpNodes.length,
+      nodes: httpNodes.map(n => ({
+        name: n.name,
+        hasCredentials: !!n.credentials,
+        credentialsKeys: n.credentials ? Object.keys(n.credentials) : [],
+        hasOpenRouter: !!n.credentials?.openRouterApi,
+        hasHttpHeader: !!n.credentials?.httpHeaderAuth
+      }))
+    });
+  }
   
   // 5. Vérifier qu'aucun placeholder n'est présent
   deploymentUtils.verifyNoPlaceholders(workflowPayload);
@@ -81,7 +80,7 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   
   // 7. Créer le workflow dans n8n
   const deployedWorkflow = await deploymentUtils.createWorkflowInN8n(workflowPayload);
-  console.log('✅ [GenericDeployment] Workflow créé dans n8n:', deployedWorkflow.id);
+  // Le log est déjà fait dans createWorkflowInN8n
   
   // 8. Mettre à jour le workflow avec les credentials (si nécessaire)
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -95,7 +94,10 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   const workflowActivated = await deploymentUtils.activateWorkflow(deployedWorkflow.id);
   
   if (!workflowActivated) {
-    console.warn('⚠️ [GenericDeployment] Le workflow n\'a pas pu être activé automatiquement');
+    logger.warn('Le workflow n\'a pas pu être activé automatiquement', {
+      workflowId: deployedWorkflow.id,
+      templateId: template.id
+    });
   }
   
   // 10. Enregistrer dans user_workflows
@@ -112,7 +114,12 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   // 11. Sauvegarder les credentials créés
   await deploymentUtils.saveWorkflowCredentials(userWorkflow.id, injectionResult, userEmail);
   
-  console.log('✅ [GenericDeployment] Workflow déployé avec succès:', deployedWorkflow.id);
+  logger.info('Workflow générique déployé avec succès', {
+    workflowId: userWorkflow.id,
+    n8nWorkflowId: deployedWorkflow.id,
+    templateId: template.id,
+    userEmail
+  });
   
   return {
     success: true,
