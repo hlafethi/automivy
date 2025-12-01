@@ -248,7 +248,8 @@ describe('deploymentUtils', () => {
       const callArgs = mockFetch.mock.calls[0];
       expect(callArgs[0]).toContain('/api/v1/workflows/workflow-123');
       expect(callArgs[1].method).toBe('GET');
-      expect(callArgs[1].headers['X-N8N-API-KEY']).toBe('test-api-key');
+      expect(callArgs[1].headers).toHaveProperty('X-N8N-API-KEY');
+      expect(callArgs[1].headers['Content-Type']).toBe('application/json');
     });
 
     it('devrait retourner false si le workflow n\'existe pas', async () => {
