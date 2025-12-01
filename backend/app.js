@@ -469,10 +469,11 @@ app.post('/api/deploy-template', async (req, res) => {
     
     // Construire l'URL du formulaire personnalisé selon le type
     let formUrl;
+    const backendUrl = config.app.backendUrl;
     if (formType === 'cv-screening') {
-      formUrl = `http://localhost:3004/cv-screening-form.html?token=${token}&template=${templateId}&user=${userId}`;
+      formUrl = `${backendUrl}/cv-screening-form.html?token=${token}&template=${templateId}&user=${userId}`;
     } else {
-      formUrl = `http://localhost:3004/upload-form-personalized.html?token=${token}&template=${templateId}&user=${userId}`;
+      formUrl = `${backendUrl}/upload-form-personalized.html?token=${token}&template=${templateId}&user=${userId}`;
     }
     
     // Simuler l'envoi d'email avec le lien

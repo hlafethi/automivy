@@ -3,6 +3,7 @@
 const { analyzeWorkflowCredentials, validateFormData } = require('./workflowAnalyzer');
 const { getAdminCredentials } = require('./n8nService');
 const logger = require('../utils/logger');
+const config = require('../config');
 
 /**
  * Injecte les credentials utilisateur dans un workflow
@@ -1489,7 +1490,8 @@ async function createImapCredential(userCredentials, userId) {
   
   // Créer le credential IMAP via le proxy backend
   try {
-    const response = await fetch('http://localhost:3004/api/n8n/credentials', {
+    const backendUrl = config.app.backendUrl;
+    const response = await fetch(`${backendUrl}/api/n8n/credentials`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1577,7 +1579,8 @@ async function createSmtpCredential(userCredentials, userId) {
       host: smtpCredentialData.data.host
     });
 
-    const response = await fetch('http://localhost:3004/api/n8n/credentials', {
+    const backendUrl = config.app.backendUrl;
+    const response = await fetch(`${backendUrl}/api/n8n/credentials`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1620,7 +1623,8 @@ async function createCredentialInN8n(credentialData) {
       dataKeys: Object.keys(credentialData.data)
     });
     
-    const response = await fetch('http://localhost:3004/api/n8n/credentials', {
+    const backendUrl = config.app.backendUrl;
+    const response = await fetch(`${backendUrl}/api/n8n/credentials`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1654,7 +1658,8 @@ async function cleanupUserCredentials(createdCredentials) {
   for (const [type, cred] of Object.entries(createdCredentials)) {
     if (cred && cred.id) {
       try {
-        await fetch(`http://localhost:3004/api/n8n/credentials/${cred.id}`, {
+        const backendUrl = config.app.backendUrl;
+        await fetch(`${backendUrl}/api/n8n/credentials/${cred.id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
