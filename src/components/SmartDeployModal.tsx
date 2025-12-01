@@ -75,21 +75,24 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
       console.log('  - Description:', workflow.description);
       
       const response = await smartDeployService.analyzeWorkflow(workflow.id);
+      // Le format standardisé est { success: true, data: { workflow, requiredCredentials, formConfig } }
+      const data = response.data || response; // Fallback pour compatibilité
+      const formConfig = data.formConfig || response.formConfig;
       console.log('🔍 [SmartDeployModal] Réponse analyse:', response);
-      console.log('🔍 [SmartDeployModal] FormConfig reçu:', response.formConfig);
-      console.log('🔍 [SmartDeployModal] Sections:', response.formConfig?.sections);
-      console.log('🔍 [SmartDeployModal] Nombre de sections:', response.formConfig?.sections?.length);
-      response.formConfig?.sections?.forEach((section, index) => {
+      console.log('🔍 [SmartDeployModal] FormConfig reçu:', formConfig);
+      console.log('🔍 [SmartDeployModal] Sections:', formConfig?.sections);
+      console.log('🔍 [SmartDeployModal] Nombre de sections:', formConfig?.sections?.length);
+      formConfig?.sections?.forEach((section, index) => {
         console.log(`  Section ${index + 1}: ${section.title} - ${section.fields?.length || 0} champ(s)`);
         section.fields?.forEach((field, fieldIndex) => {
           console.log(`    Champ ${fieldIndex + 1}: ${field.name} (${field.type}) - ${field.label}`);
         });
       });
       setSelectedWorkflow(workflow);
-      setFormConfig(response.formConfig);
+      setFormConfig(formConfig);
       
       // Initialiser storageType si présent dans le formulaire
-      const storageTypeField = response.formConfig?.sections
+      const storageTypeField = formConfig?.sections
         .flatMap(s => s.fields)
         .find(f => f.name === 'storageType');
       if (storageTypeField) {
@@ -186,12 +189,14 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
       console.log('🔍 [SmartDeployModal] Tous les champs OAuth dans formData:', Object.keys(formData).filter(key => key.includes('OAuth')));
       
       const response = await smartDeployService.deployWorkflow(selectedWorkflow.id, formData);
-      setDeployedWorkflow(response.workflow);
+      // Le format standardisé est { success: true, data: { workflow: {...} } }
+      const workflow = response.data?.workflow || response.workflow;
+      setDeployedWorkflow(workflow);
       setStep('success');
       
       // Appeler le callback de succès après un délai
       setTimeout(() => {
-        onSuccess(response.workflow);
+        onSuccess(workflow);
         handleClose();
       }, 2000);
       

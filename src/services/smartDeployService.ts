@@ -37,19 +37,29 @@ export interface WorkflowInfo {
 
 export interface AnalyzeResponse {
   success: boolean;
-  workflow: WorkflowInfo;
-  requiredCredentials: CredentialConfig[];
-  formConfig: FormConfig;
+  data: {
+    workflow: WorkflowInfo;
+    requiredCredentials: CredentialConfig[];
+    formConfig: FormConfig;
+  };
+  metadata?: {
+    analyzedAt?: string;
+  };
 }
 
 export interface DeployResponse {
   success: boolean;
-  message: string;
-  workflow: {
-    id: string;
-    name: string;
-    n8n_workflow_id: string;
-    status: string;
+  data: {
+    message?: string;
+    workflow?: {
+      id: string;
+      name: string;
+      n8n_workflow_id: string;
+      status: string;
+    };
+  };
+  metadata?: {
+    deployedAt?: string;
   };
 }
 
