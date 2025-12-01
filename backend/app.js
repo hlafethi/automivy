@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const config = require('./config');
+const logger = require('./utils/logger');
 
 // Import des routes
 const authRoutes = require('./routes/auth');
@@ -1240,87 +1241,46 @@ app.post('/api/cv-screening/submit', async (req, res) => {
                     console.error(`  ⚠️ Aucun nœud Email Send détecté dans le workflow`);
                   }
                   
-                  // ⚠️ VÉRIFICATION CRITIQUE: Nœuds LangChain (AI Agent)
+                  // Vérification des nœuds LangChain (AI Agent)
                   const langchainNodes = workflowCheckData.nodes.filter(n => 
                     n.type?.includes('langchain') || 
                     n.name?.toLowerCase().includes('ai agent') ||
                     n.name?.toLowerCase().includes('agent')
                   );
+                  
                   if (langchainNodes.length > 0) {
-                    console.error(`  📍 ${langchainNodes.length} nœud(s) LangChain/AI Agent trouvé(s):`);
+                    const issues = [];
                     langchainNodes.forEach(node => {
-                      console.error(`    - "${node.name}" (${node.type})`);
-                      console.error(`      - Disabled: ${node.disabled ? 'OUI ⚠️' : 'NON'}`);
-                      
-                      // Vérifier les credentials
-                      if (node.credentials) {
-                        const credKeys = Object.keys(node.credentials);
-                        console.error(`      - Credentials: ${credKeys.join(', ') || 'AUCUN'}`);
-                        credKeys.forEach(credKey => {
-                          const cred = node.credentials[credKey];
-                          console.error(`        - ${credKey}: ${cred.id || 'AUCUN ID'} (${cred.name || 'AUCUN NOM'})`);
-                        });
-                      } else {
-                        console.error(`      - ⚠️ AUCUN CREDENTIAL (peut être normal pour certains nœuds LangChain)`);
-                      }
-                      
-                      // Vérifier les paramètres critiques
-                      if (node.parameters) {
-                        const paramKeys = Object.keys(node.parameters);
-                        console.error(`      - Paramètres présents: ${paramKeys.length > 0 ? paramKeys.join(', ') : 'AUCUN'}`);
-                        
-                        // Vérifier spécifiquement le modèle pour OpenRouter
-                        if (node.type?.includes('lmChatOpenRouter')) {
-                          const model = node.parameters?.model || node.parameters?.modelName;
-                          console.error(`      - Modèle OpenRouter: ${model || 'NON DÉFINI ⚠️'}`);
-                        }
-                        
-                        // Vérifier le prompt pour l'agent
-                        if (node.type?.includes('agent')) {
-                          // n8n LangChain Agent utilise promptType: "define" et text pour le prompt
-                          const promptType = node.parameters?.promptType;
-                          const promptText = node.parameters?.text || node.parameters?.prompt || node.parameters?.systemMessage;
-                          const hasPrompt = !!promptText;
-                          console.error(`      - Prompt Type: ${promptType || 'NON DÉFINI'}`);
-                          console.error(`      - Prompt/System Message: ${hasPrompt ? 'PRÉSENT ✅' : 'MANQUANT ⚠️'}`);
-                          if (hasPrompt && typeof promptText === 'string') {
-                            console.error(`      - Longueur du prompt: ${promptText.length} caractères`);
-                            console.error(`      - Début du prompt: ${promptText.substring(0, 200)}...`);
-                            // Vérifier si le prompt contient des références à cvUrl
-                            const hasCvUrlRef = promptText.includes('cvUrl') || promptText.includes('{{ $json.cvUrl }}');
-                            console.error(`      - Référence à cvUrl dans le prompt: ${hasCvUrlRef ? 'OUI ✅' : 'NON ⚠️'}`);
-                          } else {
-                            console.error(`      - ⚠️ PROBLÈME: Le prompt n'est pas une chaîne ou est vide!`);
-                            console.error(`      - Paramètres disponibles: ${Object.keys(node.parameters || {}).join(', ')}`);
-                          }
-                        }
-                      }
-                      
-                      // Vérifier les connexions
                       const nodeConnections = workflowCheckData.connections?.[node.name];
-                      if (nodeConnections) {
-                        const mainConnections = nodeConnections.main?.[0]?.length || 0;
-                        const toolConnections = nodeConnections.ai_tool?.length || 0;
-                        const modelConnections = nodeConnections.ai_languageModel?.length || 0;
-                        const memoryConnections = nodeConnections.ai_memory?.length || 0;
-                        console.error(`      - Connexions:`);
-                        console.error(`        - Main: ${mainConnections} nœud(s)`);
-                        console.error(`        - Tools: ${toolConnections} nœud(s)`);
-                        console.error(`        - Language Model: ${modelConnections} nœud(s)`);
-                        console.error(`        - Memory: ${memoryConnections} nœud(s)`);
-                        
-                        if (node.type?.includes('agent') && modelConnections === 0) {
-                          console.error(`        - ❌ CRITIQUE: L'agent n'a pas de connexion au modèle de langage!`);
+                      const modelConnections = nodeConnections?.ai_languageModel?.length || 0;
+                      const toolConnections = nodeConnections?.ai_tool?.length || 0;
+                      
+                      // Vérifier seulement les problèmes critiques
+                      if (node.type?.includes('agent') && modelConnections === 0) {
+                        issues.push(`Agent "${node.name}" n'a pas de connexion au modèle de langage`);
+                      }
+                      
+                      // Vérifier le prompt pour l'agent (seulement si manquant)
+                      if (node.type?.includes('agent')) {
+                        const promptText = node.parameters?.text || node.parameters?.prompt || node.parameters?.systemMessage;
+                        if (!promptText || (typeof promptText === 'string' && promptText.trim().length === 0)) {
+                          issues.push(`Agent "${node.name}" n'a pas de prompt configuré`);
                         }
-                        if (node.type?.includes('agent') && toolConnections === 0) {
-                          console.error(`        - ⚠️ L'agent n'a pas de connexion aux outils (peut être normal)`);
-                        }
-                      } else {
-                        console.error(`      - ⚠️ Aucune connexion détectée`);
                       }
                     });
-                  } else {
-                    console.error(`  ⚠️ Aucun nœud LangChain/AI Agent détecté dans le workflow`);
+                    
+                    if (issues.length > 0) {
+                      logger.error('Problèmes détectés dans les nœuds LangChain', {
+                        workflowId: workflowCheckData.id,
+                        issues,
+                        nodesCount: langchainNodes.length
+                      });
+                    } else {
+                      logger.debug('Nœuds LangChain validés', {
+                        workflowId: workflowCheckData.id,
+                        nodesCount: langchainNodes.length
+                      });
+                    }
                   }
                   
                   // ⚠️ VÉRIFICATION: Nœud "Prepare CV Data" (Code)
