@@ -2,6 +2,7 @@
 // Si aucun déploiement spécifique n'est trouvé, utilise le déploiement générique
 
 const genericDeployment = require('./genericDeployment');
+const logger = require('../../utils/logger');
 
 // Mapping des templates vers leurs déploiements spécifiques
 const TEMPLATE_DEPLOYMENTS = {
@@ -39,31 +40,32 @@ const TEMPLATE_DEPLOYMENTS = {
  * @returns {Object} Résultat du déploiement
  */
 async function deployWorkflow(template, credentials, userId, userEmail) {
-  console.log('🔀 [DeploymentRouter] Routing vers le déploiement approprié...');
-  console.log('🔀 [DeploymentRouter] Template ID:', template.id);
-  console.log('🔀 [DeploymentRouter] Template Name:', template.name);
+  logger.debug('Routing vers le déploiement approprié', { 
+    templateId: template.id,
+    templateName: template.name
+  });
   
   // Chercher le déploiement spécifique par ID (priorité)
   let specificDeployment = null;
   if (template.id && TEMPLATE_DEPLOYMENTS[template.id]) {
     specificDeployment = TEMPLATE_DEPLOYMENTS[template.id];
-    console.log('✅ [DeploymentRouter] Déploiement spécifique trouvé par ID:', template.id);
+    logger.debug('Déploiement spécifique trouvé par ID', { templateId: template.id });
   }
   
   // Si pas trouvé par ID, chercher par nom (fallback)
   if (!specificDeployment && template.name && TEMPLATE_DEPLOYMENTS[template.name]) {
     specificDeployment = TEMPLATE_DEPLOYMENTS[template.name];
-    console.log('✅ [DeploymentRouter] Déploiement spécifique trouvé par nom:', template.name);
+    logger.debug('Déploiement spécifique trouvé par nom', { templateName: template.name });
   }
   
   // Si un déploiement spécifique est trouvé, l'utiliser
   if (specificDeployment && specificDeployment.deployWorkflow) {
-    console.log('🎯 [DeploymentRouter] Utilisation du déploiement spécifique');
+    logger.info('Utilisation du déploiement spécifique', { templateId: template.id });
     return await specificDeployment.deployWorkflow(template, credentials, userId, userEmail);
   }
   
   // Sinon, utiliser le déploiement générique
-  console.log('🔧 [DeploymentRouter] Aucun déploiement spécifique trouvé, utilisation du déploiement générique');
+  logger.info('Aucun déploiement spécifique trouvé, utilisation du déploiement générique', { templateId: template.id });
   return await genericDeployment.deployWorkflow(template, credentials, userId, userEmail);
 }
 

@@ -4,6 +4,7 @@
 const fetch = require('node-fetch');
 const config = require('../../config');
 const db = require('../../database');
+const logger = require('../../utils/logger');
 
 /**
  * Nettoie l'objet settings pour n8n (n'accepte que {} lors de la création)
@@ -33,7 +34,10 @@ function verifyNoPlaceholders(workflowPayload) {
                                cred?.id === 'USER_GOOGLE_CREDENTIAL_ID' ||
                                cred?.id === 'USER_GOOGLE_SHEETS_CREDENTIAL_ID';
           if (isPlaceholder) {
-            console.error(`❌ [DeploymentUtils] Nœud ${node.name} a un placeholder: ${cred.id}`);
+            logger.error('Placeholder détecté dans le workflow', { 
+              nodeName: node.name, 
+              credentialId: cred.id 
+            });
           }
         });
       }
@@ -48,10 +52,11 @@ function verifyNoPlaceholders(workflowPayload) {
 async function createWorkflowInN8n(workflowPayload) {
   const n8nUrl = config.n8n.url;
   
-  console.log('🔧 [DeploymentUtils] Création du workflow dans n8n...');
-  console.log('  - Nom:', workflowPayload.name);
-  console.log('  - Nœuds:', workflowPayload.nodes?.length);
-  console.log('  - Connexions:', Object.keys(workflowPayload.connections || {}).length);
+  logger.info('Création du workflow dans n8n', {
+    workflowName: workflowPayload.name,
+    nodesCount: workflowPayload.nodes?.length,
+    connectionsCount: Object.keys(workflowPayload.connections || {}).length
+  });
   
   const deployResponse = await fetch(`${n8nUrl}/api/v1/workflows`, {
     method: 'POST',
@@ -64,10 +69,13 @@ async function createWorkflowInN8n(workflowPayload) {
   
   if (!deployResponse.ok) {
     const error = await deployResponse.text();
+    logger.error('Erreur déploiement n8n', { error, status: deployResponse.status });
     throw new Error(`Erreur déploiement n8n: ${error}`);
   }
   
-  return await deployResponse.json();
+  const result = await deployResponse.json();
+  logger.info('Workflow créé dans n8n', { workflowId: result.id, workflowName: result.name });
+  return result;
 }
 
 /**
@@ -78,38 +86,40 @@ async function updateWorkflowInN8n(workflowId, injectedWorkflow) {
   const n8nApiKey = config.n8n.apiKey;
   
   try {
-    // DEBUG: Vérifier les credentials dans les nœuds HTTP Request avant update
+    // Vérifier les credentials dans les nœuds HTTP Request avant update
     const httpNodes = injectedWorkflow.nodes.filter(n => 
       n.type === 'n8n-nodes-base.httpRequest' && 
       (n.parameters?.url?.includes('openrouter.ai') || n.name?.toLowerCase().includes('openrouter'))
     );
-    console.log('🔍 [DeploymentUtils] Vérification credentials avant update...');
-    httpNodes.forEach(node => {
-      console.log(`  - Nœud ${node.name}:`, 
-        node.credentials ? Object.keys(node.credentials) : 'aucun credential');
-      if (node.credentials?.openRouterApi) {
-        console.log(`    - openRouterApi: ${node.credentials.openRouterApi.id} (${node.credentials.openRouterApi.name})`);
-      }
-      if (node.credentials?.httpHeaderAuth) {
-        console.log(`    - httpHeaderAuth: ${node.credentials.httpHeaderAuth.id} (${node.credentials.httpHeaderAuth.name})`);
-      }
-    });
     
-    // DEBUG: Vérifier les credentials SMTP dans les nœuds Email Send avant update
+    if (httpNodes.length > 0) {
+      logger.debug('Vérification credentials OpenRouter avant update', { 
+        nodesCount: httpNodes.length,
+        nodes: httpNodes.map(n => ({
+          name: n.name,
+          hasOpenRouter: !!n.credentials?.openRouterApi,
+          hasHttpHeader: !!n.credentials?.httpHeaderAuth
+        }))
+      });
+    }
+    
+    // Vérifier les credentials SMTP dans les nœuds Email Send avant update
     const emailNodes = injectedWorkflow.nodes.filter(n => 
       n.type === 'n8n-nodes-base.emailSend'
     );
-    console.log(`🔍 [DeploymentUtils] Vérification credentials SMTP avant update (${emailNodes.length} nœud(s) emailSend)...`);
-    emailNodes.forEach(node => {
-      console.log(`  - Nœud ${node.name}:`, 
-        node.credentials ? Object.keys(node.credentials) : 'aucun credential');
-      if (node.credentials?.smtp) {
-        console.log(`    ✅ SMTP: ${node.credentials.smtp.id} (${node.credentials.smtp.name})`);
+    
+    if (emailNodes.length > 0) {
+      const nodesWithoutSmtp = emailNodes.filter(n => !n.credentials?.smtp);
+      if (nodesWithoutSmtp.length > 0) {
+        logger.error('Nœuds Email Send sans credential SMTP', {
+          nodes: nodesWithoutSmtp.map(n => n.name)
+        });
       } else {
-        console.error(`    ❌ ERREUR: Aucun credential SMTP dans ${node.name}!`);
-        console.error(`    ❌ Node credentials complet:`, JSON.stringify(node.credentials, null, 2));
+        logger.debug('Tous les nœuds Email Send ont un credential SMTP', { 
+          nodesCount: emailNodes.length 
+        });
       }
-    });
+    }
     
     const updatePayload = {
       name: injectedWorkflow.name,
@@ -129,32 +139,22 @@ async function updateWorkflowInN8n(workflowId, injectedWorkflow) {
     
     if (updateResponse.ok) {
       const updatedWorkflow = await updateResponse.json();
-      console.log('✅ [DeploymentUtils] Workflow mis à jour avec les credentials');
-      
-      // DEBUG: Vérifier les credentials dans le workflow retourné par n8n
-      const updatedHttpNodes = updatedWorkflow.nodes.filter(n => 
-        n.type === 'n8n-nodes-base.httpRequest' && 
-        (n.parameters?.url?.includes('openrouter.ai') || n.name?.toLowerCase().includes('openrouter'))
-      );
-      updatedHttpNodes.forEach(node => {
-        console.log(`🔍 [DeploymentUtils] Nœud ${node.name} après update:`, 
-          node.credentials ? Object.keys(node.credentials) : 'aucun credential');
-        if (node.credentials?.openRouterApi) {
-          console.log(`    - openRouterApi: ${node.credentials.openRouterApi.id} (${node.credentials.openRouterApi.name})`);
-        }
-        if (node.credentials?.httpHeaderAuth) {
-          console.log(`    - httpHeaderAuth: ${node.credentials.httpHeaderAuth.id} (${node.credentials.httpHeaderAuth.name})`);
-        }
-      });
-      
+      logger.info('Workflow mis à jour avec les credentials', { workflowId });
       return updatedWorkflow;
     } else {
       const errorText = await updateResponse.text();
-      console.warn('⚠️ [DeploymentUtils] Impossible de mettre à jour le workflow:', errorText);
+      logger.warn('Impossible de mettre à jour le workflow', { 
+        workflowId, 
+        error: errorText,
+        status: updateResponse.status 
+      });
       return null;
     }
   } catch (updateError) {
-    console.warn('⚠️ [DeploymentUtils] Erreur mise à jour workflow:', updateError.message);
+    logger.warn('Erreur mise à jour workflow', { 
+      workflowId, 
+      error: updateError.message 
+    });
     return null;
   }
 }
@@ -169,7 +169,7 @@ async function validateWorkflow(workflowId) {
   const n8nUrl = config.n8n.url;
   const n8nApiKey = config.n8n.apiKey;
   
-  console.log(`🔍 [DeploymentUtils] Validation du workflow ${workflowId}...`);
+  logger.debug('Validation du workflow', { workflowId });
   
   try {
     const response = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
@@ -190,8 +190,6 @@ async function validateWorkflow(workflowId) {
     // Vérifier les nœuds Microsoft Outlook
     const outlookNodes = workflow.nodes?.filter(n => n.type === 'n8n-nodes-base.microsoftOutlook') || [];
     outlookNodes.forEach(node => {
-      // Pour les nœuds "Get many folder messages", vérifier que folderId est configuré
-      // SAUF pour les nœuds qui vérifient les dossiers créés dynamiquement (nœud 4)
       const nodeNameLower = (node.name || '').toLowerCase();
       const isDynamicFolderNode = nodeNameLower.includes('get many folder messages2') || 
                                    nodeNameLower.includes('messages2') ||
@@ -202,14 +200,10 @@ async function validateWorkflow(workflowId) {
         const folderId = node.parameters?.folderId;
         
         if (isDynamicFolderNode) {
-          // Pour les nœuds avec paramètres dynamiques, vérifier juste que la structure folderId existe
           if (!node.parameters?.folderId) {
             issues.push(`Nœud "${node.name}" (Microsoft Outlook): La structure folderId est requise (sera remplie dynamiquement par le workflow).`);
-          } else {
-            console.log(`ℹ️ [DeploymentUtils] Nœud "${node.name}" a des paramètres dynamiques (folderId sera défini par le workflow)`);
           }
         } else {
-          // Pour les autres nœuds, folderId doit être configuré
           const isFolderIdEmpty = !folderId || 
                                    (typeof folderId === 'object' && (!folderId.value || folderId.value === '')) ||
                                    (typeof folderId === 'string' && folderId === '');
@@ -219,7 +213,6 @@ async function validateWorkflow(workflowId) {
         }
       }
       
-      // Vérifier que le credential est présent
       if (!node.credentials?.microsoftOutlookOAuth2Api) {
         issues.push(`Nœud "${node.name}" (Microsoft Outlook): Credential Microsoft Outlook OAuth2 manquant`);
       }
@@ -239,16 +232,15 @@ async function validateWorkflow(workflowId) {
     }
     
     if (issues.length > 0) {
-      console.error('❌ [DeploymentUtils] Problèmes détectés dans le workflow:');
-      issues.forEach(issue => console.error(`  - ${issue}`));
+      logger.error('Problèmes détectés dans le workflow', { workflowId, issues });
       throw new Error(`Le workflow a des problèmes et ne peut pas être exécuté:\n${issues.join('\n')}`);
     }
     
-    console.log('✅ [DeploymentUtils] Workflow validé avec succès');
+    logger.info('Workflow validé avec succès', { workflowId });
     return true;
     
   } catch (error) {
-    console.error('❌ [DeploymentUtils] Erreur validation workflow:', error.message);
+    logger.error('Erreur validation workflow', { workflowId, error: error.message });
     throw error;
   }
 }
@@ -257,7 +249,7 @@ async function activateWorkflow(workflowId) {
   const n8nUrl = config.n8n.url;
   const n8nApiKey = config.n8n.apiKey;
   
-  console.log(`🔧 [DeploymentUtils] Activation automatique du workflow ${workflowId}...`);
+  logger.info('Activation automatique du workflow', { workflowId });
   
   try {
     // Vérifier d'abord si le workflow existe
@@ -271,19 +263,19 @@ async function activateWorkflow(workflowId) {
     
     if (!checkResponse.ok) {
       const errorText = await checkResponse.text();
-      console.error(`❌ [DeploymentUtils] Workflow ${workflowId} non trouvé dans n8n:`, errorText);
+      logger.error('Workflow non trouvé dans n8n', { workflowId, error: errorText, status: checkResponse.status });
       throw new Error(`Workflow ${workflowId} non trouvé dans n8n (${checkResponse.status})`);
     }
     
     const workflowData = await checkResponse.json();
-    console.log(`🔍 [DeploymentUtils] Workflow trouvé: ${workflowData.name}, actif: ${workflowData.active}`);
+    logger.debug('Workflow trouvé', { workflowId, workflowName: workflowData.name, active: workflowData.active });
     
     // Valider le workflow avant activation
     await validateWorkflow(workflowId);
     
     // Si déjà actif, retourner true
     if (workflowData.active) {
-      console.log('✅ [DeploymentUtils] Workflow déjà actif');
+      logger.info('Workflow déjà actif', { workflowId });
       return true;
     }
     
@@ -299,12 +291,12 @@ async function activateWorkflow(workflowId) {
     
     if (!activateResponse.ok) {
       const errorText = await activateResponse.text();
-      console.error('❌ [DeploymentUtils] Impossible d\'activer le workflow:', errorText);
+      logger.error('Impossible d\'activer le workflow', { workflowId, error: errorText, status: activateResponse.status });
       throw new Error(`Impossible d'activer le workflow: ${errorText}`);
     }
     
     const activateResult = await activateResponse.json();
-    console.log('✅ [DeploymentUtils] Commande d\'activation envoyée, résultat:', activateResult);
+    logger.debug('Commande d\'activation envoyée', { workflowId, result: activateResult });
     
     // Vérifier le statut final après un délai (n8n peut prendre du temps)
     let attempts = 0;
@@ -323,24 +315,24 @@ async function activateWorkflow(workflowId) {
       if (statusResponse.ok) {
         const statusResult = await statusResponse.json();
         if (statusResult.active) {
-          console.log('✅ [DeploymentUtils] Workflow confirmé actif dans n8n après activation');
+          logger.info('Workflow confirmé actif dans n8n après activation', { workflowId });
           return true;
         } else {
           attempts++;
-          console.log(`⏳ [DeploymentUtils] Workflow non encore actif, tentative ${attempts}/${maxAttempts}...`);
+          logger.debug('Workflow non encore actif', { workflowId, attempt: attempts, maxAttempts });
         }
       } else {
         attempts++;
-        console.warn(`⚠️ [DeploymentUtils] Impossible de vérifier le statut (tentative ${attempts}/${maxAttempts})`);
+        logger.warn('Impossible de vérifier le statut', { workflowId, attempt: attempts, maxAttempts, status: statusResponse.status });
       }
     }
     
-    console.warn('⚠️ [DeploymentUtils] Workflow non actif après plusieurs tentatives');
+    logger.warn('Workflow non actif après plusieurs tentatives', { workflowId, maxAttempts });
     return false;
     
   } catch (activateError) {
-    console.error('❌ [DeploymentUtils] Erreur activation:', activateError.message);
-    throw activateError; // Propager l'erreur au lieu de retourner false silencieusement
+    logger.error('Erreur activation', { workflowId, error: activateError.message });
+    throw activateError;
   }
 }
 
@@ -348,7 +340,7 @@ async function activateWorkflow(workflowId) {
  * Supprime les workflows existants pour cet utilisateur et ce template
  */
 async function cleanupExistingWorkflows(userId, templateId) {
-  console.log('🔍 [DeploymentUtils] Vérification des workflows existants...');
+  logger.debug('Vérification des workflows existants', { userId, templateId });
   
   try {
     const existingWorkflows = await db.query(
@@ -357,7 +349,11 @@ async function cleanupExistingWorkflows(userId, templateId) {
     );
     
     if (existingWorkflows.rows && existingWorkflows.rows.length > 0) {
-      console.log(`🔍 [DeploymentUtils] ${existingWorkflows.rows.length} workflow(s) existant(s) trouvé(s)`);
+      logger.info('Workflows existants trouvés', { 
+        count: existingWorkflows.rows.length,
+        userId,
+        templateId
+      });
       
       const n8nUrl = config.n8n.url;
       const n8nApiKey = config.n8n.apiKey;
@@ -383,16 +379,22 @@ async function cleanupExistingWorkflows(userId, templateId) {
                         'X-N8N-API-KEY': n8nApiKey
                       }
                     });
-                    console.log(`✅ [DeploymentUtils] Credential supprimé: ${cred.credential_name}`);
+                    logger.debug('Credential supprimé', { credentialName: cred.credential_name, credentialId: cred.credential_id });
                   } catch (credError) {
-                    console.warn(`⚠️ [DeploymentUtils] Erreur suppression credential:`, credError.message);
+                    logger.warn('Erreur suppression credential', { 
+                      credentialId: cred.credential_id,
+                      error: credError.message 
+                    });
                   }
                 }
               }
             }
           }
         } catch (credError) {
-          console.warn('⚠️ [DeploymentUtils] Erreur récupération credentials:', credError.message);
+          logger.warn('Erreur récupération credentials', { 
+            workflowId: existingWorkflow.id,
+            error: credError.message 
+          });
         }
         
         // Supprimer le workflow de n8n
@@ -405,19 +407,26 @@ async function cleanupExistingWorkflows(userId, templateId) {
                 'X-N8N-API-KEY': n8nApiKey
               }
             });
-            console.log(`✅ [DeploymentUtils] Ancien workflow supprimé de n8n: ${existingWorkflow.n8n_workflow_id}`);
+            logger.info('Ancien workflow supprimé de n8n', { n8nWorkflowId: existingWorkflow.n8n_workflow_id });
           } catch (deleteError) {
-            console.warn(`⚠️ [DeploymentUtils] Erreur suppression workflow n8n:`, deleteError.message);
+            logger.warn('Erreur suppression workflow n8n', { 
+              n8nWorkflowId: existingWorkflow.n8n_workflow_id,
+              error: deleteError.message 
+            });
           }
         }
         
         // Supprimer de la base de données
         await db.query('DELETE FROM user_workflows WHERE id = $1', [existingWorkflow.id]);
-        console.log(`✅ [DeploymentUtils] Ancien workflow supprimé de la BDD: ${existingWorkflow.id}`);
+        logger.info('Ancien workflow supprimé de la BDD', { workflowId: existingWorkflow.id });
       }
     }
   } catch (checkError) {
-    console.warn('⚠️ [DeploymentUtils] Erreur vérification workflows existants:', checkError.message);
+    logger.warn('Erreur vérification workflows existants', { 
+      userId,
+      templateId,
+      error: checkError.message 
+    });
   }
 }
 
@@ -427,7 +436,7 @@ async function cleanupExistingWorkflows(userId, templateId) {
 async function saveWorkflowCredentials(userWorkflowId, injectionResult, userEmail) {
   try {
     if (!injectionResult || !injectionResult.createdCredentials) {
-      console.log('ℹ️ [DeploymentUtils] Aucun credential créé à sauvegarder');
+      logger.debug('Aucun credential créé à sauvegarder', { userWorkflowId });
       return;
     }
     
@@ -445,10 +454,16 @@ async function saveWorkflowCredentials(userWorkflowId, injectionResult, userEmai
     
     if (credentialsToSave.length > 0) {
       await db.saveWorkflowCredentials(userWorkflowId, credentialsToSave);
-      console.log(`✅ [DeploymentUtils] ${credentialsToSave.length} credential(s) sauvegardé(s)`);
+      logger.info('Credentials sauvegardés', { 
+        userWorkflowId,
+        count: credentialsToSave.length 
+      });
     }
   } catch (credSaveError) {
-    console.error('❌ [DeploymentUtils] Erreur sauvegarde credentials:', credSaveError.message);
+    logger.error('Erreur sauvegarde credentials', { 
+      userWorkflowId,
+      error: credSaveError.message 
+    });
   }
 }
 
