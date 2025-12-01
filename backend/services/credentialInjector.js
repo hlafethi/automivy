@@ -961,10 +961,14 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                     id: createdCredentials.notionApi.id,
                     name: createdCredentials.notionApi.name
                   };
-                  console.log(`✅ [CredentialInjector] Credential Notion remplacé dans ${node.name}: ${credValue?.id} -> ${createdCredentials.notionApi.id}`);
+                  logger.info('Credential Notion remplacé', { 
+                    nodeName: node.name,
+                    oldCredId: credValue?.id,
+                    newCredId: createdCredentials.notionApi.id
+                  });
                 } else if (typeof credValue === 'object' && credValue.id && credValue.id.includes('USER_NOTION')) {
                   // Si le credential n'a pas été créé mais qu'il y a un placeholder, le supprimer
-                  console.warn(`⚠️ [CredentialInjector] Placeholder Notion détecté mais credential non créé pour ${node.name}`);
+                  logger.warn('Placeholder Notion détecté mais credential non créé', { nodeName: node.name });
                 } else {
                   updatedCredentials[credType] = credValue;
                 }
@@ -975,10 +979,14 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                     id: createdCredentials.postgres.id,
                     name: createdCredentials.postgres.name
                   };
-                  console.log(`✅ [CredentialInjector] Credential PostgreSQL remplacé dans ${node.name}: ${credValue?.id} -> ${createdCredentials.postgres.id}`);
+                  logger.info('Credential PostgreSQL remplacé', { 
+                    nodeName: node.name,
+                    oldCredId: credValue?.id,
+                    newCredId: createdCredentials.postgres.id
+                  });
                 } else if (typeof credValue === 'object' && credValue.id && credValue.id.includes('USER_POSTGRES')) {
                   // Si le credential n'a pas été créé mais qu'il y a un placeholder, le supprimer
-                  console.warn(`⚠️ [CredentialInjector] Placeholder PostgreSQL détecté mais credential non créé pour ${node.name}`);
+                  logger.warn('Placeholder PostgreSQL détecté mais credential non créé', { nodeName: node.name });
                 } else {
                   updatedCredentials[credType] = credValue;
                 }
@@ -989,10 +997,14 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                     id: createdCredentials.airtableApi.id,
                     name: createdCredentials.airtableApi.name
                   };
-                  console.log(`✅ [CredentialInjector] Credential Airtable remplacé dans ${node.name}: ${credValue?.id} -> ${createdCredentials.airtableApi.id}`);
+                  logger.info('Credential Airtable remplacé', { 
+                    nodeName: node.name,
+                    oldCredId: credValue?.id,
+                    newCredId: createdCredentials.airtableApi.id
+                  });
                 } else if (typeof credValue === 'object' && credValue.id && credValue.id.includes('USER_AIRTABLE')) {
                   // Si le credential n'a pas été créé mais qu'il y a un placeholder, le supprimer
-                  console.warn(`⚠️ [CredentialInjector] Placeholder Airtable détecté mais credential non créé pour ${node.name}`);
+                  logger.warn('Placeholder Airtable détecté mais credential non créé', { nodeName: node.name });
                 } else {
                   updatedCredentials[credType] = credValue;
                 }
@@ -1004,10 +1016,14 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                     id: createdCredentials.googleSheetsOAuth2.id,
                     name: createdCredentials.googleSheetsOAuth2.name
                   };
-                  console.log(`✅ [CredentialInjector] Credential Google Sheets remplacé dans ${node.name}: ${credValue?.id} -> ${createdCredentials.googleSheetsOAuth2.id}`);
+                  logger.info('Credential Google Sheets remplacé', { 
+                    nodeName: node.name,
+                    oldCredId: credValue?.id,
+                    newCredId: createdCredentials.googleSheetsOAuth2.id
+                  });
                 } else if (typeof credValue === 'object' && credValue.id && credValue.id.includes('USER_GOOGLE_SHEETS')) {
                   // Si le credential n'a pas été créé mais qu'il y a un placeholder, le supprimer
-                  console.warn(`⚠️ [CredentialInjector] Placeholder Google Sheets détecté mais credential non créé pour ${node.name}`);
+                  logger.warn('Placeholder Google Sheets détecté mais credential non créé', { nodeName: node.name });
                 } else {
                   updatedCredentials[credType] = credValue;
                 }
@@ -1020,7 +1036,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                 
                 if (isOpenRouterHttpNode && cleanedNode.credentials?.httpHeaderAuth) {
                   // Le nœud httpRequest OpenRouter utilise httpHeaderAuth, ne pas ajouter openRouterApi
-                  console.log(`⏭️ [CredentialInjector] openRouterApi ignoré pour ${node.name} (utilise httpHeaderAuth)`);
+                  logger.debug('openRouterApi ignoré (utilise httpHeaderAuth)', { nodeName: node.name });
                   // Ne pas ajouter openRouterApi à updatedCredentials
                 } else {
                   // Pour les autres types de nœuds (non-httpRequest), utiliser openRouterApi
@@ -1044,7 +1060,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                     cleanedNode.credentials.httpHeaderAuth.id === adminCreds.OPENROUTER_ID) {
                   // Le credential a déjà été assigné automatiquement, le préserver
                   updatedCredentials[credType] = cleanedNode.credentials.httpHeaderAuth;
-                  console.log(`⏭️ [CredentialInjector] httpHeaderAuth déjà assigné automatiquement pour ${node.name}, préservation`);
+                  logger.debug('httpHeaderAuth déjà assigné automatiquement, préservation', { nodeName: node.name });
                 } else if (isOpenRouterNode) {
                   // Si le placeholder a été remplacé dans la string, utiliser la valeur existante
                   // Sinon, assigner le credential admin
@@ -1057,7 +1073,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                       id: adminCreds.OPENROUTER_ID,
                       name: adminCreds.OPENROUTER_NAME || 'OpenRouter Admin'
                     };
-                    console.log(`✅ [CredentialInjector] Credential OpenRouter (httpHeaderAuth) assigné à ${node.name}: ${adminCreds.OPENROUTER_ID}`);
+                    logger.info('Credential OpenRouter (httpHeaderAuth) assigné', { nodeName: node.name, credId: adminCreds.OPENROUTER_ID });
                   }
                 } else {
                   // Pour les autres nœuds httpHeaderAuth, garder la valeur originale
@@ -1085,7 +1101,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                 name: adminCreds.OPENROUTER_NAME || 'OpenRouter Admin'
               }
             };
-            console.log(`✅ [CredentialInjector] Credential OpenRouter (httpHeaderAuth) assigné automatiquement à ${node.name} (nœud sans credential)`);
+            logger.info('Credential OpenRouter (httpHeaderAuth) assigné automatiquement (nœud sans credential)', { nodeName: node.name });
           }
         }
         
@@ -1097,7 +1113,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.googleSheetsOAuth2.name
             }
           };
-          console.log(`✅ [CredentialInjector] Credential Google Sheets OAuth2 assigné automatiquement à ${node.name} (nœud sans credential)`);
+          logger.info('Credential Google Sheets OAuth2 assigné automatiquement (nœud sans credential)', { nodeName: node.name });
         }
         
         // Nœuds Notion
@@ -1108,7 +1124,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.notionApi.name
             }
           };
-          console.log(`✅ [CredentialInjector] Credential Notion assigné automatiquement à ${node.name} (nœud sans credential)`);
+          logger.info('Credential Notion assigné automatiquement (nœud sans credential)', { nodeName: node.name });
         }
         
         // Nœuds PostgreSQL
@@ -1119,7 +1135,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.postgres.name
             }
           };
-          console.log(`✅ [CredentialInjector] Credential PostgreSQL assigné automatiquement à ${node.name} (nœud sans credential)`);
+          logger.info('Credential PostgreSQL assigné automatiquement (nœud sans credential)', { nodeName: node.name });
         }
         
         // Nœuds Airtable
@@ -1130,7 +1146,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.airtableApi.name
             }
           };
-          console.log(`✅ [CredentialInjector] Credential Airtable assigné automatiquement à ${node.name} (nœud sans credential)`);
+          logger.info('Credential Airtable assigné automatiquement (nœud sans credential)', { nodeName: node.name });
         }
       }
       
@@ -1165,13 +1181,17 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         // Supprimer openRouterApi s'il existe (mauvais type pour httpRequest)
         if (cleanedNode.credentials.openRouterApi) {
           delete cleanedNode.credentials.openRouterApi;
-          console.log(`⚠️ [CredentialInjector] PROTECTION FINALE: openRouterApi supprimé de ${cleanedNode.name}`);
+          logger.warn('PROTECTION FINALE: openRouterApi supprimé', { nodeName: cleanedNode.name });
         }
         
         // Vérifier si le credential actuel est différent de celui souhaité
         const currentCredId = cleanedNode.credentials?.httpHeaderAuth?.id;
         if (currentCredId !== credentialIdToUse) {
-          console.log(`⚠️ [CredentialInjector] PROTECTION FINALE: ${cleanedNode.name} a le credential ${currentCredId}, remplacement par ${credentialIdToUse}`);
+          logger.debug('PROTECTION FINALE: Credential remplacé', { 
+            nodeName: cleanedNode.name,
+            oldCredId: currentCredId,
+            newCredId: credentialIdToUse
+          });
         }
         
         // FORCER l'assignation du credential httpHeaderAuth (écrase tout credential existant)
@@ -1180,7 +1200,11 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
           name: credentialNameToUse
         };
         
-        console.log(`✅ [CredentialInjector] PROTECTION FINALE: Credential OpenRouter FORCÉ pour ${cleanedNode.name}: ${credentialIdToUse} (${credentialNameToUse})`);
+        logger.info('PROTECTION FINALE: Credential OpenRouter FORCÉ', { 
+          nodeName: cleanedNode.name,
+          credId: credentialIdToUse,
+          credName: credentialNameToUse
+        });
       }
       
       // ⚠️ PROTECTION FINALE: Pour les nœuds Google Sheets, s'assurer que googleSheetsOAuth2Api est présent
@@ -1194,7 +1218,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.googleSheetsOAuth2.name
             }
           };
-          console.log(`✅ [CredentialInjector] CORRECTION FINALE: googleSheetsOAuth2Api assigné à ${cleanedNode.name} (nœud sans credential)`);
+          logger.info('CORRECTION FINALE: googleSheetsOAuth2Api assigné (nœud sans credential)', { nodeName: cleanedNode.name });
         } else if (cleanedNode.credentials.googleSheetsOAuth2Api.id?.includes('USER_GOOGLE_SHEETS') || 
                    cleanedNode.credentials.googleSheetsOAuth2Api.id === 'USER_GOOGLE_SHEETS_CREDENTIAL_ID') {
           // Si le nœud a un placeholder, le remplacer
@@ -1202,7 +1226,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
             id: createdCredentials.googleSheetsOAuth2.id,
             name: createdCredentials.googleSheetsOAuth2.name
           };
-          console.log(`✅ [CredentialInjector] CORRECTION FINALE: Placeholder Google Sheets remplacé pour ${cleanedNode.name}`);
+          logger.info('CORRECTION FINALE: Placeholder Google Sheets remplacé', { nodeName: cleanedNode.name });
         }
       }
       
@@ -1229,39 +1253,44 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
     tags: injectedWorkflow.tags || [] // Préserver les tags
   };
   
-  console.log('✅ [CredentialInjector] Injection terminée avec succès');
-  console.log('✅ [CredentialInjector] Nombre de nœuds:', cleanedWorkflow.nodes?.length);
-  console.log('✅ [CredentialInjector] Nombre de connexions:', Object.keys(cleanedWorkflow.connections || {}).length);
-  console.log('✅ [CredentialInjector] Noms des nœuds:', cleanedWorkflow.nodes?.map(n => n.name).join(', '));
+  logger.success('Injection terminée avec succès', { 
+    nodesCount: cleanedWorkflow.nodes?.length,
+    connectionsCount: Object.keys(cleanedWorkflow.connections || {}).length
+  });
   
   // Vérifier que tous les nœuds ont des IDs
   const nodesWithoutId = cleanedWorkflow.nodes?.filter(n => !n.id);
   if (nodesWithoutId && nodesWithoutId.length > 0) {
-    console.warn('⚠️ [CredentialInjector] Certains nœuds n\'ont pas d\'ID:', nodesWithoutId.map(n => n.name));
+    logger.warn('Certains nœuds n\'ont pas d\'ID', { 
+      nodesWithoutId: nodesWithoutId.map(n => n.name) 
+    });
   }
   
   // Vérifier les credentials assignés aux nœuds Gmail
   const gmailNodes = cleanedWorkflow.nodes?.filter(n => n.type === 'n8n-nodes-base.gmail');
   if (gmailNodes && gmailNodes.length > 0) {
-    console.log('🔍 [CredentialInjector] ===== VÉRIFICATION CRITIQUE DES CREDENTIALS GMAIL =====');
-    console.log(`🔍 [CredentialInjector] ${gmailNodes.length} nœud(s) Gmail trouvé(s)`);
-    console.log(`🔍 [CredentialInjector] createdCredentials.gmailOAuth2:`, createdCredentials.gmailOAuth2);
+    logger.debug('Vérification critique des credentials Gmail', { 
+      gmailNodesCount: gmailNodes.length,
+      hasGmailCred: !!createdCredentials.gmailOAuth2
+    });
     gmailNodes.forEach(node => {
       if (node.credentials && node.credentials.gmailOAuth2) {
         const credId = node.credentials.gmailOAuth2.id;
         const isUserCred = createdCredentials.gmailOAuth2 && credId === createdCredentials.gmailOAuth2.id;
-        if (isUserCred) {
-          console.log(`  ✅ ${node.name}: Credential Gmail OAuth2 utilisateur présent (ID: ${credId})`);
-        } else {
-          console.error(`  ❌ ${node.name}: Credential Gmail OAuth2 template conservé (ID: ${credId}) - DEVRAIT ÊTRE REMPLACÉ!`);
-          console.error(`  ❌ ${node.name}: Credential utilisateur attendu: ${createdCredentials.gmailOAuth2?.id || 'AUCUN'}`);
+        if (!isUserCred) {
+          logger.error('Credential Gmail OAuth2 template conservé - DEVRAIT ÊTRE REMPLACÉ', { 
+            nodeName: node.name,
+            templateCredId: credId,
+            expectedCredId: createdCredentials.gmailOAuth2?.id || 'AUCUN'
+          });
         }
       } else {
-        console.error(`  ❌ ${node.name}: Aucun credential Gmail OAuth2 assigné!`);
-        console.error(`  ❌ ${node.name}: createdCredentials.gmailOAuth2 disponible: ${createdCredentials.gmailOAuth2 ? 'OUI' : 'NON'}`);
+        logger.error('Aucun credential Gmail OAuth2 assigné', { 
+          nodeName: node.name,
+          hasGmailCred: !!createdCredentials.gmailOAuth2
+        });
       }
     });
-    console.log('🔍 [CredentialInjector] ====================================================');
   }
   
   // Vérifier les credentials assignés aux nœuds OpenRouter HTTP
@@ -1270,72 +1299,74 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
     (n.parameters?.url?.includes('openrouter.ai') || n.name?.toLowerCase().includes('openrouter'))
   );
   if (openRouterNodes && openRouterNodes.length > 0) {
-    console.log('🔍 [CredentialInjector] ===== VÉRIFICATION CRITIQUE DES CREDENTIALS OPENROUTER =====');
-    console.log(`🔍 [CredentialInjector] ${openRouterNodes.length} nœud(s) OpenRouter HTTP trouvé(s)`);
-    console.log(`🔍 [CredentialInjector] adminCreds.OPENROUTER_ID: ${adminCreds.OPENROUTER_ID}`);
+    logger.debug('Vérification critique des credentials OpenRouter', { 
+      openRouterNodesCount: openRouterNodes.length,
+      openRouterId: adminCreds.OPENROUTER_ID
+    });
     openRouterNodes.forEach(node => {
       if (node.credentials && node.credentials.httpHeaderAuth) {
         const credId = node.credentials.httpHeaderAuth.id;
         const isAdminCred = adminCreds.OPENROUTER_ID && credId === adminCreds.OPENROUTER_ID;
         const hasPlaceholder = credId === 'ADMIN_OPENROUTER_CREDENTIAL_ID' || credId?.includes('ADMIN_OPENROUTER');
-        if (isAdminCred) {
-          console.log(`  ✅ ${node.name}: Credential OpenRouter admin présent (ID: ${credId})`);
-        } else if (hasPlaceholder) {
-          console.error(`  ❌ ${node.name}: Placeholder OpenRouter toujours présent (ID: ${credId}) - DEVRAIT ÊTRE REMPLACÉ!`);
-          console.error(`  ❌ ${node.name}: Credential admin attendu: ${adminCreds.OPENROUTER_ID || 'AUCUN'}`);
-        } else {
-          console.warn(`  ⚠️ ${node.name}: Credential OpenRouter différent (ID: ${credId})`);
+        if (!isAdminCred && hasPlaceholder) {
+          logger.error('Placeholder OpenRouter toujours présent - DEVRAIT ÊTRE REMPLACÉ', { 
+            nodeName: node.name,
+            placeholderId: credId,
+            expectedCredId: adminCreds.OPENROUTER_ID || 'AUCUN'
+          });
+        } else if (!isAdminCred) {
+          logger.warn('Credential OpenRouter différent', { nodeName: node.name, credId });
         }
       } else {
-        console.error(`  ❌ ${node.name}: Aucun credential OpenRouter (httpHeaderAuth) assigné!`);
-        console.error(`  ❌ ${node.name}: adminCreds.OPENROUTER_ID disponible: ${adminCreds.OPENROUTER_ID ? 'OUI' : 'NON'}`);
+        logger.error('Aucun credential OpenRouter (httpHeaderAuth) assigné', { 
+          nodeName: node.name,
+          hasOpenRouterId: !!adminCreds.OPENROUTER_ID
+        });
       }
     });
-    console.log('🔍 [CredentialInjector] ====================================================');
   }
   
   // Vérifier les credentials assignés aux nœuds Google Sheets
   const googleSheetsNodes = cleanedWorkflow.nodes?.filter(n => n.type === 'n8n-nodes-base.googleSheets');
   if (googleSheetsNodes && googleSheetsNodes.length > 0) {
-    console.log('🔍 [CredentialInjector] ===== VÉRIFICATION CRITIQUE DES CREDENTIALS GOOGLE SHEETS =====');
-    console.log(`🔍 [CredentialInjector] ${googleSheetsNodes.length} nœud(s) Google Sheets trouvé(s)`);
-    console.log(`🔍 [CredentialInjector] createdCredentials.googleSheetsOAuth2:`, createdCredentials.googleSheetsOAuth2);
+    logger.debug('Vérification critique des credentials Google Sheets', { 
+      googleSheetsNodesCount: googleSheetsNodes.length,
+      hasGoogleSheetsCred: !!createdCredentials.googleSheetsOAuth2
+    });
     googleSheetsNodes.forEach(node => {
       if (node.credentials && node.credentials.googleSheetsOAuth2) {
         const credId = node.credentials.googleSheetsOAuth2.id;
         const isUserCred = createdCredentials.googleSheetsOAuth2 && credId === createdCredentials.googleSheetsOAuth2.id;
         const hasPlaceholder = credId === 'USER_GOOGLE_SHEETS_CREDENTIAL_ID' || credId?.includes('USER_GOOGLE_SHEETS');
-        if (isUserCred) {
-          console.log(`  ✅ ${node.name}: Credential Google Sheets OAuth2 utilisateur présent (ID: ${credId})`);
-        } else if (hasPlaceholder) {
-          console.error(`  ❌ ${node.name}: Placeholder Google Sheets toujours présent (ID: ${credId}) - DEVRAIT ÊTRE REMPLACÉ!`);
-          console.error(`  ❌ ${node.name}: Credential utilisateur attendu: ${createdCredentials.googleSheetsOAuth2?.id || 'AUCUN'}`);
-        } else {
-          console.warn(`  ⚠️ ${node.name}: Credential Google Sheets différent (ID: ${credId})`);
+        if (!isUserCred && hasPlaceholder) {
+          logger.error('Placeholder Google Sheets toujours présent - DEVRAIT ÊTRE REMPLACÉ', { 
+            nodeName: node.name,
+            placeholderId: credId,
+            expectedCredId: createdCredentials.googleSheetsOAuth2?.id || 'AUCUN'
+          });
+        } else if (!isUserCred) {
+          logger.warn('Credential Google Sheets différent', { nodeName: node.name, credId });
         }
       } else {
-        console.error(`  ❌ ${node.name}: Aucun credential Google Sheets OAuth2 assigné!`);
-        console.error(`  ❌ ${node.name}: createdCredentials.googleSheetsOAuth2 disponible: ${createdCredentials.googleSheetsOAuth2 ? 'OUI' : 'NON'}`);
+        logger.error('Aucun credential Google Sheets OAuth2 assigné', { 
+          nodeName: node.name,
+          hasGoogleSheetsCred: !!createdCredentials.googleSheetsOAuth2
+        });
       }
     });
-    console.log('🔍 [CredentialInjector] ====================================================');
   }
   
   // Log final de tous les credentials créés/réutilisés
-  console.log('🔍 [CredentialInjector] ===== RÉSUMÉ DES CREDENTIALS =====');
-  console.log(`🔍 [CredentialInjector] Nombre de credentials dans createdCredentials: ${Object.keys(createdCredentials).length}`);
-  for (const [credType, cred] of Object.entries(createdCredentials)) {
-    if (cred && cred.id) {
-      console.log(`  ✅ ${credType}: ${cred.id} (${cred.name})`);
-    } else {
-      console.warn(`  ⚠️ ${credType}: credential invalide ou sans ID`);
-    }
-  }
-  console.log('🔍 [CredentialInjector] ====================================');
+  logger.debug('Résumé des credentials', { 
+    credentialsCount: Object.keys(createdCredentials).length,
+    credentials: Object.entries(createdCredentials)
+      .filter(([_, cred]) => cred && cred.id)
+      .map(([credType, cred]) => ({ type: credType, id: cred.id, name: cred.name }))
+  });
   
   // Retourner le workflow, le webhook path et les credentials créés pour stockage en base de données
   // ⚠️ VÉRIFICATION FINALE ABSOLUE: S'assurer que tous les credentials sont présents et valides
-  console.log('🔍 [CredentialInjector] ===== VÉRIFICATION FINALE ABSOLUE DES CREDENTIALS =====');
+  logger.debug('Vérification finale absolue des credentials');
   
   // Vérifier tous les nœuds OpenRouter
   const finalOpenRouterNodes = cleanedWorkflow.nodes?.filter(n => 
@@ -1348,7 +1379,10 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
       const hasPlaceholder = !credId || credId === 'ADMIN_OPENROUTER_CREDENTIAL_ID' || credId.includes('ADMIN_OPENROUTER') || credId.includes('_CREDENTIAL_ID');
       
       if (hasPlaceholder) {
-        console.error(`❌ [CredentialInjector] VÉRIFICATION FINALE: ${node.name} a toujours un placeholder ou pas de credential: ${credId}`);
+        logger.error('VÉRIFICATION FINALE: Placeholder ou pas de credential détecté', { 
+          nodeName: node.name,
+          credId 
+        });
         // FORCER l'assignation si placeholder détecté
         if (adminCreds.OPENROUTER_ID) {
           node.credentials = {
@@ -1362,10 +1396,11 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
           if (node.credentials.openRouterApi) {
             delete node.credentials.openRouterApi;
           }
-          console.log(`✅ [CredentialInjector] VÉRIFICATION FINALE: Credential OpenRouter FORCÉ pour ${node.name}: ${adminCreds.OPENROUTER_ID}`);
+          logger.info('VÉRIFICATION FINALE: Credential OpenRouter FORCÉ', { 
+            nodeName: node.name,
+            credId: adminCreds.OPENROUTER_ID
+          });
         }
-      } else {
-        console.log(`✅ [CredentialInjector] VÉRIFICATION FINALE: ${node.name} a un credential OpenRouter valide: ${credId}`);
       }
     });
   }
@@ -1387,7 +1422,10 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                             credId.includes('_CREDENTIAL_ID');
       
       if (hasPlaceholder) {
-        console.error(`❌ [CredentialInjector] VÉRIFICATION FINALE: ${node.name} a toujours un placeholder ou pas de credential: ${credId}`);
+        logger.error('VÉRIFICATION FINALE: Placeholder ou pas de credential détecté pour Google Sheets', { 
+          nodeName: node.name,
+          credId 
+        });
         // FORCER l'assignation si placeholder détecté
         node.credentials = {
           ...node.credentials,
@@ -1400,14 +1438,13 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         if (node.credentials.googleSheetsOAuth2) {
           delete node.credentials.googleSheetsOAuth2;
         }
-        console.log(`✅ [CredentialInjector] VÉRIFICATION FINALE: Credential Google Sheets FORCÉ pour ${node.name}: ${createdCredentials.googleSheetsOAuth2.id}`);
-      } else {
-        console.log(`✅ [CredentialInjector] VÉRIFICATION FINALE: ${node.name} a un credential Google Sheets valide: ${credId}`);
+        logger.info('VÉRIFICATION FINALE: Credential Google Sheets FORCÉ', { 
+          nodeName: node.name,
+          credId: createdCredentials.googleSheetsOAuth2.id
+        });
       }
     });
   }
-  
-  console.log('🔍 [CredentialInjector] ====================================================');
   
   return {
     workflow: cleanedWorkflow,
@@ -1423,14 +1460,12 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
  * @returns {Object} Credential créé
  */
 async function createImapCredential(userCredentials, userId) {
-  console.log('🔍 [CredentialInjector] DEBUG - Credentials reçus pour IMAP:');
-  console.log('  - userCredentials.email:', userCredentials.email);
-  console.log('  - userCredentials.imapPassword:', userCredentials.imapPassword);
-  console.log('  - userCredentials.imapPassword type:', typeof userCredentials.imapPassword);
-  console.log('  - userCredentials.imapPassword length:', userCredentials.imapPassword?.length);
-  console.log('  - userCredentials.imapServer:', userCredentials.imapServer);
-  console.log('  - userCredentials.imapPort:', userCredentials.imapPort);
-  console.log('  - userCredentials.imapPassword COMPLET:', JSON.stringify(userCredentials.imapPassword));
+  logger.debug('Création credential IMAP', { 
+    email: userCredentials.email,
+    imapServer: userCredentials.imapServer,
+    imapPort: userCredentials.imapPort,
+    hasPassword: !!userCredentials.imapPassword
+  });
   
   const credentialData = {
     name: `IMAP-${userId}-${Date.now()}`,
@@ -1444,20 +1479,16 @@ async function createImapCredential(userCredentials, userId) {
     }
   };
   
-  console.log('🔧 [CredentialInjector] Création credential IMAP:', credentialData.name);
-  console.log('🔧 [CredentialInjector] Données IMAP finales:', {
+  logger.debug('Données IMAP finales', {
+    credentialName: credentialData.name,
     user: credentialData.data.user,
     host: credentialData.data.host,
     port: credentialData.data.port,
-    secure: credentialData.data.secure,
-    passwordLength: credentialData.data.password?.length,
-    passwordPreview: credentialData.data.password ? credentialData.data.password.substring(0, 2) + '***' : 'UNDEFINED'
+    secure: credentialData.data.secure
   });
   
   // Créer le credential IMAP via le proxy backend
   try {
-    console.log('🔧 [CredentialInjector] Création credential IMAP via proxy...');
-    
     const response = await fetch('http://localhost:3004/api/n8n/credentials', {
       method: 'POST',
       headers: {
@@ -1472,11 +1503,11 @@ async function createImapCredential(userCredentials, userId) {
     }
 
     const credential = await response.json();
-    console.log('✅ [CredentialInjector] Credential IMAP créé via proxy:', credential.id);
+    logger.info('Credential IMAP créé via proxy', { credId: credential.id });
     
     return credential;
   } catch (error) {
-    console.error('❌ [CredentialInjector] Erreur création credential IMAP via proxy:', error);
+    logger.error('Erreur création credential IMAP via proxy', { error: error.message });
     throw error;
   }
 }
@@ -1489,13 +1520,8 @@ async function createImapCredential(userCredentials, userId) {
  */
 async function createSmtpCredential(userCredentials, userId) {
   try {
-    console.log('🚨🚨🚨 [CredentialInjector] ========================================== 🚨🚨🚨');
-    console.log('🚨🚨🚨 [CredentialInjector] CRÉATION CREDENTIAL SMTP DÉMARRÉE 🚨🚨🚨');
-    console.log('🚨🚨🚨 [CredentialInjector] ========================================== 🚨🚨🚨');
-    console.log('🔧 [CredentialInjector] Création credential SMTP natif avec SSL/TLS...');
-    console.log('🔧 [CredentialInjector] User credentials reçus:', {
+    logger.debug('Création credential SMTP natif avec SSL/TLS', {
       smtpPort: userCredentials.smtpPort,
-      smtpPortType: typeof userCredentials.smtpPort,
       smtpServer: userCredentials.smtpServer,
       smtpEmail: userCredentials.smtpEmail
     });
@@ -1545,17 +1571,12 @@ async function createSmtpCredential(userCredentials, userId) {
       smtpCredentialData.data.disableStartTls = false; // Port 587 avec STARTTLS
     }
 
-    console.log('📤 [CredentialInjector] Payload SMTP natif:', JSON.stringify(smtpCredentialData, null, 2));
-    console.log('🔍 [CredentialInjector] DEBUG - Port type:', typeof smtpCredentialData.data.port);
-    console.log('🔍 [CredentialInjector] DEBUG - Port value:', smtpCredentialData.data.port);
-    console.log('🔍 [CredentialInjector] DEBUG - User credentials smtpPort:', userCredentials.smtpPort);
-    console.log('🔍 [CredentialInjector] DEBUG - User credentials smtpPort type:', typeof userCredentials.smtpPort);
-    console.log('🔍 [CredentialInjector] DEBUG - Number conversion result:', Number(userCredentials.smtpPort));
-    console.log('🔍 [CredentialInjector] DEBUG - Number conversion type:', typeof Number(userCredentials.smtpPort));
-    console.log('🔍 [CredentialInjector] DEBUG - isNaN check:', isNaN(Number(userCredentials.smtpPort)));
-    console.log('🔍 [CredentialInjector] DEBUG - Final port value:', Number(userCredentials.smtpPort) || 465);
+    logger.debug('Payload SMTP natif préparé', {
+      port: smtpCredentialData.data.port,
+      secure: smtpCredentialData.data.secure,
+      host: smtpCredentialData.data.host
+    });
 
-    console.log('🔧 [CredentialInjector] Envoi de la requête à n8n...');
     const response = await fetch('http://localhost:3004/api/n8n/credentials', {
       method: 'POST',
       headers: {
@@ -1564,25 +1585,24 @@ async function createSmtpCredential(userCredentials, userId) {
       body: JSON.stringify(smtpCredentialData),
     });
 
-    console.log('📋 [CredentialInjector] Réponse n8n:', response.status, response.statusText);
+    logger.debug('Réponse n8n reçue', { status: response.status, statusText: response.statusText });
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('❌ [CredentialInjector] Erreur détaillée:', errorText);
+      logger.error('Erreur création credential SMTP', { status: response.status, error: errorText });
       throw new Error(`Erreur création credential SMTP: ${response.status} - ${errorText}`);
     }
 
     const credential = await response.json();
-    console.log('✅ [CredentialInjector] Credential SMTP natif créé:', credential.id);
-    console.log('📋 [CredentialInjector] Détails credential créé:', {
-      id: credential.id,
-      name: credential.name,
-      type: credential.type
+    logger.info('Credential SMTP natif créé', { 
+      credId: credential.id,
+      credName: credential.name,
+      credType: credential.type
     });
     
     return credential;
   } catch (error) {
-    console.error('❌ [CredentialInjector] Erreur création credential SMTP natif:', error);
+    logger.error('Erreur création credential SMTP natif', { error: error.message });
     throw error;
   }
 }
@@ -1594,13 +1614,11 @@ async function createSmtpCredential(userCredentials, userId) {
  */
 async function createCredentialInN8n(credentialData) {
   try {
-    console.log('🔍 [CredentialInjector] DEBUG - Envoi à n8n:');
-    console.log('  - Type:', credentialData.type);
-    console.log('  - Name:', credentialData.name);
-    console.log('  - Data keys:', Object.keys(credentialData.data));
-    console.log('  - Password length:', credentialData.data.password?.length);
-    console.log('  - Password preview:', credentialData.data.password ? credentialData.data.password.substring(0, 2) + '***' : 'UNDEFINED');
-    console.log('  - Password COMPLET:', JSON.stringify(credentialData.data.password));
+    logger.debug('Envoi credential à n8n', {
+      type: credentialData.type,
+      name: credentialData.name,
+      dataKeys: Object.keys(credentialData.data)
+    });
     
     const response = await fetch('http://localhost:3004/api/n8n/credentials', {
       method: 'POST',
@@ -1612,17 +1630,16 @@ async function createCredentialInN8n(credentialData) {
     
     if (!response.ok) {
       const error = await response.text();
-      console.error('❌ [CredentialInjector] Erreur API n8n:', error);
+      logger.error('Erreur API n8n', { error });
       throw new Error(`Erreur création credential: ${error}`);
     }
     
     const result = await response.json();
-    console.log('✅ [CredentialInjector] Credential créé dans n8n:', result.id);
-    console.log('✅ [CredentialInjector] Credential name:', result.name);
+    logger.info('Credential créé dans n8n', { credId: result.id, credName: result.name });
     return result;
     
   } catch (error) {
-    console.error('❌ [CredentialInjector] Erreur création credential:', error);
+    logger.error('Erreur création credential', { error: error.message });
     throw error;
   }
 }
@@ -1632,19 +1649,21 @@ async function createCredentialInN8n(credentialData) {
  * @param {Object} createdCredentials - Credentials créés
  */
 async function cleanupUserCredentials(createdCredentials) {
-  console.log('🧹 [CredentialInjector] Nettoyage des credentials...');
+  logger.debug('Nettoyage des credentials');
   
   for (const [type, cred] of Object.entries(createdCredentials)) {
-    try {
-      await fetch(`http://localhost:3004/api/n8n/credentials/${cred.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      console.log(`✅ [CredentialInjector] Credential ${type} supprimé`);
-    } catch (error) {
-      console.error(`❌ [CredentialInjector] Erreur suppression credential ${type}:`, error);
+    if (cred && cred.id) {
+      try {
+        await fetch(`http://localhost:3004/api/n8n/credentials/${cred.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        logger.debug('Credential supprimé', { type, credId: cred.id });
+      } catch (error) {
+        logger.error('Erreur suppression credential', { type, error: error.message });
+      }
     }
   }
 }
@@ -1656,7 +1675,7 @@ async function cleanupUserCredentials(createdCredentials) {
  * @returns {Object} Credential créé
  */
 async function createAirtableCredential(userCredentials, userId) {
-  console.log('🔧 [CredentialInjector] Création credential Airtable...');
+  logger.debug('Création credential Airtable');
   
   const credentialData = {
     name: `Airtable-${userId}-${Date.now()}`,
@@ -1667,7 +1686,7 @@ async function createAirtableCredential(userCredentials, userId) {
   };
   
   const credential = await createCredentialInN8n(credentialData);
-  console.log('✅ [CredentialInjector] Credential Airtable créé:', credential.id);
+  logger.info('Credential Airtable créé', { credId: credential.id });
   return credential;
 }
 
@@ -1678,7 +1697,7 @@ async function createAirtableCredential(userCredentials, userId) {
  * @returns {Object} Credential créé
  */
 async function createNotionCredential(userCredentials, userId) {
-  console.log('🔧 [CredentialInjector] Création credential Notion...');
+  logger.debug('Création credential Notion');
   
   const credentialData = {
     name: `Notion-${userId}-${Date.now()}`,
@@ -1689,7 +1708,7 @@ async function createNotionCredential(userCredentials, userId) {
   };
   
   const credential = await createCredentialInN8n(credentialData);
-  console.log('✅ [CredentialInjector] Credential Notion créé:', credential.id);
+  logger.info('Credential Notion créé', { credId: credential.id });
   return credential;
 }
 
@@ -1700,7 +1719,7 @@ async function createNotionCredential(userCredentials, userId) {
  * @returns {Object} Credential créé
  */
 async function createPostgresCredential(userCredentials, userId) {
-  console.log('🔧 [CredentialInjector] Création credential PostgreSQL...');
+  logger.debug('Création credential PostgreSQL');
   
   const credentialData = {
     name: `PostgreSQL-${userId}-${Date.now()}`,
@@ -1718,7 +1737,7 @@ async function createPostgresCredential(userCredentials, userId) {
   };
   
   const credential = await createCredentialInN8n(credentialData);
-  console.log('✅ [CredentialInjector] Credential PostgreSQL créé:', credential.id);
+  logger.info('Credential PostgreSQL créé', { credId: credential.id });
   return credential;
 }
 
