@@ -507,16 +507,16 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
     (n.parameters?.url?.includes('openrouter.ai') || n.name?.toLowerCase().includes('openrouter'))
   );
   if (openRouterNodesAfterParse && openRouterNodesAfterParse.length > 0) {
-    console.log(`🔍 [CredentialInjector] DEBUG: ${openRouterNodesAfterParse.length} nœud(s) OpenRouter trouvé(s) après parsing`);
+    logger.debug('Nœuds OpenRouter trouvés après parsing', { count: openRouterNodesAfterParse.length });
     openRouterNodesAfterParse.forEach(node => {
       const credId = node.credentials?.httpHeaderAuth?.id || node.credentials?.openRouterApi?.id || 'aucun';
       const hasPlaceholder = credId === 'ADMIN_OPENROUTER_CREDENTIAL_ID' || credId?.includes('ADMIN_OPENROUTER');
       if (hasPlaceholder) {
-        console.error(`❌ [CredentialInjector] DEBUG: ${node.name} a toujours le placeholder: ${credId}`);
+        logger.error('Placeholder toujours présent après parsing', { nodeName: node.name, credId });
       } else if (credId === adminCreds.OPENROUTER_ID) {
-        console.log(`✅ [CredentialInjector] DEBUG: ${node.name} a le bon credential: ${credId}`);
+        logger.debug('Credential OpenRouter correct', { nodeName: node.name, credId });
       } else {
-        console.warn(`⚠️ [CredentialInjector] DEBUG: ${node.name} a un credential différent: ${credId}`);
+        logger.warn('Credential OpenRouter différent', { nodeName: node.name, credId });
       }
     });
   }
@@ -540,7 +540,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
       const isGmailNode = node.type === 'n8n-nodes-base.gmail';
       if (isGmailNode && node.credentials?.gmailOAuth2) {
         const templateCredId = node.credentials.gmailOAuth2.id;
-        console.log(`🔍 [CredentialInjector] Nœud Gmail détecté: ${node.name} avec credential template: ${templateCredId}`);
+        logger.debug('Nœud Gmail détecté', { nodeName: node.name, templateCredId });
         
         // ⚠️ CRITIQUE: Remplacer IMMÉDIATEMENT le credential template par le credential utilisateur
         // Même si c'est un nœud de lecture qui nécessite IMAP, on doit d'abord remplacer le credential Gmail
@@ -552,15 +552,17 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.gmailOAuth2.name
             }
           };
-          console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 remplacé IMMÉDIATEMENT pour ${node.name}:`);
-          console.log(`  - Ancien (template): ${templateCredId}`);
-          console.log(`  - Nouveau (utilisateur): ${createdCredentials.gmailOAuth2.id}`);
+          logger.info('Credential Gmail OAuth2 remplacé', { 
+            nodeName: node.name,
+            oldCredId: templateCredId,
+            newCredId: createdCredentials.gmailOAuth2.id 
+          });
         } else {
-          console.error(`❌ [CredentialInjector] Pas de credential utilisateur disponible pour ${node.name}`);
+          logger.error('Pas de credential utilisateur disponible pour nœud Gmail', { nodeName: node.name });
           // Supprimer le credential template
           if (cleanedNode.credentials) {
             delete cleanedNode.credentials.gmailOAuth2;
-            console.log(`⚠️ [CredentialInjector] Credential template supprimé de ${node.name}`);
+            logger.warn('Credential template supprimé', { nodeName: node.name });
           }
         }
       }
@@ -579,10 +581,12 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                                templateCredId?.includes('ADMIN_OPENROUTER') ||
                                templateCredName?.includes('ADMIN_OPENROUTER');
         
-        console.log(`🔍 [CredentialInjector] Nœud OpenRouter HTTP détecté: ${node.name}`);
-        console.log(`  - Credential template (httpHeaderAuth): ${node.credentials?.httpHeaderAuth?.id || 'aucun'}`);
-        console.log(`  - Credential template (openRouterApi): ${node.credentials?.openRouterApi?.id || 'aucun'}`);
-        console.log(`  - Contient placeholder: ${hasPlaceholder}`);
+        logger.debug('Nœud OpenRouter HTTP détecté', { 
+          nodeName: node.name,
+          httpHeaderAuthId: node.credentials?.httpHeaderAuth?.id || 'aucun',
+          openRouterApiId: node.credentials?.openRouterApi?.id || 'aucun',
+          hasPlaceholder 
+        });
         
         // Assigner automatiquement le credential OpenRouter admin (même si le nœud n'a pas de credential ou a un placeholder)
         // ⚠️ CRITIQUE: Pour les nœuds httpRequest, utiliser httpHeaderAuth, pas openRouterApi
@@ -596,7 +600,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
           const cleanedCreds = { ...cleanedNode.credentials };
           if (cleanedCreds.openRouterApi) {
             delete cleanedCreds.openRouterApi;
-            console.log(`⚠️ [CredentialInjector] openRouterApi supprimé de ${node.name} (remplacé par httpHeaderAuth)`);
+            logger.debug('openRouterApi supprimé (remplacé par httpHeaderAuth)', { nodeName: node.name });
           }
           
           cleanedNode.credentials = {
@@ -606,9 +610,11 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: adminCreds.OPENROUTER_NAME || 'OpenRouter Admin'
             }
           };
-          console.log(`✅ [CredentialInjector] Credential OpenRouter (httpHeaderAuth) assigné automatiquement à ${node.name}:`);
-          console.log(`  - Ancien (template): ${templateCredId}`);
-          console.log(`  - Nouveau (admin): ${adminCreds.OPENROUTER_ID} (${adminCreds.OPENROUTER_NAME || 'OpenRouter Admin'})`);
+          logger.info('Credential OpenRouter (httpHeaderAuth) assigné', { 
+            nodeName: node.name,
+            oldCredId: templateCredId,
+            newCredId: adminCreds.OPENROUTER_ID 
+          });
         } else if (usesOpenRouterApiCredentialType && adminCreds.OPENROUTER_ID) {
           // Si le nœud utilise nodeCredentialType: "openRouterApi", garder openRouterApi et remplacer le placeholder
           if (!cleanedNode.credentials) {
@@ -618,10 +624,15 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
             id: adminCreds.OPENROUTER_ID,
             name: adminCreds.OPENROUTER_NAME || 'OpenRouter Admin'
           };
-          console.log(`✅ [CredentialInjector] Credential OpenRouter (openRouterApi avec nodeCredentialType) assigné à ${node.name}: ${adminCreds.OPENROUTER_ID}`);
+          logger.info('Credential OpenRouter (openRouterApi avec nodeCredentialType) assigné', { 
+            nodeName: node.name,
+            credId: adminCreds.OPENROUTER_ID 
+          });
         } else {
-          console.error(`❌ [CredentialInjector] Pas de credential OpenRouter admin disponible pour ${node.name}`);
-          console.error(`❌ [CredentialInjector] adminCreds.OPENROUTER_ID: ${adminCreds.OPENROUTER_ID}`);
+          logger.error('Pas de credential OpenRouter admin disponible', { 
+            nodeName: node.name,
+            openRouterId: adminCreds.OPENROUTER_ID 
+          });
         }
       }
       
@@ -646,6 +657,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         // On peut aussi modifier le path dans les paramètres
         if (!cleanedNode.parameters.path) {
           cleanedNode.parameters.path = uniqueWebhookPath;
+          logger.debug('Webhook unique assigné', { nodeName: node.name, webhookPath: uniqueWebhookPath });
         } else {
           // Remplacer le path existant par le webhook unique
           cleanedNode.parameters.path = uniqueWebhookPath;
@@ -654,7 +666,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         if (node.webhookId) {
           cleanedNode.webhookId = node.webhookId;
         }
-        console.log(`✅ [CredentialInjector] Webhook unique assigné à ${node.name}: ${uniqueWebhookPath}`);
+        // Webhook déjà loggé plus haut
       }
       
       // Configuration automatique des credentials selon le type de nœud (comme dans injectParams)
@@ -698,7 +710,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         
         // Si le credential par défaut (DJ4JtAswl4vKWvdI) est déjà présent, le garder
         if (isDefaultAdminCred) {
-          console.log(`✅ [CredentialInjector] Credential OpenRouter par défaut (DJ4JtAswl4vKWvdI) déjà présent pour ${node.name}, conservation`);
+          logger.debug('Credential OpenRouter par défaut déjà présent, conservation', { nodeName: node.name });
         } else if (hasPlaceholder && adminCreds.OPENROUTER_ID) {
           // Si placeholder ou pas de credential, utiliser adminCreds ou DJ4JtAswl4vKWvdI par défaut
           const credIdToUse = adminCreds.OPENROUTER_ID || 'DJ4JtAswl4vKWvdI';
@@ -711,7 +723,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: credNameToUse
             }
           };
-          console.log(`✅ [CredentialInjector] Credential OpenRouter (openRouterApi) assigné automatiquement à ${node.name}: ${credIdToUse}`);
+          logger.info('Credential OpenRouter (openRouterApi) assigné automatiquement', { nodeName: node.name, credId: credIdToUse });
         } else if (!existingCredId && adminCreds.OPENROUTER_ID) {
           // Si pas de credential du tout, utiliser adminCreds ou DJ4JtAswl4vKWvdI par défaut
           const credIdToUse = adminCreds.OPENROUTER_ID || 'DJ4JtAswl4vKWvdI';
@@ -724,11 +736,11 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: credNameToUse
             }
           };
-          console.log(`✅ [CredentialInjector] Credential OpenRouter (openRouterApi) assigné automatiquement à ${node.name}: ${credIdToUse}`);
+          logger.info('Credential OpenRouter (openRouterApi) assigné automatiquement', { nodeName: node.name, credId: credIdToUse });
         }
       } else if (hasHttpHeaderAuthForOpenRouter) {
         // Le nœud httpRequest OpenRouter a déjà httpHeaderAuth, ne pas l'écraser avec openRouterApi
-        console.log(`⏭️ [CredentialInjector] Nœud ${node.name} a déjà httpHeaderAuth assigné, passage de l'assignation openRouterApi`);
+        logger.debug('Nœud a déjà httpHeaderAuth assigné, passage de l\'assignation openRouterApi', { nodeName: node.name });
       } else if (node.type === 'n8n-nodes-base.emailSend' || 
                  node.type === 'n8n-nodes-base.smtp' ||
                  node.name?.toLowerCase().includes('smtp') ||
@@ -741,7 +753,7 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: adminCreds.SMTP_NAME || 'SMTP Admin - admin@heleam.com'
             }
           };
-          console.log(`✅ [CredentialInjector] Credential SMTP admin assigné automatiquement à ${node.name}: ${adminCreds.SMTP_ID}`);
+          logger.info('Credential SMTP admin assigné automatiquement', { nodeName: node.name, smtpId: adminCreds.SMTP_ID });
         } else if (createdCredentials.smtp) {
           // Fallback: utiliser createdCredentials.smtp si adminCreds.SMTP_ID n'est pas disponible
           cleanedNode.credentials = {
@@ -750,9 +762,9 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.smtp.name
             }
           };
-          console.log(`✅ [CredentialInjector] Credential SMTP assigné à ${node.name}: ${createdCredentials.smtp.id}`);
+          logger.info('Credential SMTP assigné', { nodeName: node.name, smtpId: createdCredentials.smtp.id });
         } else {
-          console.error(`❌ [CredentialInjector] Aucun credential SMTP disponible pour ${node.name}!`);
+          logger.error('Aucun credential SMTP disponible', { nodeName: node.name });
         }
       } else if (node.type === 'n8n-nodes-base.gmail') {
         // Nœud Gmail - TOUJOURS remplacer le credential du template par celui de l'utilisateur
@@ -769,27 +781,29 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               }
             };
             const oldCredId = node.credentials?.gmailOAuth2?.id || 'aucun';
-            console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 utilisateur assigné à ${node.name} (branche else if):`);
-            console.log(`  - ID utilisateur: ${createdCredentials.gmailOAuth2.id}`);
-            console.log(`  - Name: ${createdCredentials.gmailOAuth2.name}`);
-            console.log(`  - ⚠️ Ancien credential template (${oldCredId}) remplacé`);
+            logger.info('Credential Gmail OAuth2 utilisateur assigné', { 
+              nodeName: node.name,
+              userId: createdCredentials.gmailOAuth2.id,
+              oldCredId 
+            });
           } else {
             // Si aucun credential utilisateur n'est disponible, supprimer celui du template
             // Le credential du template n'appartient pas à l'utilisateur et ne fonctionnera pas
             const templateCredId = node.credentials?.gmailOAuth2?.id || 'aucun';
-            console.error(`❌ [CredentialInjector] CRITIQUE: Aucun credential Gmail OAuth2 utilisateur disponible pour ${node.name}`);
-            console.error(`❌ [CredentialInjector] Le credential du template (${templateCredId}) sera supprimé car il n'appartient pas à l'utilisateur`);
-            console.error(`❌ [CredentialInjector] createdCredentials.gmailOAuth2:`, createdCredentials.gmailOAuth2);
+            logger.error('CRITIQUE: Aucun credential Gmail OAuth2 utilisateur disponible', { 
+              nodeName: node.name,
+              templateCredId 
+            });
             // Supprimer le credential du template pour éviter l'erreur "credential does not exist"
             if (node.credentials) {
               cleanedNode.credentials = { ...node.credentials };
               delete cleanedNode.credentials.gmailOAuth2; // Supprimer le credential template invalide
-              console.log(`⚠️ [CredentialInjector] Credential template supprimé de ${node.name} - l'utilisateur devra le configurer dans n8n`);
+              logger.warn('Credential template supprimé - l\'utilisateur devra le configurer dans n8n', { nodeName: node.name });
             }
           }
         } else {
           // Le credential a déjà été remplacé plus tôt, ne rien faire
-          console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 déjà remplacé pour ${node.name} (ignoré dans else if)`);
+          logger.debug('Credential Gmail OAuth2 déjà remplacé (ignoré)', { nodeName: node.name });
         }
       } else if (node.type === 'n8n-nodes-imap.imap' ||
                  node.type === 'n8n-nodes-base.emailReadImap') {
@@ -801,10 +815,9 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.imap.name
             }
           };
-          console.log(`✅ [CredentialInjector] Credential IMAP assigné à ${node.name} (type: ${node.type}): ${createdCredentials.imap.id}`);
+          logger.info('Credential IMAP assigné', { nodeName: node.name, nodeType: node.type, imapId: createdCredentials.imap.id });
         } else {
-          console.error(`❌ [CredentialInjector] Nœud IMAP ${node.name} (type: ${node.type}) sans credential IMAP`);
-          console.error(`❌ [CredentialInjector] createdCredentials.imap:`, createdCredentials.imap);
+          logger.error('Nœud IMAP sans credential IMAP', { nodeName: node.name, nodeType: node.type });
         }
       } else if (node.type === 'n8n-nodes-base.googleSheets') {
         // Nœud Google Sheets - assigner automatiquement le credential Google Sheets OAuth2 utilisateur
@@ -821,11 +834,13 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                                templateCredName?.includes('USER_GOOGLE_SHEETS') ||
                                templateCredName?.includes('USER_GOOGLE_CREDENTIAL');
         
-        console.log(`🔍 [CredentialInjector] Nœud Google Sheets détecté: ${node.name}`);
-        console.log(`  - Credential template ID: ${templateCredId}`);
-        console.log(`  - Credential template Name: ${templateCredName}`);
-        console.log(`  - Contient placeholder: ${hasPlaceholder}`);
-        console.log(`  - createdCredentials.googleSheetsOAuth2 disponible: ${createdCredentials.googleSheetsOAuth2 ? 'OUI' : 'NON'}`);
+        logger.debug('Nœud Google Sheets détecté', { 
+          nodeName: node.name,
+          templateCredId,
+          templateCredName,
+          hasPlaceholder,
+          hasGoogleSheetsCred: !!createdCredentials.googleSheetsOAuth2
+        });
         
         if (createdCredentials.googleSheetsOAuth2) {
           cleanedNode.credentials = {
@@ -835,12 +850,18 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
               name: createdCredentials.googleSheetsOAuth2.name
             }
           };
-          console.log(`✅ [CredentialInjector] Credential Google Sheets OAuth2 assigné automatiquement à ${node.name} (type: ${node.type}):`);
-          console.log(`  - Ancien (template): ${templateCredId}`);
-          console.log(`  - Nouveau (utilisateur): ${createdCredentials.googleSheetsOAuth2.id} (${createdCredentials.googleSheetsOAuth2.name})`);
+          logger.info('Credential Google Sheets OAuth2 assigné automatiquement', { 
+            nodeName: node.name,
+            nodeType: node.type,
+            oldCredId: templateCredId,
+            newCredId: createdCredentials.googleSheetsOAuth2.id,
+            newCredName: createdCredentials.googleSheetsOAuth2.name
+          });
         } else {
-          console.error(`❌ [CredentialInjector] Nœud Google Sheets ${node.name} (type: ${node.type}) sans credential Google Sheets OAuth2`);
-          console.error(`❌ [CredentialInjector] createdCredentials.googleSheetsOAuth2:`, createdCredentials.googleSheetsOAuth2);
+          logger.error('Nœud Google Sheets sans credential Google Sheets OAuth2', { 
+            nodeName: node.name,
+            nodeType: node.type 
+          });
         }
       } else if (node.credentials && Object.keys(node.credentials).length > 0) {
         // Pour les autres nœuds, remplacer TOUJOURS les credentials du template par ceux de l'utilisateur
@@ -861,10 +882,11 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         
         if (isOpenRouterHttpNodeAlreadyProcessed || isGoogleSheetsNodeAlreadyProcessed) {
           // Les credentials ont déjà été assignés automatiquement, ne pas les écraser
-          console.log(`⏭️ [CredentialInjector] Nœud ${node.name} a déjà ses credentials assignés automatiquement, passage...`);
-          if (isOpenRouterHttpNodeAlreadyProcessed) {
-            console.log(`  - httpHeaderAuth préservé: ${cleanedNode.credentials.httpHeaderAuth.id}`);
-          }
+          logger.debug('Nœud a déjà ses credentials assignés automatiquement, passage', { 
+            nodeName: node.name,
+            hasHttpHeaderAuth: isOpenRouterHttpNodeAlreadyProcessed,
+            hasGoogleSheets: isGoogleSheetsNodeAlreadyProcessed
+          });
           // Continuer avec les autres propriétés du nœud
         } else {
           if (isGmailNodeInElse && node.credentials.gmailOAuth2) {
@@ -876,12 +898,19 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                   name: createdCredentials.gmailOAuth2.name
                 }
               };
-              console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 remplacé dans ${node.name} (branche else): ${node.credentials.gmailOAuth2.id} -> ${createdCredentials.gmailOAuth2.id}`);
+              logger.info('Credential Gmail OAuth2 remplacé (branche else)', { 
+                nodeName: node.name,
+                oldCredId: node.credentials.gmailOAuth2.id,
+                newCredId: createdCredentials.gmailOAuth2.id
+              });
             } else {
               // Supprimer le credential du template
               cleanedNode.credentials = { ...node.credentials };
               delete cleanedNode.credentials.gmailOAuth2;
-              console.error(`❌ [CredentialInjector] Credential Gmail OAuth2 du template (${node.credentials.gmailOAuth2.id}) supprimé de ${node.name} - aucun credential utilisateur disponible`);
+              logger.error('Credential Gmail OAuth2 du template supprimé - aucun credential utilisateur disponible', { 
+                nodeName: node.name,
+                templateCredId: node.credentials.gmailOAuth2.id
+              });
             }
           } else {
             // Pour les autres nœuds (non-Gmail), remplacer les credentials existants
@@ -894,10 +923,17 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
                     id: createdCredentials.gmailOAuth2.id,
                     name: createdCredentials.gmailOAuth2.name
                   };
-                  console.log(`✅ [CredentialInjector] Credential Gmail OAuth2 remplacé dans ${node.name}: ${credValue?.id} -> ${createdCredentials.gmailOAuth2.id}`);
+                  logger.info('Credential Gmail OAuth2 remplacé', { 
+                    nodeName: node.name,
+                    oldCredId: credValue?.id,
+                    newCredId: createdCredentials.gmailOAuth2.id
+                  });
                 } else {
                   // Si pas de credential utilisateur, supprimer celui du template (il ne fonctionnera pas)
-                  console.error(`❌ [CredentialInjector] Credential Gmail OAuth2 du template (${credValue?.id}) ignoré pour ${node.name} - aucun credential utilisateur disponible`);
+                  logger.error('Credential Gmail OAuth2 du template ignoré - aucun credential utilisateur disponible', { 
+                    nodeName: node.name,
+                    templateCredId: credValue?.id
+                  });
                   // Ne pas ajouter ce credential - il sera invalide
                 }
               } else if (credType === 'imap' && createdCredentials.imap) {
