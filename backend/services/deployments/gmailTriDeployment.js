@@ -4,14 +4,18 @@
 const gmailTriInjector = require('../injectors/gmailTriInjector');
 const db = require('../../database');
 const deploymentUtils = require('./deploymentUtils');
+const logger = require('../../utils/logger');
 
 /**
  * Déploie le workflow "GMAIL Tri Automatique" avec sa logique spécifique
  */
 async function deployWorkflow(template, credentials, userId, userEmail) {
-  console.log('🚀 [GmailTriDeployment] Déploiement spécifique du workflow Gmail Tri...');
-  console.log('🚀 [GmailTriDeployment] Template:', template.name);
-  console.log('🚀 [GmailTriDeployment] User:', userEmail);
+  logger.info('Déploiement spécifique du workflow Gmail Tri', {
+    templateName: template.name,
+    templateId: template.id,
+    userEmail,
+    userId
+  });
   
   // 1. Parser le JSON du template
   let workflowJson;
@@ -31,7 +35,7 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   const workflowName = `${template.name} - ${userEmail}`;
   
   // 3. Injecter les credentials avec l'injecteur spécifique Gmail Tri
-  console.log('🔧 [GmailTriDeployment] Injection des credentials avec gmailTriInjector...');
+  logger.debug('Injection des credentials avec gmailTriInjector', { templateId: template.id });
   const injectionResult = await gmailTriInjector.injectUserCredentials(
     workflowJson, 
     credentials, 
@@ -64,7 +68,7 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   
   // 7. Créer le workflow dans n8n
   const deployedWorkflow = await deploymentUtils.createWorkflowInN8n(workflowPayload);
-  console.log('✅ [GmailTriDeployment] Workflow créé dans n8n:', deployedWorkflow.id);
+  // Le log est déjà fait dans createWorkflowInN8n
   
   // 8. Mettre à jour le workflow avec les credentials (si nécessaire)
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -78,7 +82,10 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   const workflowActivated = await deploymentUtils.activateWorkflow(deployedWorkflow.id);
   
   if (!workflowActivated) {
-    console.warn('⚠️ [GmailTriDeployment] Le workflow n\'a pas pu être activé automatiquement');
+    logger.warn('Le workflow n\'a pas pu être activé automatiquement', {
+      workflowId: deployedWorkflow.id,
+      templateId: template.id
+    });
   }
   
   // 10. Enregistrer dans user_workflows
@@ -95,7 +102,12 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
   // 11. Sauvegarder les credentials créés
   await deploymentUtils.saveWorkflowCredentials(userWorkflow.id, injectionResult, userEmail);
   
-  console.log('✅ [GmailTriDeployment] Workflow déployé avec succès:', deployedWorkflow.id);
+  logger.info('Workflow Gmail Tri déployé avec succès', {
+    workflowId: userWorkflow.id,
+    n8nWorkflowId: deployedWorkflow.id,
+    templateId: template.id,
+    userEmail
+  });
   
   return {
     success: true,
