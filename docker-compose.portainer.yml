@@ -89,15 +89,11 @@ services:
       retries: 3
 
 networks:
-  # Utiliser le réseau par défaut de Docker pour communiquer avec les autres services
-  # Si vous avez un réseau spécifique pour vos services, remplacez 'default' par son nom
+  # Utiliser le réseau bridge par défaut pour communiquer avec les autres conteneurs Docker
+  # Les conteneurs peuvent communiquer entre eux via leurs noms (n8n, nocodb, localai, etc.)
   default:
-    external: true
-    name: bridge
-  # Alternative: Si vous voulez un réseau dédié mais accessible aux autres services
-  # automivy-network:
-  #   driver: bridge
-  #   external: false
+    driver: bridge
+    external: false
 
 volumes:
   automivy_uploads:
