@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { LandingService, LandingContent } from '../services/landingService';
 import { getAssetsBaseUrl } from '../lib/apiConfig';
 
