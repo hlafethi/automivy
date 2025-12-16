@@ -1,8 +1,17 @@
-require('dotenv').config();
+// Charger dotenv uniquement si le fichier .env existe (développement)
+// En production, les variables sont passées via Docker/Portainer
+const fs = require('fs');
+const path = require('path');
 const os = require('os');
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isDevelopment = !isProduction;
+
+// Charger .env uniquement en développement ou si le fichier existe
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath) || isDevelopment) {
+  require('dotenv').config();
+}
 
 // Fonction pour détecter l'IP locale
 function getLocalIP() {
@@ -65,7 +74,25 @@ function validateSecrets() {
 }
 
 // Validation au chargement du module
-validateSecrets();
+// ⚠️ En production Docker, les variables sont passées via les variables d'environnement Docker
+// Ne pas valider si on est dans un conteneur Docker et que les variables ne sont pas encore chargées
+if (isProduction) {
+  // En production, attendre un peu que les variables d'environnement soient chargées
+  // ou logger un message d'aide si elles manquent
+  try {
+    validateSecrets();
+  } catch (error) {
+    console.error('❌ [Config] Erreur de validation des secrets:', error.message);
+    console.error('💡 [Config] Assurez-vous que toutes les variables d\'environnement sont définies dans Portainer:');
+    console.error('   - DB_PASSWORD');
+    console.error('   - JWT_SECRET');
+    console.error('   - N8N_API_KEY');
+    console.error('   - SMTP_PASSWORD');
+    throw error;
+  }
+} else {
+  validateSecrets();
+}
 
 const config = {
   database: {
