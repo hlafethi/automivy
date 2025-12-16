@@ -44,8 +44,8 @@
 2. **Details Tab** :
    - **Domain Names** : `api.automivy.com` (ou `automivy.com/api`)
    - **Scheme** : `http`
-   - **Forward Hostname / IP** : `automivy-backend` (nom du conteneur) OU `147.93.58.155` (IP du VPS)
-   - **Forward Port** : `3004`
+   - **Forward Hostname / IP** : `automivy-backend` (nom du conteneur - ⚠️ utilisez le nom du conteneur, pas l'IP)
+   - **Forward Port** : `3004` (port interne du conteneur)
    - **Block Common Exploits** : ✅ Activé
    - **Websockets Support** : ✅ Activé
 
@@ -71,8 +71,8 @@
 
 ## 🎯 Option 1 : Deux Domaines Séparés (Recommandé)
 
-- **Frontend** : `https://automivy.com` → `automivy-frontend:3005`
-- **Backend** : `https://api.automivy.com` → `automivy-backend:3004`
+- **Frontend** : `https://automivy.com` → `automivy-frontend:80` (port interne)
+- **Backend** : `https://api.automivy.com` → `automivy-backend:3004` (port interne)
 
 **Avantages** :
 - ✅ Séparation claire
@@ -81,8 +81,8 @@
 
 ## 🎯 Option 2 : Même Domaine avec `/api`
 
-- **Frontend** : `https://automivy.com` → `automivy-frontend:3005`
-- **Backend** : `https://automivy.com/api` → `automivy-backend:3004` (via Advanced Tab)
+- **Frontend** : `https://automivy.com` → `automivy-frontend:80` (port interne)
+- **Backend** : `https://automivy.com/api` → `automivy-backend:3004` (port interne, via Advanced Tab)
 
 **Avantages** :
 - ✅ Un seul domaine
@@ -108,14 +108,21 @@ CORS_ORIGIN=https://automivy.com
 ### Le frontend ne charge pas
 
 - Vérifiez que le conteneur `automivy-frontend` est en état `running` ou `healthy`
-- Vérifiez que Nginx Proxy Manager et `automivy-frontend` sont sur le même réseau Docker
-- Vérifiez que vous utilisez le nom du conteneur (`automivy-frontend`) et non l'IP dans Nginx Proxy Manager
+- ⚠️ **CRITIQUE** : Vérifiez que Nginx Proxy Manager et `automivy-frontend` sont sur le même réseau Docker
+  - Dans Portainer, allez dans **Networks** > cliquez sur le réseau de `automivy-frontend` (probablement `default` ou `bridge`)
+  - Vérifiez que le conteneur `npm` (Nginx Proxy Manager) est dans la liste des conteneurs connectés
+  - Si non, connectez `npm` au même réseau : `docker network connect <network-name> npm`
+- Vérifiez que vous utilisez le nom du conteneur (`automivy-frontend`) et le port **80** (pas 3005) dans Nginx Proxy Manager
 - Vérifiez les logs du conteneur : `docker logs automivy-frontend`
 
 ### Le backend ne répond pas
 
 - Vérifiez que le conteneur `automivy-backend` est en état `healthy`
-- Vérifiez que le port 3004 est accessible depuis Nginx Proxy Manager
+- ⚠️ **CRITIQUE** : Vérifiez que Nginx Proxy Manager et `automivy-backend` sont sur le même réseau Docker
+  - Dans Portainer, allez dans **Networks** > cliquez sur le réseau de `automivy-backend` (probablement `default` ou `bridge`)
+  - Vérifiez que le conteneur `npm` (Nginx Proxy Manager) est dans la liste des conteneurs connectés
+  - Si non, connectez `npm` au même réseau : `docker network connect <network-name> npm`
+- Vérifiez que vous utilisez le nom du conteneur (`automivy-backend`) et le port **3004** dans Nginx Proxy Manager
 - Vérifiez les logs du conteneur : `docker logs automivy-backend`
 
 ### Erreurs CORS
