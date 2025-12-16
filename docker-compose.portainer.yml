@@ -102,6 +102,8 @@ networks:
     external: false
 
 volumes:
+  # Utiliser le volume existant créé par Docker Compose (avec préfixe de stack)
+  # Si le volume n'existe pas, Docker le créera automatiquement
   automivy_uploads:
     driver: local
   automivy_logs:
