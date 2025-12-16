@@ -61,7 +61,7 @@ services:
       - automivy_uploads:/app/public/uploads
       - automivy_logs:/app/logs
     networks:
-      - automivy-network
+      - default
     # Pas de depends_on car la DB est externe
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3004/api/health"]
@@ -79,7 +79,7 @@ services:
     restart: unless-stopped
     # Pas besoin de monter nginx.conf, il est intégré dans l'image Docker
     networks:
-      - automivy-network
+      - default
     depends_on:
       - backend
     healthcheck:
@@ -89,10 +89,15 @@ services:
       retries: 3
 
 networks:
-  automivy-network:
-    driver: bridge
-    # Permettre l'accès à la DB externe sur le VPS
-    external: false
+  # Utiliser le réseau par défaut de Docker pour communiquer avec les autres services
+  # Si vous avez un réseau spécifique pour vos services, remplacez 'default' par son nom
+  default:
+    external: true
+    name: bridge
+  # Alternative: Si vous voulez un réseau dédié mais accessible aux autres services
+  # automivy-network:
+  #   driver: bridge
+  #   external: false
 
 volumes:
   automivy_uploads:

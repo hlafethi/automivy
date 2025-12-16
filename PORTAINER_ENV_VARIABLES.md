@@ -16,8 +16,8 @@ DB_NAME=automivy
 DB_USER=fethi
 DB_PASSWORD=VotreMotDePassePostgreSQL
 
-# JWT
-JWT_SECRET=VotreSecretJWTTresSecuriseChangezMoi
+# JWT (OBLIGATOIRE)
+JWT_SECRET=VotreSecretJWTTresSecuriseChangezMoiTresSecuriseChangezMoi
 
 # n8n
 N8N_URL=https://n8n.globalsaas.eu
