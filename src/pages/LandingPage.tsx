@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Star } from 'lucide-react';
 import { LandingService, LandingContent } from '../services/landingService';
+import { getAssetsBaseUrl } from '../lib/apiConfig';
 
 
 export function LandingPage() {
@@ -72,7 +73,7 @@ export function LandingPage() {
               {/* Logo */}
               {hero.logo_image && (
                 <img 
-                  src={`http://localhost:3004${hero.logo_image}?v=${contentTimestamp}`} 
+                  src={`${getAssetsBaseUrl()}${hero.logo_image}?v=${contentTimestamp}`} 
                   alt="Logo AUTOMIVY" 
                   className="h-8 w-auto"
                   key={`nav-logo-${contentTimestamp}`}
@@ -120,15 +121,15 @@ export function LandingPage() {
             loop 
             playsInline
           >
-            <source src={`http://localhost:3004${hero.hero_video}?v=${Date.now()}`} type="video/mp4" />
-            <source src={`http://localhost:3004${hero.hero_video}?v=${Date.now()}`} type="video/webm" />
-            <source src={`http://localhost:3004${hero.hero_video}?v=${Date.now()}`} type="video/ogg" />
+            <source src={`${getAssetsBaseUrl()}${hero.hero_video}?v=${Date.now()}`} type="video/mp4" />
+            <source src={`${getAssetsBaseUrl()}${hero.hero_video}?v=${Date.now()}`} type="video/webm" />
+            <source src={`${getAssetsBaseUrl()}${hero.hero_video}?v=${Date.now()}`} type="video/ogg" />
           </video>
         ) : hero.background_image ? (
           <div 
             className="absolute inset-0"
             style={{
-              backgroundImage: `url(http://localhost:3004${hero.background_image}?v=${Date.now()})`,
+              backgroundImage: `url(${getAssetsBaseUrl()}${hero.background_image}?v=${Date.now()})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat'
@@ -226,9 +227,9 @@ export function LandingPage() {
                           playsInline
                           controls
                         >
-                          <source src={`http://localhost:3004${videoFile}?v=${Date.now()}`} type="video/mp4" />
-                          <source src={`http://localhost:3004${videoFile}?v=${Date.now()}`} type="video/webm" />
-                          <source src={`http://localhost:3004${videoFile}?v=${Date.now()}`} type="video/ogg" />
+                          <source src={`${getAssetsBaseUrl()}${videoFile}?v=${Date.now()}`} type="video/mp4" />
+                          <source src={`${getAssetsBaseUrl()}${videoFile}?v=${Date.now()}`} type="video/webm" />
+                          <source src={`${getAssetsBaseUrl()}${videoFile}?v=${Date.now()}`} type="video/ogg" />
                           Votre navigateur ne supporte pas la lecture de vidéos.
                         </video>
                       ) : (
@@ -289,7 +290,7 @@ export function LandingPage() {
                 {features[`feature_${index + 1}_image`] && (
                   <div className="mb-4">
                     <img 
-                      src={`http://localhost:3004${features[`feature_${index + 1}_image`]}?v=${Date.now()}`}
+                      src={`${getAssetsBaseUrl()}${features[`feature_${index + 1}_image`]}?v=${Date.now()}`}
                       alt={feature.title || `Feature ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg"
                     />
@@ -534,7 +535,7 @@ export function LandingPage() {
                 {/* Logo */}
                 {hero.logo_image && (
                   <img 
-                    src={`http://localhost:3004${hero.logo_image}?v=${contentTimestamp}`} 
+                    src={`${getAssetsBaseUrl()}${hero.logo_image}?v=${contentTimestamp}`} 
                     alt="Logo AUTOMIVY" 
                     className="h-8 w-auto"
                     key={`footer-logo-${contentTimestamp}`}

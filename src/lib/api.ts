@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:3004/api';
+import { getApiBaseUrl } from './apiConfig';
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiClient {
   private baseUrl: string;
@@ -30,8 +32,8 @@ class ApiClient {
     console.log('🚨🚨🚨 [ApiClient] Body instanceof FormData:', options.body instanceof FormData);
     console.log('🚨🚨🚨 [ApiClient] Body content:', options.body);
     
-    const headers: HeadersInit = {
-      ...options.headers,
+    const headers: Record<string, string> = {
+      ...(options.headers as Record<string, string> || {}),
     };
 
     // Ne pas définir Content-Type pour FormData - le navigateur le fait automatiquement
