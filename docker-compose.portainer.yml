@@ -88,10 +88,11 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"] || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
 
 networks:
   # Utiliser le réseau bridge par défaut pour communiquer avec les autres conteneurs Docker
