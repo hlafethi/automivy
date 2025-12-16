@@ -1,0 +1,53 @@
+# Configuration complète pour Nginx Proxy Manager - automivy.com
+# ⚠️ COPIEZ SEULEMENT LE CONTENU, SANS LES TRIPLE BACKTICKS (```)
+
+# Proxy vers le backend pour les routes /api
+location /api {
+    proxy_pass http://automivy-backend:3004;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+    
+    # Timeouts
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 60s;
+}
+
+# Proxy vers le backend pour les fichiers uploads (images, vidéos)
+# ⚠️ CRITIQUE : Cette location doit être AVANT location /
+location /uploads {
+    proxy_pass http://automivy-backend:3004;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    
+    # Cache pour les images/vidéos
+    expires 1h;
+    add_header Cache-Control "public, max-age=3600";
+}
+
+# Frontend - SPA routing (toutes les autres routes vers index.html)
+# ⚠️ CRITIQUE : Cette location doit être EN DERNIER
+location / {
+    proxy_pass http://automivy-frontend:80;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+    
+    # Important pour le SPA routing
+    proxy_intercept_errors off;
+}
+
