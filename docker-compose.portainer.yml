@@ -62,6 +62,9 @@ services:
       - automivy_logs:/app/logs
     networks:
       - default
+    # ⚠️ IMPORTANT: Pas de section "ports" - Nginx Proxy Manager se connecte via le réseau Docker
+    # Le port 3004 est déjà utilisé par taxi-abel-backend
+    # Nginx Proxy Manager utilisera: Forward Hostname = automivy-backend, Forward Port = 3004
     # Pas de depends_on car la DB est externe
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3004/api/health"]
@@ -70,22 +73,22 @@ services:
       retries: 3
       start_period: 40s
 
-  # Frontend Nginx (fichiers statiques uniquement - Nginx Proxy Manager gère le reverse proxy)
+  # Frontend Nginx
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: automivy-frontend
     restart: unless-stopped
-    # Exposer le port 80 pour Nginx Proxy Manager
-    ports:
-      - "3005:80"
+    # ⚠️ IMPORTANT: Pas de section "ports" - Nginx Proxy Manager se connecte via le réseau Docker
+    # Le port 3005 est déjà utilisé par taxi-abel-frontend
+    # Nginx Proxy Manager utilisera: Forward Hostname = automivy-frontend, Forward Port = 80
     networks:
       - default
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
