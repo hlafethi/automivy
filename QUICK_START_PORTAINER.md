@@ -16,8 +16,13 @@
 1. **Portainer** > **Stacks** > **Add Stack**
 2. **Name** : `automivy`
 3. **Build method** : `Repository`
-4. **Repository URL** : `https://github.com/votre-username/votre-repo.git`
-5. **Compose path** : `docker-compose.portainer.yml`
+4. **Repository URL** : 
+   - **Si repository public** : `https://github.com/hlafethi/automivy.git`
+   - **Si repository privé** : `https://TOKEN@github.com/hlafethi/automivy.git` (remplacez TOKEN par votre Personal Access Token GitHub)
+5. **Repository reference** : `refactor/code-cleanup-and-improvements` (ou votre branche)
+6. **Compose path** : `docker-compose.portainer.yml`
+
+⚠️ **Si erreur d'authentification** : Voir `PORTAINER_GITHUB_AUTH.md` pour configurer l'authentification GitHub
 
 ### 3. Variables d'Environnement dans Portainer
 
