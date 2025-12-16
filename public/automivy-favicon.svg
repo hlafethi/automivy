@@ -1,29 +1,29 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Bras robotique -->
-  <g id="robotic-arm">
-    <!-- Segment 1 (base) -->
-    <path d="M12 48 L20 40 L24 44 L20 52 L16 50 Z" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.5"/>
-    <circle cx="18" cy="42" r="2" fill="#0F3D3E"/>
-    
-    <!-- Segment 2 (milieu) -->
-    <path d="M20 44 L28 36 L32 40 L28 48 L24 46 Z" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.5"/>
-    <circle cx="26" cy="38" r="2" fill="#0F3D3E"/>
-    
-    <!-- Segment 3 (extrémité) -->
-    <path d="M28 40 L36 32 L40 36 L36 44 L32 42 Z" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.5"/>
-    <circle cx="34" cy="34" r="2" fill="#0F3D3E"/>
-    
-    <!-- Pointe finale -->
-    <circle cx="38" cy="38" r="3" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.5"/>
-  </g>
+  <!-- Bras robotique avec feuille - Logo AUTOMIVY -->
   
-  <!-- Feuille -->
-  <g id="leaf">
-    <path d="M40 38 C42 34 46 36 48 40 C46 44 42 46 40 42 C38 40 38 38 40 38 Z" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.5"/>
-    <path d="M44 42 L44 50" stroke="#0F3D3E" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M42 44 L46 44" stroke="#0F3D3E" stroke-width="1" stroke-linecap="round"/>
-  </g>
+  <!-- Feuille (base) -->
+  <path d="M18 50 C20 48 22 50 20 52 C18 54 16 52 18 50 Z" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.3"/>
+  <path d="M20 52 L20 58" stroke="#0F3D3E" stroke-width="1" stroke-linecap="round"/>
+  <path d="M18 54 L22 54" stroke="#0F3D3E" stroke-width="0.8" stroke-linecap="round"/>
   
-  <!-- Texte AUTOMIVY -->
-  <text x="32" y="58" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#0A2A2B" text-anchor="middle" letter-spacing="1">AUTOMIVY</text>
+  <!-- Segment 1 du bras (base) -->
+  <path d="M20 50 L26 44 L30 48 L26 54 L22 52 Z" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.3"/>
+  <circle cx="24" cy="46" r="1.8" fill="#0F3D3E"/>
+  <circle cx="24" cy="46" r="0.8" fill="#FFFFFF"/>
+  
+  <!-- Segment 2 du bras (milieu) -->
+  <path d="M28 46 L34 40 L38 44 L34 50 L30 48 Z" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.3"/>
+  <circle cx="32" cy="42" r="1.8" fill="#0F3D3E"/>
+  <circle cx="32" cy="42" r="0.8" fill="#FFFFFF"/>
+  
+  <!-- Segment 3 du bras (extrémité) -->
+  <path d="M36 42 L42 36 L46 40 L42 46 L38 44 Z" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.3"/>
+  <circle cx="40" cy="38" r="1.8" fill="#0F3D3E"/>
+  <circle cx="40" cy="38" r="0.8" fill="#FFFFFF"/>
+  
+  <!-- Pointe finale arrondie -->
+  <circle cx="44" cy="42" r="2.5" fill="#1A5D5E" stroke="#0F3D3E" stroke-width="0.3"/>
+  
+  <!-- Texte AUTOMIVY (simplifié pour favicon) -->
+  <text x="32" y="60" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#0A2A2B" text-anchor="middle" letter-spacing="0.5">AUTOMIVY</text>
 </svg>
