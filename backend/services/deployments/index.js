@@ -1,35 +1,15 @@
 // Système de routing vers les déploiements spécifiques par template
 // Si aucun déploiement spécifique n'est trouvé, utilise le déploiement générique
+// 
+// ⚠️ IMPORTANT: Les mappings sont maintenant centralisés dans backend/config/templateMappings.js
+// Pour ajouter un nouveau template, modifiez uniquement ce fichier de configuration.
 
 const genericDeployment = require('./genericDeployment');
 const logger = require('../../utils/logger');
+const { buildDeploymentMappings, findTemplateConfig } = require('../../config/templateMappings');
 
-// Mapping des templates vers leurs déploiements spécifiques
-const TEMPLATE_DEPLOYMENTS = {
-  // GMAIL Tri Automatique Boite Email
-  '5114f297-e56e-4fec-be2b-1afbb5ea8619': require('./gmailTriDeployment'),
-  'GMAIL Tri Automatique Boite Email': require('./gmailTriDeployment'),
-  
-  // Template fonctionnel résume email
-  '6ff57a3c-c9a0-40ec-88c0-7e25ef031cb0': require('./resumeEmailDeployment'),
-  'Template fonctionnel résume email': require('./resumeEmailDeployment'),
-  
-  // PDF Analysis Complete
-  '132d04c8-e36a-4dbd-abac-21fa8280650e': require('./pdfAnalysisDeployment'),
-  'PDF Analysis Complete': require('./pdfAnalysisDeployment'),
-  
-  // CV Analysis and Candidate Evaluation
-  'aa3ba641-9bfb-429c-8b42-506d4f33ff40': require('./cvAnalysisDeployment'),
-  'CV Analysis and Candidate Evaluation': require('./cvAnalysisDeployment'),
-  
-  // IMAP Tri Automatique BAL
-  'c1bd6bd6-8a2b-4beb-89ee-1cd734a907a2': require('./imapTriDeployment'),
-  'IMAP Tri Automatique BAL': require('./imapTriDeployment'),
-  
-  // Microsoft Tri Automatique BAL (version Microsoft du template IMAP Tri)
-  'a3b5ba35-aeea-48f4-83d7-34e964a6a8b6': require('./microsoftTriDeployment'),
-  'Microsoft Tri Automatique BAL': require('./microsoftTriDeployment'),
-};
+// Construire les mappings depuis la configuration centralisée
+const TEMPLATE_DEPLOYMENTS = buildDeploymentMappings();
 
 /**
  * Route vers le déploiement approprié selon le template
@@ -52,10 +32,34 @@ async function deployWorkflow(template, credentials, userId, userEmail) {
     logger.debug('Déploiement spécifique trouvé par ID', { templateId: template.id });
   }
   
-  // Si pas trouvé par ID, chercher par nom (fallback)
+  // Si pas trouvé par ID, chercher par nom exact (fallback)
   if (!specificDeployment && template.name && TEMPLATE_DEPLOYMENTS[template.name]) {
     specificDeployment = TEMPLATE_DEPLOYMENTS[template.name];
-    logger.debug('Déploiement spécifique trouvé par nom', { templateName: template.name });
+    logger.debug('Déploiement spécifique trouvé par nom exact', { templateName: template.name });
+  }
+  
+  // Si pas trouvé par nom exact, chercher par pattern via la configuration centralisée
+  if (!specificDeployment && template.name) {
+    const config = findTemplateConfig(template.id, template.name);
+    if (config) {
+      const path = require('path');
+      const deploymentsDir = __dirname;
+      const deploymentFileName = config.deployment.replace('./', '');
+      const deploymentPath = path.join(deploymentsDir, deploymentFileName);
+      try {
+        specificDeployment = require(deploymentPath);
+        logger.debug('Déploiement trouvé par pattern', { 
+          templateName: template.name,
+          deployment: config.deployment
+        });
+      } catch (err) {
+        logger.warn('Erreur lors du chargement du déploiement par pattern', {
+          templateName: template.name,
+          deployment: config.deployment,
+          error: err.message
+        });
+      }
+    }
   }
   
   // Si un déploiement spécifique est trouvé, l'utiliser

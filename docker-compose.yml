@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # Backend Node.js
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: automivy-backend
+    restart: unless-stopped
+    environment:
+      # Node Environment
+      - NODE_ENV=production
+      - PORT=3004
+      
+      # Database Configuration
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-automivy}
+      - DB_USER=${DB_USER:-fethi}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL=${DB_SSL:-false}
+      
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      
+      # n8n Configuration
+      - N8N_URL=${N8N_URL:-https://n8n.globalsaas.eu}
+      - N8N_API_KEY=${N8N_API_KEY}
+      
+      # NocoDB Configuration
+      - NOCODB_BASE_URL=${NOCODB_BASE_URL:-https://nocodb.globalsaas.eu}
+      - NOCODB_API_TOKEN=${NOCODB_API_TOKEN}
+      - NOCODB_BASE_ID=${NOCODB_BASE_ID}
+      
+      # OpenRouter Configuration
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      
+      # Email Configuration (SMTP)
+      - SMTP_HOST=${SMTP_HOST:-mail.heleam.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-admin@heleam.com}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FROM_EMAIL=${FROM_EMAIL:-admin@heleam.com}
+      
+      # OAuth Configuration
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}
+      
+      # Application URLs
+      - FRONTEND_URL=${FRONTEND_URL:-https://automivy.com}
+      - BACKEND_URL=${BACKEND_URL:-https://automivy.com}
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://automivy.com}
+      
+      # Ollama/LocalAI (optionnel)
+      - OLLAMA_URL=${OLLAMA_URL}
+    volumes:
+      - ./backend/public/uploads:/app/public/uploads
+      - ./logs:/app/logs
+    networks:
+      - automivy-network
+    # Si vous utilisez une DB externe, commentez cette ligne :
+    # depends_on:
+    #   - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: automivy-frontend
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - automivy-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Database
+  # ⚠️ Si vous utilisez une base de données externe (déjà sur le VPS),
+  # commentez cette section et configurez DB_HOST dans .env avec l'IP du VPS
+  postgres:
+    image: postgres:15-alpine
+    container_name: automivy-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME:-automivy}
+      - POSTGRES_USER=${DB_USER:-fethi}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - automivy-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fethi} -d ${DB_NAME:-automivy}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      # Optionnel: exposer PostgreSQL pour accès externe (désactiver en production si non nécessaire)
+      - "5432:5432"
+
+networks:
+  automivy-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  # Les logs sont montés comme bind mount, pas besoin de volume séparé
+

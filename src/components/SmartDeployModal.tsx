@@ -227,7 +227,8 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
       
       console.log('🔍 [SmartDeployModal] handleOAuthConnect appelé:', { provider, fieldName });
       
-      // Appeler l'API backend pour initier le flux OAuth
+      // Pour LinkedIn, les credentials sont gérés par l'admin (pas besoin de les stocker ici)
+      // Appeler directement l'API backend pour initier le flux OAuth
       const response = await fetch(`http://localhost:3004/api/oauth/initiate/${provider}`, {
         method: 'GET',
         headers: {
@@ -241,7 +242,12 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
         const errorMessage = errorData.message || errorData.details || errorData.error || 'Erreur lors de l\'initiation OAuth';
         console.error('❌ [SmartDeployModal] Erreur OAuth:', errorData);
         
-        // Si c'est une erreur de configuration, afficher un message plus clair
+        // Si c'est une erreur de configuration LinkedIn, afficher un message plus clair
+        if (errorMessage.includes('LinkedIn OAuth non configuré') || errorMessage.includes('LINKEDIN_CLIENT_ID')) {
+          throw new Error('LinkedIn OAuth n\'est pas encore configuré. L\'administrateur doit configurer les credentials LinkedIn (LINKEDIN_CLIENT_ID et LINKEDIN_CLIENT_SECRET) dans la BDD (admin_api_keys) ou dans backend/.env. Cette fonctionnalité sera bientôt disponible.');
+        }
+        
+        // Si c'est une erreur de configuration Google, afficher un message plus clair
         if (errorMessage.includes('non configuré') || errorMessage.includes('GOOGLE_CLIENT_ID')) {
           throw new Error('Google OAuth n\'est pas encore configuré. L\'administrateur doit configurer les credentials Google dans le backend. Cette fonctionnalité sera bientôt disponible.');
         }
@@ -253,7 +259,11 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
       
       // Déterminer le nom de la fenêtre selon le provider
       const windowName = provider === 'microsoft' ? 'Microsoft Outlook OAuth' : 
+                        provider === 'linkedin' ? 'LinkedIn OAuth' :
+                        provider === 'google' ? 'Google OAuth (tous services)' :
                         provider === 'google_sheets' ? 'Google Sheets OAuth' : 
+                        provider === 'google_drive' ? 'Google Drive OAuth' :
+                        provider === 'google_docs' ? 'Google Docs OAuth' :
                         'Gmail OAuth';
       
       // Ouvrir la fenêtre OAuth
@@ -351,15 +361,42 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
                 buttonText = label; // "Connecter Google Sheets"
                 console.log('✅ [SmartDeployModal] buttonText depuis label:', buttonText);
               } 
+              // Vérifier Google unifié (tous services)
+              else if (label && (label.toLowerCase().includes('google (tous services)') || label.toLowerCase().includes('google tous services'))) {
+                buttonText = 'Connecter Google';
+                console.log('✅ [SmartDeployModal] buttonText depuis label (Google unifié):', buttonText);
+              }
+              // Vérifier Google Drive
+              else if (label && (label.toLowerCase().includes('google drive') || label.toLowerCase().includes('googledrive'))) {
+                buttonText = 'Connecter Google Drive';
+                console.log('✅ [SmartDeployModal] buttonText depuis label (Google Drive):', buttonText);
+              }
+              // Vérifier Google Docs
+              else if (label && (label.toLowerCase().includes('google docs') || label.toLowerCase().includes('googledocs'))) {
+                buttonText = 'Connecter Google Docs';
+                console.log('✅ [SmartDeployModal] buttonText depuis label (Google Docs):', buttonText);
+              }
               // Vérifier Microsoft Outlook
               else if (label && (label.toLowerCase().includes('microsoft') || label.toLowerCase().includes('outlook'))) {
                 buttonText = 'Connecter Microsoft Outlook';
                 console.log('✅ [SmartDeployModal] buttonText depuis label (Microsoft):', buttonText);
               }
               // Vérifier le provider
+              else if (provider === 'google') {
+                buttonText = 'Connecter Google';
+                console.log('✅ [SmartDeployModal] buttonText depuis provider (Google unifié):', buttonText);
+              }
               else if (provider === 'google_sheets') {
                 buttonText = 'Connecter Google Sheets';
                 console.log('✅ [SmartDeployModal] buttonText depuis provider:', buttonText);
+              }
+              else if (provider === 'google_drive') {
+                buttonText = 'Connecter Google Drive';
+                console.log('✅ [SmartDeployModal] buttonText depuis provider (Google Drive):', buttonText);
+              }
+              else if (provider === 'google_docs') {
+                buttonText = 'Connecter Google Docs';
+                console.log('✅ [SmartDeployModal] buttonText depuis provider (Google Docs):', buttonText);
               }
               else if (provider === 'microsoft') {
                 buttonText = 'Connecter Microsoft Outlook';
@@ -370,9 +407,21 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
                 buttonText = 'Connecter Google Sheets';
                 console.log('✅ [SmartDeployModal] buttonText depuis name:', buttonText);
               }
+              else if (name && name.toLowerCase().includes('googledrive')) {
+                buttonText = 'Connecter Google Drive';
+                console.log('✅ [SmartDeployModal] buttonText depuis name (Google Drive):', buttonText);
+              }
+              else if (name && (name.toLowerCase().includes('googledocs') || name.toLowerCase().includes('google docs'))) {
+                buttonText = 'Connecter Google Docs';
+                console.log('✅ [SmartDeployModal] buttonText depuis name (Google Docs):', buttonText);
+              }
               else if (name && (name.toLowerCase().includes('microsoft') || name.toLowerCase().includes('outlook'))) {
                 buttonText = 'Connecter Microsoft Outlook';
                 console.log('✅ [SmartDeployModal] buttonText depuis name (Microsoft):', buttonText);
+              }
+              else if (name && name.toLowerCase().includes('linkedin')) {
+                buttonText = 'Connecter LinkedIn';
+                console.log('✅ [SmartDeployModal] buttonText depuis name (LinkedIn):', buttonText);
               } else {
                 console.log('⚠️ [SmartDeployModal] buttonText par défaut (Gmail):', buttonText);
               }
@@ -380,20 +429,34 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
               console.log('🔍 [SmartDeployModal] buttonText final:', buttonText);
               
               // Déterminer le provider réel
-              const actualProvider = provider || (name && name.toLowerCase().includes('microsoft') ? 'microsoft' : 'gmail');
+              const actualProvider = provider || 
+                (name && name.toLowerCase().includes('linkedin') ? 'linkedin' :
+                 name && name.toLowerCase().includes('microsoft') ? 'microsoft' : 
+                 name && (name.toLowerCase().includes('googleunified') || name.toLowerCase().includes('google unified')) ? 'google' :
+                 name && (name.toLowerCase().includes('googledocs') || name.toLowerCase().includes('google docs')) ? 'google_docs' :
+                 name && name.toLowerCase().includes('googledrive') ? 'google_drive' :
+                 name && name.toLowerCase().includes('googlesheets') ? 'google_sheets' : 'gmail');
               const isMicrosoft = actualProvider === 'microsoft' || label.toLowerCase().includes('microsoft') || label.toLowerCase().includes('outlook');
+              const isLinkedIn = actualProvider === 'linkedin' || label.toLowerCase().includes('linkedin') || name.toLowerCase().includes('linkedin');
               
               return (
                 <button
                   type="button"
                   onClick={() => handleOAuthConnect(actualProvider, field.name)}
                   className={`w-full px-4 py-3 text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md ${
-                    isMicrosoft 
+                    isLinkedIn
+                      ? 'bg-[#0077b5] hover:bg-[#006399]'
+                      : isMicrosoft 
                       ? 'bg-[#0078d4] hover:bg-[#106ebe]' 
                       : 'bg-blue-600 hover:bg-blue-700'
                   }`}
                 >
-                  {isMicrosoft ? (
+                  {isLinkedIn ? (
+                    // Icône LinkedIn
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                  ) : isMicrosoft ? (
                     // Icône Microsoft Outlook (logo officiel)
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
                       <path d="M7.5 7.5h9v9h-9z" fill="#0078d4"/>
@@ -423,15 +486,32 @@ export default function SmartDeployModal({ isOpen, onClose, onSuccess, initialTe
                   const name = field.name || '';
                   
                   // Déterminer le provider réel (même logique que pour le bouton)
-                  const actualProvider = provider || (name && name.toLowerCase().includes('microsoft') ? 'microsoft' : 'gmail');
+                  const actualProvider = provider || 
+                    (name && name.toLowerCase().includes('linkedin') ? 'linkedin' :
+                     name && name.toLowerCase().includes('microsoft') ? 'microsoft' : 'gmail');
                   const isMicrosoftProvider = actualProvider === 'microsoft' || 
                                               label.toLowerCase().includes('microsoft') || 
                                               label.toLowerCase().includes('outlook') ||
                                               name.toLowerCase().includes('microsoft') || 
                                               name.toLowerCase().includes('outlook');
+                  const isLinkedInProvider = actualProvider === 'linkedin' || 
+                                            label.toLowerCase().includes('linkedin') || 
+                                            name.toLowerCase().includes('linkedin');
                   
+                  if (isLinkedInProvider) {
+                    return 'LinkedIn connecté avec succès';
+                  }
+                  if (label.toLowerCase().includes('google (tous services)') || provider === 'google' || name.toLowerCase().includes('googleunified')) {
+                    return 'Google connecté avec succès (Gmail, Sheets, Docs, Drive)';
+                  }
                   if (label.toLowerCase().includes('google sheets') || provider === 'google_sheets' || name.toLowerCase().includes('googlesheets')) {
                     return 'Google Sheets connecté avec succès';
+                  }
+                  if (label.toLowerCase().includes('google drive') || provider === 'google_drive' || name.toLowerCase().includes('googledrive')) {
+                    return 'Google Drive connecté avec succès';
+                  }
+                  if (label.toLowerCase().includes('google docs') || provider === 'google_docs' || name.toLowerCase().includes('googledocs')) {
+                    return 'Google Docs connecté avec succès';
                   }
                   if (isMicrosoftProvider) {
                     return 'Microsoft Outlook connecté avec succès';

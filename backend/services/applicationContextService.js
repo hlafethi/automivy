@@ -111,8 +111,92 @@ class ApplicationContextService {
     return 'complex';
   }
   
-  // Obtenir les nœuds les plus populaires
+  // Obtenir TOUS les nœuds disponibles depuis le registre local et l'API n8n
   static async getPopularNodes() {
+    try {
+      console.log('🔍 [ApplicationContext] Récupération de tous les nœuds disponibles...');
+      
+      // Utiliser le registre local comme source principale
+      const PerfectN8nNodesRegistry = require('./perfectN8nNodesRegistry');
+      const allTypes = PerfectN8nNodesRegistry.getAllValidTypes();
+      
+      console.log(`📋 [ApplicationContext] ${allTypes.length} nœuds depuis le registre local`);
+      
+      // Créer un map avec tous les nœuds (valeur = 1 pour indiquer disponibilité)
+      const allNodes = {};
+      allTypes.forEach(nodeType => {
+        allNodes[nodeType] = 1;
+      });
+      
+      // Essayer d'enrichir avec l'API n8n si disponible
+      try {
+        const n8nUrl = config.n8n.url;
+        const n8nApiKey = config.n8n.apiKey;
+        
+        // Essayer plusieurs endpoints possibles
+        const endpoints = [
+          `${n8nUrl}/rest/node-types`,
+          `${n8nUrl}/api/v1/node-types`,
+          `${n8nUrl}/api/v1/nodes`
+        ];
+        
+        for (const fullUrl of endpoints) {
+          try {
+            const response = await fetch(fullUrl, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-N8N-API-KEY': n8nApiKey,
+              },
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              
+              // Extraire les nœuds supplémentaires depuis l'API
+              if (Array.isArray(data)) {
+                data.forEach(node => {
+                  if (node.name && !allNodes[node.name]) {
+                    allNodes[node.name] = 1;
+                  }
+                });
+              } else if (typeof data === 'object') {
+                for (const [category, nodes] of Object.entries(data)) {
+                  if (Array.isArray(nodes)) {
+                    nodes.forEach(node => {
+                      if (node.name && !allNodes[node.name]) {
+                        allNodes[node.name] = 1;
+                      }
+                    });
+                  }
+                }
+              }
+              
+              console.log(`✅ [ApplicationContext] Nœuds enrichis depuis l'API n8n`);
+              break;
+            }
+          } catch (err) {
+            // Continuer avec le prochain endpoint
+          }
+        }
+      } catch (apiError) {
+        console.log(`⚠️ [ApplicationContext] API n8n non disponible, utilisation du registre local uniquement`);
+      }
+      
+      console.log(`📊 [ApplicationContext] ${Object.keys(allNodes).length} nœuds disponibles au total`);
+      
+      return allNodes;
+      
+    } catch (error) {
+      console.error('❌ [ApplicationContext] Erreur lors de la récupération des nœuds:', error);
+      // Fallback: utiliser les nœuds populaires depuis les templates
+      return await this.getPopularNodesFromTemplates();
+    }
+  }
+  
+  // Fallback: obtenir les nœuds populaires depuis les templates
+  static async getPopularNodesFromTemplates() {
+    console.log('📋 [ApplicationContext] Utilisation du fallback: nœuds depuis templates');
     const result = await pool.query(`
       SELECT 
         jsonb_array_elements(json->'nodes')->>'type' as node_type,

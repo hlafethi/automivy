@@ -13,6 +13,9 @@ export interface UserWorkflow {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  webhook_path?: string;
+  template_id?: string;
+  is_active?: boolean;
 }
 
 export interface UserWorkflowConfig {
@@ -254,9 +257,9 @@ class UserWorkflowService {
   /**
    * Planifie directement un webhook sans passer par n8n
    */
-  async scheduleDirectWebhook(webhookUrl: string, schedule: string, userId: string): Promise<void> {
+  async scheduleDirectWebhook(webhookUrl: string, schedule: string, userId: string, n8nWorkflowId: string | null = null): Promise<void> {
     try {
-      console.log('🔧 [UserWorkflowService] Planification directe webhook:', { webhookUrl, schedule, userId });
+      console.log('🔧 [UserWorkflowService] Planification directe webhook:', { webhookUrl, schedule, userId, n8nWorkflowId });
       
       // Appeler le script de planification backend avec l'URL webhook directe
       const response = await fetch('http://localhost:3004/api/schedule-direct-webhook', {
@@ -268,7 +271,8 @@ class UserWorkflowService {
         body: JSON.stringify({
           userId,
           webhookUrl,
-          schedule
+          schedule,
+          n8nWorkflowId // Passer le n8nWorkflowId pour identifier le workflow spécifique
         })
       });
 

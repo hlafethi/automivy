@@ -31,7 +31,52 @@ export class WorkflowService {
   }
 
   // Méthodes de compatibilité
-  async getUserWorkflows(): Promise<Workflow[]> {
+  async getUserWorkflows(userId?: string): Promise<Workflow[]> {
+    // Utiliser la route user-workflows qui retourne les UserWorkflow avec is_active
+    // Cette route retourne des UserWorkflow qui ont is_active au lieu de active
+    if (userId) {
+      const userWorkflows = await apiClient.getUserWorkflows(userId);
+      console.log('🔍 [WorkflowService] getUserWorkflows - UserWorkflows bruts:', userWorkflows.length);
+      userWorkflows.forEach((uw: any, index: number) => {
+        console.log(`  [${index}] ${uw.name} - is_active: ${uw.is_active}, template_id: ${uw.template_id}`);
+      });
+      
+      // Convertir UserWorkflow en Workflow pour compatibilité
+      const converted = userWorkflows.map((uw: any) => {
+        const convertedWorkflow = {
+          id: uw.id,
+          user_id: uw.user_id,
+          name: uw.name || '',
+          description: uw.description || '',
+          workflow_data: uw.workflow_data || {},
+          n8n_workflow_id: uw.n8n_workflow_id,
+          active: uw.is_active, // Convertir is_active en active
+          is_active: uw.is_active, // Garder aussi is_active pour compatibilité
+          created_at: uw.created_at,
+          updated_at: uw.updated_at,
+          params: uw.params,
+          template_id: uw.template_id // Garder template_id pour la détection
+        };
+        
+        // Log pour chaque workflow converti
+        console.log(`🔍 [WorkflowService] Workflow converti: "${convertedWorkflow.name}"`, {
+          id: convertedWorkflow.id,
+          template_id: convertedWorkflow.template_id,
+          is_active: convertedWorkflow.is_active,
+          active: convertedWorkflow.active
+        });
+        
+        return convertedWorkflow;
+      });
+      
+      console.log('🔍 [WorkflowService] Workflows convertis:', converted.length);
+      converted.forEach((w: any, index: number) => {
+        console.log(`  [${index}] ${w.name} - active: ${w.active}, is_active: ${w.is_active}, template_id: ${w.template_id}`);
+      });
+      
+      return converted;
+    }
+    // Fallback vers getWorkflows si pas d'userId
     return this.getWorkflows();
   }
 

@@ -4,6 +4,7 @@ import { userWorkflowService, UserWorkflowConfig } from '../services/userWorkflo
 import { templateService } from '../services/templateService';
 import { useAuth } from '../contexts/AuthContext';
 import SmartDeployModal from './SmartDeployModal';
+import { shouldUseSmartDeployModal } from '../services/templateModalService';
 
 interface CreateAutomationModalProps {
   onClose: () => void;
@@ -96,38 +97,9 @@ export function CreateAutomationModal({ onClose, onSuccess }: CreateAutomationMo
   };
 
   const handleTemplateSelect = (template: any) => {
-    // Détecter si c'est un workflow qui nécessite SmartDeployModal
-    const templateNameLower = template.name?.toLowerCase() || '';
-    const templateDescLower = template.description?.toLowerCase() || '';
-    
-    // Workflows CV (Screening ou Analysis)
-    const isCV = templateNameLower.includes('cv screening') || 
-                 templateNameLower.includes('cv analysis') ||
-                 templateNameLower.includes('candidate evaluation') ||
-                 templateDescLower.includes('cv screening') ||
-                 templateDescLower.includes('cv analysis');
-    
-    // Workflows Email (Gmail Tri, IMAP Tri ou Microsoft Tri)
-    const isEmailWorkflow = templateNameLower.includes('gmail tri') ||
-                            templateNameLower.includes('imap tri') ||
-                            templateNameLower.includes('microsoft tri') ||
-                            templateNameLower.includes('email tri') ||
-                            templateDescLower.includes('gmail tri') ||
-                            templateDescLower.includes('imap tri') ||
-                            templateDescLower.includes('microsoft tri');
-    
-    // Détecter spécifiquement le template Microsoft Tri par ID
-    const microsoftTriTemplateId = 'a3b5ba35-aeea-48f4-83d7-34e964a6a8b6';
-    const isMicrosoftTriTemplate = template.id === microsoftTriTemplateId || 
-                                    templateNameLower.includes('microsoft tri automatique bal');
-    
-    // Workflows avec injecteur spécifique (PDF Analysis, etc.)
-    const hasSpecificInjector = templateNameLower.includes('pdf analysis') ||
-                                templateNameLower.includes('résume email') ||
-                                templateNameLower.includes('resume email');
-    
-    // Si c'est un workflow qui nécessite SmartDeployModal, l'utiliser
-    if (isCV || isEmailWorkflow || isMicrosoftTriTemplate || hasSpecificInjector) {
+    // Utiliser le service centralisé pour déterminer le type de modal
+    // Cela garantit la cohérence avec le backend
+    if (shouldUseSmartDeployModal(template)) {
       setSelectedTemplate(template);
       setShowSmartDeploy(true);
       return;

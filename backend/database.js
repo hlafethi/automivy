@@ -437,6 +437,86 @@ class Database {
     }));
   }
 
+  /**
+   * Stocke les credentials Nextcloud pour un workflow utilisateur
+   * @param {string} userWorkflowId - ID du workflow utilisateur
+   * @param {Object} credentials - { nextcloudUrl, nextcloudUsername, nextcloudPassword }
+   */
+  async saveNextcloudCredentials(userWorkflowId, credentials) {
+    // Créer la table si elle n'existe pas
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS nextcloud_credentials (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_workflow_id UUID NOT NULL REFERENCES user_workflows(id) ON DELETE CASCADE,
+        nextcloud_url TEXT NOT NULL,
+        nextcloud_username TEXT NOT NULL,
+        nextcloud_password TEXT NOT NULL,
+        source_folder TEXT DEFAULT '/',
+        destination_folder TEXT DEFAULT '/Triés',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_workflow_id)
+      )
+    `);
+    
+    // Encoder le mot de passe en base64 (pas sécurisé mais fonctionnel pour MVP)
+    // En production, utiliser une vraie encryption
+    const encodedPassword = Buffer.from(credentials.nextcloudPassword).toString('base64');
+    
+    const result = await this.query(`
+      INSERT INTO nextcloud_credentials 
+        (user_workflow_id, nextcloud_url, nextcloud_username, nextcloud_password, source_folder, destination_folder)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (user_workflow_id) DO UPDATE SET
+        nextcloud_url = EXCLUDED.nextcloud_url,
+        nextcloud_username = EXCLUDED.nextcloud_username,
+        nextcloud_password = EXCLUDED.nextcloud_password,
+        source_folder = EXCLUDED.source_folder,
+        destination_folder = EXCLUDED.destination_folder,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `, [
+      userWorkflowId,
+      credentials.nextcloudUrl,
+      credentials.nextcloudUsername,
+      encodedPassword,
+      credentials.nextcloudSourceFolder || '/',
+      credentials.nextcloudDestinationFolder || '/Triés'
+    ]);
+    
+    console.log('✅ [Database] Credentials Nextcloud sauvegardés pour workflow', userWorkflowId);
+    return result.rows[0];
+  }
+
+  /**
+   * Récupère les credentials Nextcloud pour un workflow utilisateur
+   * @param {string} userWorkflowId - ID du workflow utilisateur
+   * @returns {Object|null} Credentials Nextcloud ou null
+   */
+  async getNextcloudCredentials(userWorkflowId) {
+    const result = await this.query(
+      'SELECT * FROM nextcloud_credentials WHERE user_workflow_id = $1',
+      [userWorkflowId]
+    );
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    const row = result.rows[0];
+    
+    // Décoder le mot de passe
+    const decodedPassword = Buffer.from(row.nextcloud_password, 'base64').toString('utf-8');
+    
+    return {
+      nextcloud_url: row.nextcloud_url,
+      nextcloud_username: row.nextcloud_username,
+      nextcloud_password: decodedPassword,
+      source_folder: row.source_folder,
+      destination_folder: row.destination_folder
+    };
+  }
+
   async deleteUserWorkflow(id, userId) {
     const client = await this.pool.connect();
     try {

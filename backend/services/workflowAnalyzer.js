@@ -3,12 +3,17 @@
 /**
  * Analyse un workflow et détecte les credentials utilisateur requis
  * @param {Object} workflow - Le workflow JSON à analyser
+ * @param {string} templateId - ID du template (optionnel)
+ * @param {string} templateName - Nom du template dans la BDD (optionnel)
  * @returns {Array} Liste des credentials requis avec leurs types et métadonnées
  */
-function analyzeWorkflowCredentials(workflow, templateId = null) {
+function analyzeWorkflowCredentials(workflow, templateId = null, templateName = null) {
   console.log('🔍 [WorkflowAnalyzer] Analyse du workflow:', workflow.name);
   if (templateId) {
     console.log('🔍 [WorkflowAnalyzer] Template ID:', templateId);
+  }
+  if (templateName) {
+    console.log('🔍 [WorkflowAnalyzer] Template Name (BDD):', templateName);
   }
   
   const requiredCredentials = [];
@@ -19,6 +24,123 @@ function analyzeWorkflowCredentials(workflow, templateId = null) {
   
   if (!workflow.nodes) {
     console.log('⚠️ [WorkflowAnalyzer] Aucun nœud trouvé dans le workflow');
+    return requiredCredentials;
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DÉTECTION SPÉCIALE: Workflows Nextcloud
+  // Si le workflow OU le template contient "nextcloud", on ne demande QUE Nextcloud
+  // ═══════════════════════════════════════════════════════════════════════════
+  const workflowNameLower = (workflow.name || '').toLowerCase();
+  const templateNameLower = (templateName || '').toLowerCase();
+  const isNextcloudWorkflow = workflowNameLower.includes('nextcloud') || 
+                              templateNameLower.includes('nextcloud') ||
+                              workflow.nodes.some(node => 
+                                node.type === 'n8n-nodes-base.nextCloud' ||
+                                node.type?.toLowerCase().includes('nextcloud') ||
+                                node.name?.toLowerCase().includes('nextcloud')
+                              );
+  
+  if (isNextcloudWorkflow) {
+    console.log('☁️ [WorkflowAnalyzer] Workflow Nextcloud détecté - credentials Nextcloud uniquement');
+    
+    // Vérifier s'il y a un Schedule Trigger
+    const hasSchedule = workflow.nodes.some(node => 
+      node.type === 'n8n-nodes-base.schedule' || 
+      node.type === 'n8n-nodes-base.scheduleTrigger'
+    );
+    
+    // Ajouter les credentials Nextcloud
+    const nextcloudConfig = getCredentialConfig('nextCloudApi');
+    if (nextcloudConfig) {
+      requiredCredentials.push(nextcloudConfig);
+      console.log('  ✅ [WorkflowAnalyzer] Credentials Nextcloud ajoutés');
+    }
+    
+    // Ajouter le champ schedule si présent
+    if (hasSchedule) {
+      requiredCredentials.push({
+        type: 'schedule',
+        name: 'Planification',
+        description: 'Configurez l\'heure d\'exécution quotidienne',
+        fields: [
+          { 
+            name: 'scheduleTime', 
+            label: 'Heure d\'exécution quotidienne', 
+            type: 'time', 
+            required: true, 
+            defaultValue: '09:00',
+            placeholder: 'HH:MM'
+          }
+        ]
+      });
+      console.log('  ✅ [WorkflowAnalyzer] Schedule ajouté pour workflow Nextcloud');
+    }
+    
+    console.log('✅ [WorkflowAnalyzer] Credentials Nextcloud: ', requiredCredentials.length);
+    return requiredCredentials;
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DÉTECTION SPÉCIALE: Workflows LinkedIn
+  // Si le workflow OU le template contient "linkedin", on ne demande QUE:
+  // 1. Email de notification (pour recevoir les posts générés)
+  // 2. LinkedIn OAuth2 (connexion LinkedIn)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const isLinkedInWorkflow = workflowNameLower.includes('linkedin') || 
+                            templateNameLower.includes('linkedin') ||
+                            workflow.nodes.some(node => 
+                              node.type === 'n8n-nodes-base.linkedIn' ||
+                              node.type?.toLowerCase().includes('linkedin') ||
+                              node.name?.toLowerCase().includes('linkedin')
+                            );
+  
+  if (isLinkedInWorkflow) {
+    console.log('💼 [WorkflowAnalyzer] Workflow LinkedIn détecté - credentials LinkedIn uniquement');
+    
+    // Vérifier si le workflow contient des nœuds NocoDB
+    const hasNocoDbNodes = workflow.nodes.some(node => 
+      node.type === 'n8n-nodes-base.nocoDb' || 
+      node.type?.toLowerCase().includes('nocodb') ||
+      node.name?.toLowerCase().includes('nocodb')
+    );
+    
+    // Ajouter le champ email de notification
+    requiredCredentials.push({
+      type: 'notificationEmail',
+      name: 'Email de notification',
+      description: 'Adresse email où vous recevrez les posts LinkedIn générés automatiquement',
+      fields: [
+        { 
+          name: 'notificationEmail', 
+          label: 'Adresse email', 
+          type: 'email', 
+          required: true, 
+          placeholder: 'votre-email@example.com'
+        }
+      ]
+    });
+    console.log('  ✅ [WorkflowAnalyzer] Champ email de notification ajouté');
+    
+    // Pas besoin de demander les credentials LinkedIn à l'utilisateur
+    // L'admin configure les credentials LinkedIn une fois (dans admin_api_keys ou .env)
+    // Tous les utilisateurs utilisent les mêmes credentials (comme pour Google)
+    console.log('  ✅ [WorkflowAnalyzer] Credentials LinkedIn gérés par l\'admin (pas demandés à l\'utilisateur)');
+    
+    // Ajouter LinkedIn OAuth2 (bouton de connexion)
+    const linkedinConfig = getCredentialConfig('linkedInOAuth2');
+    if (linkedinConfig) {
+      requiredCredentials.push(linkedinConfig);
+      console.log('  ✅ [WorkflowAnalyzer] Credentials LinkedIn OAuth2 ajoutés');
+    }
+    
+    // NocoDB est géré par l'admin (dans admin_api_keys ou .env)
+    // Pas besoin de le demander à l'utilisateur - transparent comme OpenRouter et SMTP
+    if (hasNocoDbNodes) {
+      console.log('  ✅ [WorkflowAnalyzer] Nœuds NocoDB détectés - credentials gérés par l\'admin (transparent pour l\'utilisateur)');
+    }
+    
+    console.log('✅ [WorkflowAnalyzer] Credentials LinkedIn: ', requiredCredentials.length);
     return requiredCredentials;
   }
   
@@ -176,6 +298,40 @@ function analyzeWorkflowCredentials(workflow, templateId = null) {
     console.log(`📦 [WorkflowAnalyzer] Types de stockage détectés:`, Array.from(storageCredentialTypes));
   }
   
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DÉTECTION SPÉCIALE: Plusieurs services Google détectés
+  // Si plusieurs services Google sont nécessaires, proposer une connexion unique "Google"
+  // ═══════════════════════════════════════════════════════════════════════════
+  const googleServiceTypes = ['googleSheetsOAuth2', 'googleDocsOAuth2Api', 'googleDriveOAuth2', 'gmailOAuth2'];
+  const detectedGoogleServices = Array.from(credentialTypes).filter(cred => googleServiceTypes.includes(cred));
+  
+  if (detectedGoogleServices.length > 1) {
+    console.log('🔗 [WorkflowAnalyzer] Plusieurs services Google détectés:', detectedGoogleServices);
+    console.log('🔗 [WorkflowAnalyzer] Proposition d\'une connexion Google unique avec tous les scopes');
+    
+    // Retirer les services Google individuels
+    detectedGoogleServices.forEach(googleService => {
+      credentialTypes.delete(googleService);
+      console.log(`  ⏭️ [WorkflowAnalyzer] Service Google ${googleService} retiré (sera remplacé par connexion unique)`);
+    });
+    
+    // Ajouter une connexion Google unique
+    const googleUnifiedConfig = {
+      type: 'googleUnified',
+      name: 'Google (tous services)',
+      description: 'Connexion unique à votre compte Google pour accéder à Gmail, Sheets, Docs et Drive',
+      fields: [
+        { name: 'googleUnified', label: 'Connecter Google', type: 'oauth', required: true, provider: 'google' }
+      ],
+      oauth: true,
+      provider: 'google',
+      coversServices: detectedGoogleServices // Indiquer quels services sont couverts
+    };
+    
+    requiredCredentials.push(googleUnifiedConfig);
+    console.log(`  ✅ [WorkflowAnalyzer] Connexion Google unique ajoutée (couvre: ${detectedGoogleServices.join(', ')})`);
+  }
+  
   // Générer les credentials requis basés sur les types détectés (après avoir retiré les stockages)
   console.log(`🔍 [WorkflowAnalyzer] Types de credentials uniques détectés:`, Array.from(credentialTypes));
   credentialTypes.forEach(credType => {
@@ -286,6 +442,24 @@ function detectUserCredentialTypes(node, isReportWorkflow = false, templateId = 
   // ne jamais demander IMAP - utiliser uniquement Microsoft Outlook OAuth2
   const isMicrosoftTriTemplate = templateId === 'a3b5ba35-aeea-48f4-83d7-34e964a6a8b6';
   
+  // ⚠️ EXCEPTION: Pour le template Production Vidéo IA,
+  // ne demander QUE Google Drive OAuth2 - ignorer tous les autres credentials (email, SMTP, etc.)
+  const isVideoProductionTemplate = templateId === 'ndkuzYMKt4nRyRXy' || 
+                                    templateId === '6a60e84e-b5c1-414d-9f27-5770bc438a64';
+  
+  // Si c'est le template Production Vidéo IA, ne détecter QUE Google Drive
+  if (isVideoProductionTemplate) {
+    if (node.type === 'n8n-nodes-base.googleDrive' || 
+        (node.type && node.type.includes('googleDrive'))) {
+      if (!credentialTypes.includes('googleDriveOAuth2')) {
+        credentialTypes.push('googleDriveOAuth2');
+        console.log(`  ✅ [WorkflowAnalyzer] Google Drive OAuth2 détecté pour template Production Vidéo IA: ${node.name}`);
+      }
+    }
+    // Retourner immédiatement - ignorer tous les autres types de credentials
+    return credentialTypes;
+  }
+  
   const nodeNameLower = node.name?.toLowerCase() || '';
   const isEmailReadImap = node.type === 'n8n-nodes-base.emailReadImap';
   const isImapNode = node.type === 'n8n-nodes-imap.imap' || (node.type && node.type.includes('imap'));
@@ -363,12 +537,88 @@ function detectUserCredentialTypes(node, isReportWorkflow = false, templateId = 
     // credentialTypes.push('openAiApi');
   }
   
-  // Détecter les nœuds Google Sheets
+  // Détecter les nœuds Google Sheets (y compris Tool)
   if (node.type === 'n8n-nodes-base.googleSheets' || 
+      node.type === 'n8n-nodes-base.googleSheetsTool' ||
       (node.type && node.type.includes('googleSheets'))) {
     if (!credentialTypes.includes('googleSheetsOAuth2')) {
       credentialTypes.push('googleSheetsOAuth2');
       console.log(`  ✅ [WorkflowAnalyzer] Google Sheets OAuth2 détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Google Docs
+  if (node.type === 'n8n-nodes-base.googleDocs' || 
+      (node.type && node.type.includes('googleDocs')) ||
+      node.type === 'n8n-nodes-base.googleDocsTool') {
+    if (!credentialTypes.includes('googleDocsOAuth2Api')) {
+      credentialTypes.push('googleDocsOAuth2Api');
+      console.log(`  ✅ [WorkflowAnalyzer] Google Docs OAuth2 détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Google Drive (y compris Tool)
+  if (node.type === 'n8n-nodes-base.googleDrive' || 
+      node.type === 'n8n-nodes-base.googleDriveTool' ||
+      (node.type && node.type.includes('googleDrive'))) {
+    if (!credentialTypes.includes('googleDriveOAuth2')) {
+      credentialTypes.push('googleDriveOAuth2');
+      console.log(`  ✅ [WorkflowAnalyzer] Google Drive OAuth2 détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Gmail
+  if (node.type === 'n8n-nodes-base.gmail' || 
+      (node.type && node.type.includes('gmail')) ||
+      node.type === 'n8n-nodes-base.gmailTool') {
+    if (!credentialTypes.includes('gmailOAuth2')) {
+      credentialTypes.push('gmailOAuth2');
+      console.log(`  ✅ [WorkflowAnalyzer] Gmail OAuth2 détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Google Calendar
+  if (node.type === 'n8n-nodes-base.googleCalendar' || 
+      (node.type && node.type.includes('googleCalendar')) ||
+      (node.type && node.type.includes('calendar')) ||
+      (node.name && node.name.toLowerCase().includes('calendar'))) {
+    if (!credentialTypes.includes('googleCalendarOAuth2Api')) {
+      credentialTypes.push('googleCalendarOAuth2Api');
+      console.log(`  ✅ [WorkflowAnalyzer] Google Calendar OAuth2 détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Google Ads
+  if (node.type === 'n8n-nodes-base.googleAds' || 
+      (node.type && node.type.includes('googleAds')) ||
+      (node.type && node.type.includes('ads')) ||
+      (node.name && node.name.toLowerCase().includes('ads'))) {
+    if (!credentialTypes.includes('googleAdsOAuth2Api')) {
+      credentialTypes.push('googleAdsOAuth2Api');
+      console.log(`  ✅ [WorkflowAnalyzer] Google Ads OAuth2 détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Google Tasks
+  if (node.type === 'n8n-nodes-base.googleTasks' || 
+      (node.type && node.type.includes('googleTasks')) ||
+      (node.type && node.type.includes('tasks')) ||
+      (node.name && node.name.toLowerCase().includes('tasks'))) {
+    if (!credentialTypes.includes('googleTasksOAuth2Api')) {
+      credentialTypes.push('googleTasksOAuth2Api');
+      console.log(`  ✅ [WorkflowAnalyzer] Google Tasks OAuth2 détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Google Slides
+  if (node.type === 'n8n-nodes-base.googleSlides' || 
+      (node.type && node.type.includes('googleSlides')) ||
+      (node.type && node.type.includes('slides')) ||
+      (node.type && node.type.includes('presentation')) ||
+      (node.name && (node.name.toLowerCase().includes('slides') || node.name.toLowerCase().includes('presentation')))) {
+    if (!credentialTypes.includes('googleSlidesOAuth2Api')) {
+      credentialTypes.push('googleSlidesOAuth2Api');
+      console.log(`  ✅ [WorkflowAnalyzer] Google Slides OAuth2 détecté pour nœud: ${node.name}`);
     }
   }
   
@@ -410,6 +660,36 @@ function detectUserCredentialTypes(node, isReportWorkflow = false, templateId = 
       if (isMicrosoftTriTemplate) {
         console.log(`  ℹ️ [WorkflowAnalyzer] Template Microsoft Tri - Microsoft Outlook OAuth2 utilisé pour tous les nœuds`);
       }
+    }
+  }
+  
+  // Détecter les nœuds Google Drive
+  if (node.type === 'n8n-nodes-base.googleDrive' || 
+      (node.type && node.type.includes('googleDrive'))) {
+    if (!credentialTypes.includes('googleDriveOAuth2')) {
+      credentialTypes.push('googleDriveOAuth2');
+      console.log(`  ✅ [WorkflowAnalyzer] Google Drive OAuth2 détecté pour nœud: ${node.name}`);
+    }
+  }
+  
+  // Détecter les nœuds Nextcloud
+  if (node.type === 'n8n-nodes-base.nextCloud' || 
+      node.type === 'n8n-nodes-base.nextcloud' ||
+      (node.type && node.type.toLowerCase().includes('nextcloud')) ||
+      (node.name && node.name.toLowerCase().includes('nextcloud'))) {
+    if (!credentialTypes.includes('nextCloudApi')) {
+      credentialTypes.push('nextCloudApi');
+      console.log(`  ✅ [WorkflowAnalyzer] Nextcloud API détecté pour nœud: ${node.name} (type: ${node.type})`);
+    }
+  }
+  
+  // Détecter les nœuds WebDAV (souvent utilisé avec Nextcloud)
+  if (node.type === 'n8n-nodes-base.webdav' || 
+      (node.type && node.type.toLowerCase().includes('webdav')) ||
+      (node.name && node.name.toLowerCase().includes('webdav'))) {
+    if (!credentialTypes.includes('webDavApi')) {
+      credentialTypes.push('webDavApi');
+      console.log(`  ✅ [WorkflowAnalyzer] WebDAV API détecté pour nœud: ${node.name}`);
     }
   }
   
@@ -472,6 +752,27 @@ function getCredentialConfig(credType) {
       oauth: true,
       provider: 'google_sheets'
     },
+    'googleDriveOAuth2': {
+      type: 'googleDriveOAuth2',
+      name: 'Google Drive',
+      description: 'Connexion à Google Drive pour stocker les fichiers',
+      fields: [
+        { name: 'googleDriveOAuth2', label: 'Connecter Google Drive', type: 'oauth', required: true, provider: 'google_drive' },
+        { name: 'googleDriveFolderId', label: 'ID du dossier Google Drive (optionnel)', type: 'text', required: false, placeholder: 'Laissez vide pour la racine ou copiez l\'ID du dossier' }
+      ],
+      oauth: true,
+      provider: 'google_drive'
+    },
+    'googleDocsOAuth2Api': {
+      type: 'googleDocsOAuth2Api',
+      name: 'Google Docs',
+      description: 'Connexion à Google Docs pour créer et modifier des documents',
+      fields: [
+        { name: 'googleDocsOAuth2', label: 'Connecter Google Docs', type: 'oauth', required: true, provider: 'google_docs' }
+      ],
+      oauth: true,
+      provider: 'google_docs'
+    },
     'airtableApi': {
       type: 'airtableApi',
       name: 'Airtable',
@@ -500,6 +801,28 @@ function getCredentialConfig(credType) {
         { name: 'port', label: 'Port', type: 'number', required: false, defaultValue: 5432 }
       ]
     },
+    'nextCloudApi': {
+      type: 'nextCloudApi',
+      name: 'Nextcloud',
+      description: 'Connexion à votre serveur Nextcloud',
+      fields: [
+        { name: 'nextcloudUrl', label: 'URL Nextcloud', type: 'text', required: true, placeholder: 'https://votre-serveur.nextcloud.com' },
+        { name: 'nextcloudUsername', label: 'Nom d\'utilisateur', type: 'text', required: true, placeholder: 'admin' },
+        { name: 'nextcloudPassword', label: 'Mot de passe ou Token d\'application', type: 'password', required: true, placeholder: 'Mot de passe ou token généré dans Nextcloud' },
+        { name: 'nextcloudSourceFolder', label: '📁 Dossier(s) à trier', type: 'text', required: false, placeholder: '/Documents ou /Photos,/Videos (séparez par des virgules)', defaultValue: '/' },
+        { name: 'nextcloudDestinationFolder', label: '📂 Dossier de destination', type: 'text', required: false, placeholder: '/Triés (dossier où seront créés les sous-dossiers)', defaultValue: '/Triés' }
+      ]
+    },
+    'webDavApi': {
+      type: 'webDavApi',
+      name: 'WebDAV',
+      description: 'Connexion WebDAV (compatible Nextcloud, ownCloud, etc.)',
+      fields: [
+        { name: 'webdavUrl', label: 'URL WebDAV', type: 'text', required: true, placeholder: 'https://votre-serveur.com/remote.php/webdav/' },
+        { name: 'webdavUsername', label: 'Nom d\'utilisateur', type: 'text', required: true, placeholder: 'utilisateur' },
+        { name: 'webdavPassword', label: 'Mot de passe', type: 'password', required: true }
+      ]
+    },
     'microsoftOutlookOAuth2': {
       type: 'microsoftOutlookOAuth2',
       name: 'Microsoft Outlook OAuth2',
@@ -509,6 +832,26 @@ function getCredentialConfig(credType) {
       ],
       oauth: true,
       provider: 'microsoft'
+    },
+    'googleUnified': {
+      type: 'googleUnified',
+      name: 'Google (tous services)',
+      description: 'Connexion unique à votre compte Google pour accéder à Gmail, Sheets, Docs et Drive',
+      fields: [
+        { name: 'googleUnified', label: 'Connecter Google', type: 'oauth', required: true, provider: 'google' }
+      ],
+      oauth: true,
+      provider: 'google'
+    },
+    'linkedInOAuth2': {
+      type: 'linkedInOAuth2',
+      name: 'LinkedIn OAuth2',
+      description: 'Connexion à votre compte LinkedIn via OAuth2 pour publier des posts',
+      fields: [
+        { name: 'linkedInOAuth2', label: 'Connecter LinkedIn', type: 'oauth', required: true, provider: 'linkedin' }
+      ],
+      oauth: true,
+      provider: 'linkedin'
     }
   };
   

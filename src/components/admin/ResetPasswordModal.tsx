@@ -7,9 +7,10 @@ interface ResetPasswordModalProps {
   user: User;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ResetPasswordModal({ user, isOpen, onClose }: ResetPasswordModalProps) {
+export function ResetPasswordModal({ user, isOpen, onClose, onSuccess }: ResetPasswordModalProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +39,9 @@ export function ResetPasswordModal({ user, isOpen, onClose }: ResetPasswordModal
     try {
       await UserManagementService.resetUserPassword(user.id, newPassword);
       setSuccess(true);
+      if (onSuccess) {
+        onSuccess();
+      }
       setTimeout(() => {
         onClose();
       }, 2000);

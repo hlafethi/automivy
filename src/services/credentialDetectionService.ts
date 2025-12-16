@@ -50,6 +50,17 @@ class CredentialDetectionService {
           });
         }
 
+        if ((credType === 'googleDriveOAuth2' || credType === 'googleDriveOAuth2Api') && !seenProviders.has('google_drive')) {
+          seenProviders.add('google_drive');
+          oauth.push({
+            type: 'oauth',
+            provider: 'google_drive',
+            displayName: 'Google Drive',
+            description: 'Connect your Google Drive account',
+            credentialIds: [credData.id],
+          });
+        }
+
         if (credType === 'microsoftOutlookOAuth2Api' && !seenProviders.has('microsoft_outlook')) {
           seenProviders.add('microsoft_outlook');
           oauth.push({

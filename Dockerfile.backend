@@ -1,0 +1,27 @@
+# Dockerfile pour le backend Automivy
+FROM node:18-alpine
+
+# Installer curl pour les healthchecks
+RUN apk add --no-cache curl
+
+# Créer le répertoire de travail
+WORKDIR /app
+
+# Copier le package.json du backend
+COPY backend/package*.json ./
+
+# Installer les dépendances du backend
+RUN npm install --production
+
+# Copier le code source du backend
+COPY backend/ ./
+
+# Créer les répertoires nécessaires
+RUN mkdir -p /app/public/uploads /app/logs
+
+# Exposer le port
+EXPOSE 3004
+
+# Commande de démarrage
+CMD ["node", "server.js"]
+

@@ -32,9 +32,12 @@ export function OAuthCallback() {
 
         if (oauthSuccess) {
           setStatus('success');
-          const provider = oauthSuccess; // oauthSuccess contient le nom du provider (gmail, google_sheets, microsoft)
+          const provider = oauthSuccess; // oauthSuccess contient le nom du provider (gmail, google_sheets, google_drive, microsoft)
           const providerName = provider === 'microsoft' ? 'Microsoft Outlook' : 
-                              provider === 'google_sheets' ? 'Google Sheets' : 'Gmail';
+                              provider === 'google' ? 'Google (tous services)' :
+                              provider === 'google_sheets' ? 'Google Sheets' :
+                              provider === 'google_drive' ? 'Google Drive' :
+                              provider === 'google_docs' ? 'Google Docs' : 'Gmail';
           setMessage(`${providerName} connecté avec succès${email ? ` : ${decodeURIComponent(email)}` : ''} !`);
           
           setTimeout(() => {

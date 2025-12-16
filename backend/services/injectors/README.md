@@ -10,9 +10,14 @@ Ce système permet d'avoir des injecteurs de credentials spécifiques pour chaqu
 backend/services/injectors/
 ├── index.js                    # Système de routing vers les injecteurs spécifiques
 ├── gmailTriInjector.js         # Injecteur pour "GMAIL Tri Automatique Boite Email"
+├── imapTriInjector.js          # Injecteur pour "IMAP Tri Automatique BAL"
+├── microsoftTriInjector.js     # Injecteur pour "Microsoft Tri Automatique BAL"
 ├── resumeEmailInjector.js      # Injecteur pour "Template fonctionnel résume email"
 ├── pdfAnalysisInjector.js      # Injecteur pour "PDF Analysis Complete"
 ├── cvAnalysisInjector.js       # Injecteur pour "CV Analysis and Candidate Evaluation"
+├── videoProductionInjector.js  # Injecteur pour "Production Vidéo IA"
+├── nextcloudInjector.js        # Injecteur pour templates Nextcloud
+├── newsletterInjector.js       # Injecteur pour newsletters
 └── README.md                   # Cette documentation
 ```
 

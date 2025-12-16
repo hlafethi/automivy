@@ -293,6 +293,14 @@ export function UsersSection() {
   useEffect(() => {
     loadUsers();
     loadStats();
+    
+    // Rafraîchir les données toutes les 30 secondes pour avoir des informations à jour
+    const refreshInterval = setInterval(() => {
+      loadUsers();
+      loadStats();
+    }, 30000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // Filtrage des utilisateurs
@@ -350,12 +358,12 @@ export function UsersSection() {
     setActionLoading(userId);
     try {
       await UserManagementService.toggleUserStatus(userId);
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, is_active: !currentStatus } : user
-      ));
+      // Recharger les utilisateurs depuis le serveur pour avoir les données à jour
+      await loadUsers();
       loadStats(); // Recharger les stats
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors du changement de statut:', error);
+      alert(`Erreur lors du changement de statut: ${error.message || 'Erreur inconnue'}`);
     } finally {
       setActionLoading(null);
     }
@@ -369,10 +377,12 @@ export function UsersSection() {
     setActionLoading(userId);
     try {
       await UserManagementService.deleteUser(userId);
-      setUsers(users.filter(user => user.id !== userId));
+      // Recharger les utilisateurs depuis le serveur pour avoir les données à jour
+      await loadUsers();
       loadStats(); // Recharger les stats
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la suppression:', error);
+      alert(`Erreur lors de la suppression de l'utilisateur: ${error.message || 'Erreur inconnue'}`);
     } finally {
       setActionLoading(null);
     }
@@ -601,6 +611,9 @@ export function UsersSection() {
                     <div className="flex items-center space-x-2">
                       <span>{user.workflows_count} total</span>
                       <span className="text-green-600">({user.active_workflows} actifs)</span>
+                      {user.workflows_count > user.active_workflows && (
+                        <span className="text-gray-500">({user.workflows_count - user.active_workflows} inactifs)</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
@@ -711,6 +724,10 @@ export function UsersSection() {
           onClose={() => {
             setShowPasswordModal(false);
             setSelectedUser(null);
+          }}
+          onSuccess={() => {
+            loadUsers();
+            loadStats();
           }}
         />
       )}

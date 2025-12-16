@@ -166,6 +166,15 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       n8n_credential_id: workflow.n8n_credential_id
     });
 
+    // Supprimer les credentials du workflow dans n8n AVANT de supprimer de la BDD
+    const deploymentUtils = require('../services/deployments/deploymentUtils');
+    try {
+      await deploymentUtils.deleteWorkflowCredentialsInN8n(req.params.id);
+      console.log('✅ [Backend] Credentials du workflow supprimés');
+    } catch (credError) {
+      console.warn('⚠️ [Backend] Erreur suppression credentials (non bloquant):', credError.message);
+    }
+
     // Supprimer de la base de données
     try {
       const deletedWorkflow = await db.deleteUserWorkflow(req.params.id, req.user.id);
@@ -180,8 +189,31 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       throw dbError;
     }
 
-    // Note: La suppression des workflows et credentials n8n se fait côté frontend
-    // via userWorkflowService.deleteUserWorkflow() pour une meilleure gestion des erreurs
+    // Supprimer le workflow de n8n
+    if (workflow.n8n_workflow_id) {
+      try {
+        const n8nService = require('../services/n8nService');
+        const config = require('../config');
+        const n8nUrl = config.n8n.url;
+        const n8nApiKey = config.n8n.apiKey;
+        
+        const deleteResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflow.n8n_workflow_id}`, {
+          method: 'DELETE',
+          headers: {
+            'X-N8N-API-KEY': n8nApiKey,
+          },
+        });
+        
+        if (deleteResponse.ok) {
+          console.log('✅ [Backend] Workflow supprimé de n8n:', workflow.n8n_workflow_id);
+        } else {
+          const errorText = await deleteResponse.text();
+          console.warn('⚠️ [Backend] Erreur suppression workflow n8n:', errorText);
+        }
+      } catch (n8nError) {
+        console.warn('⚠️ [Backend] Erreur suppression workflow n8n (non bloquant):', n8nError.message);
+      }
+    }
 
     console.log('✅ [Backend] Suppression workflow utilisateur terminée');
     res.json({ message: 'User workflow deleted successfully' });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Play, Pause, Trash2, Edit, Clock, Mail, Loader2, FileText, Grid3X3, Ticket as TicketIcon, Users2, User, Search, Filter, X } from 'lucide-react';
+import { Plus, Play, Pause, Trash2, Edit, Clock, Mail, Loader2, FileText, Grid3X3, Ticket as TicketIcon, Users2, User, Search, Filter, X, Folder, MessageSquare, Sparkles } from 'lucide-react';
 import { userWorkflowService, UserWorkflow } from '../services/userWorkflowService';
 import { useAuth } from '../contexts/AuthContext';
 import { CreateAutomationModal } from './CreateAutomationModal';
@@ -11,6 +11,9 @@ import SmartDeployModal from './SmartDeployModal';
 import PDFFormModal from './PDFFormModal';
 import CVScreeningFormModal from './CVScreeningFormModal';
 import CVAnalysisFormModal from './CVAnalysisFormModal';
+import VideoProductionModal from './VideoProductionModal';
+import NextcloudFormModal from './NextcloudFormModal';
+import McpChatModal from './McpChatModal';
 import { UserTickets } from './UserTickets';
 import { UserCommunityView } from './user/UserCommunityComponents';
 import { UserProfileView } from './user/UserProfileComponents';
@@ -30,9 +33,21 @@ export function UserAutomations() {
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [showCVModal, setShowCVModal] = useState(false);
   const [showCVAnalysisModal, setShowCVAnalysisModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showNextcloudModal, setShowNextcloudModal] = useState(false);
+  const [showMcpChatModal, setShowMcpChatModal] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<UserWorkflow | null>(null);
   const [activeTab, setActiveTab] = useState<'automations' | 'catalog' | 'tickets' | 'community' | 'profile'>('automations');
   const [showSmartDeploy, setShowSmartDeploy] = useState(false);
+  
+  // États pour LinkedIn
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showPostsModal, setShowPostsModal] = useState(false);
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+  const [theme, setTheme] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
   
   // États pour les filtres
   const [searchTerm, setSearchTerm] = useState('');
@@ -257,6 +272,126 @@ export function UserAutomations() {
   const handleCVAnalysisForm = (workflow: UserWorkflow) => {
     setSelectedWorkflow(workflow);
     setShowCVAnalysisModal(true);
+  };
+
+  const handleVideoProductionForm = (workflow: UserWorkflow) => {
+    setSelectedWorkflow(workflow);
+    setShowVideoModal(true);
+  };
+
+  const handleNextcloudForm = (workflow: UserWorkflow) => {
+    setSelectedWorkflow(workflow);
+    setShowNextcloudModal(true);
+  };
+
+  const handleMcpChat = (workflow: UserWorkflow) => {
+    setSelectedWorkflow(workflow);
+    setShowMcpChatModal(true);
+  };
+
+  // Vérifier si un workflow est LinkedIn
+  const isLinkedInWorkflow = (workflow: UserWorkflow) => {
+    const name = workflow.name || '';
+    const nameLower = name.toLowerCase();
+    const templateId = (workflow as any).template_id || '';
+    
+    // IDs des templates LinkedIn
+    const linkedInTemplateIds = [
+      '8f7cf302-523a-49c2-961f-7da9692e7397', // LinkedIn Post Generator - Principal
+    ];
+    
+    // Détection par template_id (plus fiable)
+    const isLinkedInByTemplateId = linkedInTemplateIds.includes(templateId);
+    
+    // Détection par nom (fallback)
+    const isLinkedInByName = nameLower.includes('linkedin') || 
+                             nameLower.includes('linked-in') ||
+                             nameLower.includes('post generator') ||
+                             nameLower.includes('token monitor') ||
+                             nameLower.includes('oauth handler');
+    
+    const isLinkedIn = isLinkedInByTemplateId || isLinkedInByName;
+    
+    if (isLinkedIn) {
+      console.log('✅ [UserAutomations] Workflow LinkedIn détecté:', name, isLinkedInByTemplateId ? '(par template_id)' : '(par nom)');
+    }
+    
+    return isLinkedIn;
+  };
+
+  // Ouvrir le modal de génération de post
+  const handleGeneratePost = (workflowId: string) => {
+    setSelectedWorkflowId(workflowId);
+    setTheme('');
+    setShowGenerateModal(true);
+  };
+
+  // Générer un post LinkedIn
+  const handleGeneratePostSubmit = async () => {
+    if (!selectedWorkflowId || !theme.trim()) {
+      alert('Veuillez entrer un thème pour votre post');
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('http://localhost:3004/api/linkedin/generate-post', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          workflowId: selectedWorkflowId,
+          theme: theme.trim()
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'Erreur lors de la génération');
+      }
+
+      const result = await response.json();
+      console.log('✅ [UserAutomations] Post LinkedIn généré:', result);
+      alert('Post LinkedIn en cours de génération ! Vous recevrez un email une fois terminé.');
+      setShowGenerateModal(false);
+      setTheme('');
+      setSelectedWorkflowId(null);
+    } catch (error: any) {
+      console.error('❌ [UserAutomations] Erreur génération post LinkedIn:', error);
+      alert(error.message || 'Erreur lors de la génération du post LinkedIn');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Charger les posts LinkedIn de l'utilisateur
+  const loadLinkedInPosts = async () => {
+    setLoadingPosts(true);
+    setShowPostsModal(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('http://localhost:3004/api/linkedin/posts', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des posts');
+      }
+
+      const data = await response.json();
+      setPosts(data.posts || []);
+    } catch (error: any) {
+      console.error('❌ [UserAutomations] Erreur chargement posts LinkedIn:', error);
+      alert(error.message || 'Erreur lors du chargement des posts LinkedIn');
+      setPosts([]);
+    } finally {
+      setLoadingPosts(false);
+    }
   };
 
   // Fonction pour tronquer les descriptions
@@ -582,6 +717,70 @@ export function UserAutomations() {
                             </button>
                           )}
                           
+                          {/* Bouton Video Production Form - pour Production Vidéo IA */}
+                          {(workflow.name.toLowerCase().includes('production vidéo') || 
+                            workflow.name.toLowerCase().includes('video ia') ||
+                            workflow.name.toLowerCase().includes('vidéo ia')) && (
+                            <button
+                              onClick={() => handleVideoProductionForm(workflow)}
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                              title="Créer une vidéo IA"
+                            >
+                              <Play className="w-5 h-5" />
+                            </button>
+                          )}
+                          
+                          {/* Bouton Nextcloud Form - pour Nextcloud File Sorting */}
+                          {(workflow.name.toLowerCase().includes('nextcloud')) && (
+                            <button
+                              onClick={() => handleNextcloudForm(workflow)}
+                              className="p-2 rounded-lg transition"
+                              style={{ color: '#046f78' }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e0f4f6'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              title="Sélectionner les dossiers à trier"
+                            >
+                              <Folder className="w-5 h-5" />
+                            </button>
+                          )}
+                          
+                          {/* Bouton Chat MCP - pour test mcp */}
+                          {(workflow.name.toLowerCase().includes('test mcp') || workflow.name.toLowerCase().includes('mcp')) && (
+                            <button
+                              onClick={() => handleMcpChat(workflow)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                              title="Ouvrir le chat MCP"
+                            >
+                              <MessageSquare className="w-5 h-5" />
+                            </button>
+                          )}
+                          
+                          {/* Boutons spécifiques LinkedIn */}
+                          {isLinkedInWorkflow(workflow) && (
+                            <>
+                              <button
+                                onClick={() => handleGeneratePost(workflow.id)}
+                                disabled={actionLoading === workflow.id || !workflow.is_active}
+                                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition disabled:opacity-50"
+                                title="Générer un post LinkedIn"
+                              >
+                                <Sparkles className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={loadLinkedInPosts}
+                                disabled={loadingPosts}
+                                className="p-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition disabled:opacity-50"
+                                title="Voir mes posts générés"
+                              >
+                                {loadingPosts ? (
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                  <FileText className="w-5 h-5" />
+                                )}
+                              </button>
+                            </>
+                          )}
+                          
                           <button
                             onClick={() => handleToggle(workflow.id, workflow.is_active)}
                             disabled={actionLoading === workflow.id}
@@ -717,6 +916,44 @@ export function UserAutomations() {
         />
       )}
 
+      {showVideoModal && selectedWorkflow && (
+        <VideoProductionModal
+          workflowId={selectedWorkflow.id}
+          workflowName={selectedWorkflow.name}
+          webhookPath={selectedWorkflow.webhook_path}
+          isOpen={showVideoModal}
+          onClose={() => {
+            setShowVideoModal(false);
+            setSelectedWorkflow(null);
+          }}
+        />
+      )}
+
+      {showNextcloudModal && selectedWorkflow && (
+        <NextcloudFormModal
+          workflowId={selectedWorkflow.id}
+          workflowName={selectedWorkflow.name}
+          isOpen={showNextcloudModal}
+          onClose={() => {
+            setShowNextcloudModal(false);
+            setSelectedWorkflow(null);
+          }}
+        />
+      )}
+
+      {showMcpChatModal && selectedWorkflow && (
+        <McpChatModal
+          workflowId={selectedWorkflow.id}
+          workflowName={selectedWorkflow.name}
+          webhookPath={selectedWorkflow.webhook_path}
+          isOpen={showMcpChatModal}
+          onClose={() => {
+            setShowMcpChatModal(false);
+            setSelectedWorkflow(null);
+          }}
+        />
+      )}
+
       {showPDFEditModal && editingWorkflow && (
         <EditPDFWorkflowModal
           isOpen={showPDFEditModal}
@@ -790,6 +1027,103 @@ export function UserAutomations() {
           loadWorkflows();
         }}
       />
+
+      {/* Modal de génération de post LinkedIn */}
+      {showGenerateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-slate-900">Générer un post LinkedIn</h3>
+              <button
+                onClick={() => {
+                  setShowGenerateModal(false);
+                  setTheme('');
+                  setSelectedWorkflowId(null);
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Thème du post
+                </label>
+                <textarea
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value)}
+                  placeholder="Ex: Les tendances de l'IA en 2025"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                />
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setShowGenerateModal(false);
+                    setTheme('');
+                    setSelectedWorkflowId(null);
+                  }}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                  disabled={generating}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleGeneratePostSubmit}
+                  disabled={generating || !theme.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {generating ? 'Génération...' : 'Générer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'affichage des posts LinkedIn */}
+      {showPostsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-slate-900">Mes posts LinkedIn générés</h3>
+              <button
+                onClick={() => setShowPostsModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {loadingPosts ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              </div>
+            ) : posts.length === 0 ? (
+              <p className="text-slate-500 text-center py-8">Aucun post généré pour le moment.</p>
+            ) : (
+              <div className="space-y-4">
+                {posts.map((post, index) => (
+                  <div key={index} className="border border-slate-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-slate-500">
+                        {post.created_at ? new Date(post.created_at).toLocaleString('fr-FR') : 'Date inconnue'}
+                      </span>
+                      {post.linkedinPostId && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          Publié
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-slate-900 whitespace-pre-wrap">{post.content || post.post_content || 'Contenu non disponible'}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

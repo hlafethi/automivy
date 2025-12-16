@@ -1,0 +1,20 @@
+[33m4d01363[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrefactor/code-cleanup-and-improvements[m[33m)[m fix: adaptation complète frontend au format de réponse API standardisé (analyze et deploy)
+[33mc1ba1c9[m fix: adaptation frontend au nouveau format de réponse API standardisé
+[33mcc08d31[m test: correction test checkWorkflowExists - vérification headers simplifiée
+[33mec24392[m test: correction dernier test checkWorkflowExists
+[33mc2ba082[m test: ajout tests unitaires pour apiResponse, n8nErrorHandler et deploymentUtils
+[33m7c8ddba[m refactor: amélioration gestion erreurs n8n avec parser et messages clairs
+[33m3e243df[m refactor: optimisation appels API n8n (retries intelligents) + standardisation réponses API
+[33m7a223ae[m refactor: amélioration de la vérification des placeholders avec détection robuste
+[33m93cf700[m docs: création documentation complète centralisée + migration logs injectors/index.js
+[33md793be1[m refactor: migration complète des logs console vers logger dans tous les fichiers de déploiement
+[33m03c7eb0[m refactor: migration des logs console vers logger dans gmailTriDeployment.js
+[33m02326c8[m fix: correction des URLs hardcodées localhost:3004 (Priorité 1 - Critique)
+[33md295722[m refactor: standardisation de la gestion des erreurs dans enhancedAI.js avec logger
+[33mdf4d2df[m refactor: simplification des vérifications redondantes LangChain dans app.js
+[33m907563b[m refactor: réduction des logs dans les services de déploiement (index.js, deploymentUtils.js)
+[33m35b0911[m refactor: réduction complète des logs dans credentialInjector.js (280 -> 0 logs console)
+[33m21b6fd2[m refactor: réduction des logs dans credentialInjector.js (étape 2/3 - 178 -> 132 logs)
+[33m0c24fc3[m refactor: réduction des logs dans credentialInjector.js (étape 1/3)
+[33m6c9142a[m[33m ([m[1;31morigin/refactor/code-cleanup-and-improvements[m[33m)[m refactor: réduction des logs excessifs avec système de logging structuré
+[33mdc8e343[m refactor: amélioration de la gestion des secrets avec validation au démarrage

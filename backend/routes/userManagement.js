@@ -30,19 +30,38 @@ router.get('/', async (req, res) => {
         u.created_at,
         u.last_login,
         u.is_active,
-        COUNT(w.id) as workflows_count,
-        COUNT(CASE WHEN w.is_active = true THEN 1 END) as active_workflows,
-        COUNT(CASE WHEN w.created_at > NOW() - INTERVAL '7 days' THEN 1 END) as recent_workflows
+        COALESCE(uw_stats.total_count, 0) as workflows_count,
+        COALESCE(uw_stats.active_count, 0) as active_workflows,
+        COALESCE(uw_stats.recent_count, 0) as recent_workflows
       FROM users u
-      LEFT JOIN workflows w ON u.id = w.user_id
-      GROUP BY u.id, u.email, u.role, u.created_at, u.last_login, u.is_active
+      LEFT JOIN (
+        SELECT 
+          user_id,
+          COUNT(*) as total_count,
+          COUNT(CASE WHEN is_active = true THEN 1 END) as active_count,
+          COUNT(CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 1 END) as recent_count
+        FROM user_workflows
+        GROUP BY user_id
+      ) uw_stats ON u.id = uw_stats.user_id
       ORDER BY u.created_at DESC
     `;
     
     const result = await pool.query(query);
-    const users = result.rows;
+    const users = result.rows.map(user => ({
+      ...user,
+      workflows_count: parseInt(user.workflows_count) || 0,
+      active_workflows: parseInt(user.active_workflows) || 0,
+      recent_workflows: parseInt(user.recent_workflows) || 0
+    }));
 
     console.log(`✅ [UserManagement] ${users.length} utilisateurs récupérés`);
+    
+    // Log des workflows pour debug
+    users.forEach(user => {
+      if (user.email === 'user@heleam.com') {
+        console.log(`🔍 [UserManagement] user@heleam.com - workflows_count: ${user.workflows_count}, active_workflows: ${user.active_workflows}`);
+      }
+    });
 
     res.json({
       success: true,
@@ -91,7 +110,7 @@ router.get('/:userId', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Workflows de l'utilisateur
+    // Workflows de l'utilisateur (uniquement user_workflows)
     const workflowsQuery = `
       SELECT 
         id,
@@ -99,8 +118,8 @@ router.get('/:userId', async (req, res) => {
         is_active,
         created_at,
         n8n_workflow_id,
-        params
-      FROM workflows
+        '{}'::jsonb as params
+      FROM user_workflows
       WHERE user_id = $1
       ORDER BY created_at DESC
     `;
@@ -108,14 +127,14 @@ router.get('/:userId', async (req, res) => {
     const workflowsResult = await pool.query(workflowsQuery, [userId]);
     const workflows = workflowsResult.rows;
 
-    // Statistiques d'activité
+    // Statistiques d'activité (uniquement user_workflows)
     const activityQuery = `
       SELECT 
         COUNT(*) as total_workflows,
         COUNT(CASE WHEN is_active = true THEN 1 END) as active_workflows,
         COUNT(CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 1 END) as workflows_this_week,
         COUNT(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 END) as workflows_this_month
-      FROM workflows
+      FROM user_workflows
       WHERE user_id = $1
     `;
     
@@ -241,7 +260,7 @@ router.post('/:userId/reset-password', async (req, res) => {
     // Mettre à jour le mot de passe
     const updateQuery = `
       UPDATE users 
-      SET password = $1
+      SET password_hash = $1
       WHERE id = $2
       RETURNING email
     `;
@@ -327,9 +346,11 @@ router.delete('/:userId', async (req, res) => {
 
     const userEmail = userResult.rows[0].email;
 
-    // Supprimer en cascade (workflows, user_profiles, puis users)
-    await pool.query('DELETE FROM workflows WHERE user_id = $1', [userId]);
-    await pool.query('DELETE FROM user_profiles WHERE user_id = $1', [userId]);
+    // Supprimer en cascade (user_workflows, user_profiles, puis users)
+    // Note: user_profiles utilise 'id' comme clé primaire (pas 'user_id')
+    // Note: workflows est une ancienne table, on supprime uniquement user_workflows
+    await pool.query('DELETE FROM user_workflows WHERE user_id = $1', [userId]);
+    await pool.query('DELETE FROM user_profiles WHERE id = $1', [userId]);
     await pool.query('DELETE FROM users WHERE id = $1', [userId]);
 
     console.log(`✅ [UserManagement] Utilisateur supprimé: ${userEmail}`);

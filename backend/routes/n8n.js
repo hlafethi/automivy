@@ -5,6 +5,111 @@ const { deployEmailSummaryWorkflow } = require('../services/n8nService');
 
 // Routes spécifiques pour n8n
 
+// Récupérer tous les nœuds disponibles dans n8n
+router.get('/nodes', async (req, res) => {
+  try {
+    const n8nUrl = config.n8n.url;
+    const n8nApiKey = config.n8n.apiKey;
+    
+    // L'API n8n expose les nœuds via /rest/node-types
+    const fullUrl = `${n8nUrl}/rest/node-types`;
+    console.log(`🔍 [n8n] Récupération des nœuds depuis: ${fullUrl}`);
+    
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-N8N-API-KEY': n8nApiKey,
+      },
+    });
+    
+    if (!response.ok) {
+      console.error(`❌ [n8n] Erreur ${response.status} lors de la récupération des nœuds`);
+      const errorText = await response.text();
+      console.error('Détails:', errorText);
+      
+      // Fallback: utiliser le registre local si l'API n8n ne répond pas
+      const PerfectN8nNodesRegistry = require('../services/perfectN8nNodesRegistry');
+      const localNodes = PerfectN8nNodesRegistry.getAllNodes();
+      const allTypes = PerfectN8nNodesRegistry.getAllValidTypes();
+      
+      return res.json({
+        success: true,
+        source: 'local-registry',
+        data: {
+          nodes: localNodes,
+          totalCount: allTypes.length,
+          allTypes: allTypes
+        }
+      });
+    }
+    
+    const data = await response.json();
+    console.log(`✅ [n8n] ${Object.keys(data).length} catégories de nœuds récupérées`);
+    
+    // Organiser les nœuds par catégorie
+    const organizedNodes = {};
+    const allTypes = [];
+    
+    // Parcourir toutes les catégories de nœuds
+    for (const [category, nodes] of Object.entries(data)) {
+      if (Array.isArray(nodes)) {
+        organizedNodes[category] = nodes.map(node => ({
+          name: node.displayName || node.name,
+          type: node.name,
+          description: node.description || '',
+          icon: node.icon || '📦',
+          category: category,
+          version: node.version || 1,
+          defaults: node.defaults || {},
+          properties: node.properties || []
+        }));
+        
+        nodes.forEach(node => {
+          allTypes.push(node.name);
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      source: 'n8n-api',
+      data: {
+        nodes: organizedNodes,
+        totalCount: allTypes.length,
+        allTypes: allTypes,
+        categories: Object.keys(organizedNodes)
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ [n8n] Erreur lors de la récupération des nœuds:', error);
+    
+    // Fallback: utiliser le registre local
+    try {
+      const PerfectN8nNodesRegistry = require('../services/perfectN8nNodesRegistry');
+      const localNodes = PerfectN8nNodesRegistry.getAllNodes();
+      const allTypes = PerfectN8nNodesRegistry.getAllValidTypes();
+      
+      res.json({
+        success: true,
+        source: 'local-registry-fallback',
+        data: {
+          nodes: localNodes,
+          totalCount: allTypes.length,
+          allTypes: allTypes
+        }
+      });
+    } catch (fallbackError) {
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to communicate with n8n and local registry unavailable',
+        details: error.message 
+      });
+    }
+  }
+});
+
 // Récupérer tous les credentials
 router.get('/credentials', async (req, res) => {
   try {

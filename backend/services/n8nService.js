@@ -117,7 +117,12 @@ async function getAdminCredentials() {
   }
   
   // Si un ID OpenRouter est défini dans les variables d'environnement, l'utiliser en priorité
-  if (process.env.OPENROUTER_CREDENTIAL_ID) {
+  // Vérifie plusieurs formats possibles pour la compatibilité
+  if (process.env.ADMIN_OPENROUTER_CREDENTIAL_ID) {
+    adminCreds.OPENROUTER_ID = process.env.ADMIN_OPENROUTER_CREDENTIAL_ID;
+    adminCreds.OPENROUTER_NAME = process.env.ADMIN_OPENROUTER_CREDENTIAL_NAME || 'OpenRouter Admin';
+    console.log(`✅ [n8nService] Credential OpenRouter admin forcé depuis env: ${adminCreds.OPENROUTER_ID} (${adminCreds.OPENROUTER_NAME})`);
+  } else if (process.env.OPENROUTER_CREDENTIAL_ID) {
     adminCreds.OPENROUTER_ID = process.env.OPENROUTER_CREDENTIAL_ID;
     adminCreds.OPENROUTER_NAME = process.env.OPENROUTER_CREDENTIAL_NAME || 'OpenRouter Admin';
     console.log(`✅ [n8nService] Credential OpenRouter forcé depuis env: ${adminCreds.OPENROUTER_ID} (${adminCreds.OPENROUTER_NAME})`);

@@ -196,10 +196,95 @@ async function createWorkflowInN8n(workflowPayload) {
   const n8nUrl = config.n8n.url;
   const n8nErrorHandler = require('../../utils/n8nErrorHandler');
   
+  // ⚠️ CRITIQUE: Vérifier que tous les nœuds référencés dans les connections existent
+  if (workflowPayload.connections && workflowPayload.nodes) {
+    const nodeNames = new Set(workflowPayload.nodes.map(n => n.name));
+    const missingNodes = [];
+    
+    Object.keys(workflowPayload.connections).forEach(sourceNodeName => {
+      if (!nodeNames.has(sourceNodeName)) {
+        missingNodes.push(`Source: ${sourceNodeName}`);
+      }
+      
+      const connections = workflowPayload.connections[sourceNodeName];
+      Object.values(connections).forEach(connectionArray => {
+        if (Array.isArray(connectionArray)) {
+          connectionArray.forEach(connectionGroup => {
+            if (Array.isArray(connectionGroup)) {
+              connectionGroup.forEach(connection => {
+                if (connection.node && !nodeNames.has(connection.node)) {
+                  missingNodes.push(`Target: ${connection.node} (from ${sourceNodeName})`);
+                }
+              });
+            }
+          });
+        }
+      });
+    });
+    
+    if (missingNodes.length > 0) {
+      const uniqueMissing = [...new Set(missingNodes)];
+      logger.error('❌ [createWorkflowInN8n] Nœuds manquants dans le workflow', {
+        missingNodes: uniqueMissing,
+        existingNodes: Array.from(nodeNames),
+        totalNodes: nodeNames.size
+      });
+      // Ne pas bloquer, mais logger l'erreur pour diagnostic
+    }
+  }
+  
+  // ⚠️ CRITIQUE: Vérifier que les paramètres NocoDB sont bien présents avant l'envoi
+  const nocoDbNodes = workflowPayload.nodes?.filter(n => 
+    n.type === 'n8n-nodes-base.nocoDb' || 
+    n.type?.toLowerCase().includes('nocodb') ||
+    n.name?.toLowerCase().includes('nocodb')
+  ) || [];
+  
+  if (nocoDbNodes.length > 0) {
+    logger.info('🔍 Vérification des paramètres NocoDB avant création dans n8n', {
+      nocoDbNodesCount: nocoDbNodes.length,
+      nodesDetails: nocoDbNodes.map(n => ({
+        name: n.name,
+        hasCredentials: !!(n.credentials && n.credentials.nocoDbApiToken),
+        credentialId: n.credentials?.nocoDbApiToken?.id || 'MANQUANT',
+        hasOperation: !!n.parameters?.operation,
+        hasBaseNameOrId: !!n.parameters?.baseNameOrId,
+        hasBaseId: !!n.parameters?.baseId,
+        hasTableNameOrId: !!n.parameters?.tableNameOrId,
+        hasTableId: !!n.parameters?.tableId,
+        hasTableName: !!n.parameters?.tableName,
+        parameters: n.parameters
+      }))
+    });
+    
+    // ⚠️ CRITIQUE: Vérifier que les credentials sont bien présents
+    const nodesWithoutCreds = nocoDbNodes.filter(n => !n.credentials?.nocoDbApiToken);
+    if (nodesWithoutCreds.length > 0) {
+      logger.error('❌ [createWorkflowInN8n] Nœuds NocoDB sans credentials avant création', {
+        nodesWithoutCreds: nodesWithoutCreds.map(n => n.name)
+      });
+    }
+  }
+  
   logger.info('Création du workflow dans n8n', {
     workflowName: workflowPayload.name,
     nodesCount: workflowPayload.nodes?.length,
     connectionsCount: Object.keys(workflowPayload.connections || {}).length
+  });
+  
+  // ⚠️ IMPORTANT: Vérifier que les credentials sont bien dans le payload initial
+  const nodesWithCredentials = workflowPayload.nodes?.filter(n => 
+    n.credentials && Object.keys(n.credentials).length > 0
+  ) || [];
+  
+  logger.info('Credentials dans le payload initial', {
+    totalNodes: workflowPayload.nodes?.length || 0,
+    nodesWithCredentials: nodesWithCredentials.length,
+    credentialsDetails: nodesWithCredentials.map(n => ({
+      nodeName: n.name,
+      nodeType: n.type,
+      credentials: Object.keys(n.credentials || {})
+    }))
   });
   
   return await n8nErrorHandler.handleN8nApiCall(async () => {
@@ -218,6 +303,46 @@ async function createWorkflowInN8n(workflowPayload) {
     
     const result = await deployResponse.json();
     logger.info('Workflow créé dans n8n', { workflowId: result.id, workflowName: result.name });
+    
+    // ⚠️ CRITIQUE: Vérifier que les credentials sont bien présents dans le workflow créé
+    const createdNodesWithCredentials = result.nodes?.filter(n => 
+      n.credentials && Object.keys(n.credentials).length > 0
+    ) || [];
+    
+    // ⚠️ CRITIQUE: Vérifier spécifiquement les nœuds NocoDB
+    const createdNocoDbNodes = result.nodes?.filter(n => 
+      n.type === 'n8n-nodes-base.nocoDb' || 
+      n.type?.toLowerCase().includes('nocodb') ||
+      n.name?.toLowerCase().includes('nocodb')
+    ) || [];
+    
+    if (createdNocoDbNodes.length > 0) {
+      const nocoDbNodesWithoutCreds = createdNocoDbNodes.filter(n => !n.credentials?.nocoDbApiToken);
+      if (nocoDbNodesWithoutCreds.length > 0) {
+        logger.error('❌ [createWorkflowInN8n] Nœuds NocoDB sans credentials après création dans n8n', {
+          workflowId: result.id,
+          nodesWithoutCreds: nocoDbNodesWithoutCreds.map(n => n.name),
+          expectedCredentialId: workflowPayload.nodes
+            .find(n => n.type === 'n8n-nodes-base.nocoDb' && n.credentials?.nocoDbApiToken?.id)
+            ?.credentials?.nocoDbApiToken?.id || 'NON TROUVÉ'
+        });
+      } else {
+        logger.info('✅ [createWorkflowInN8n] Tous les nœuds NocoDB ont leurs credentials après création');
+      }
+    }
+    
+    logger.info('Credentials dans le workflow créé', {
+      totalNodes: result.nodes?.length || 0,
+      nodesWithCredentials: createdNodesWithCredentials.length,
+      nocoDbNodesCount: createdNocoDbNodes.length,
+      nocoDbNodesWithCreds: createdNocoDbNodes.filter(n => n.credentials?.nocoDbApiToken).length,
+      credentialsDetails: createdNodesWithCredentials.map(n => ({
+        nodeName: n.name,
+        nodeType: n.type,
+        credentials: Object.keys(n.credentials || {})
+      }))
+    });
+    
     return result;
   }, 'create');
 }
@@ -239,6 +364,36 @@ async function updateWorkflowInN8n(workflowId, injectedWorkflow) {
   if (!workflowReady) {
     logger.warn('Workflow non accessible pour mise à jour', { workflowId });
     // Continuer quand même, n8n peut parfois accepter la mise à jour
+  }
+  
+  // ⚠️ CRITIQUE: Vérifier que les paramètres NocoDB sont bien présents avant la mise à jour
+  const nocoDbNodes = injectedWorkflow.nodes?.filter(n => 
+    n.type === 'n8n-nodes-base.nocoDb' || 
+    n.type?.toLowerCase().includes('nocodb') ||
+    n.name?.toLowerCase().includes('nocodb')
+  ) || [];
+  
+  if (nocoDbNodes.length > 0) {
+    logger.info('🔍 Vérification des paramètres NocoDB avant mise à jour dans n8n', {
+      workflowId,
+      nocoDbNodesCount: nocoDbNodes.length,
+      nodesDetails: nocoDbNodes.map(n => ({
+        name: n.name,
+        hasOperation: !!n.parameters?.operation,
+        operation: n.parameters?.operation,
+        hasBaseNameOrId: !!n.parameters?.baseNameOrId,
+        baseNameOrId: n.parameters?.baseNameOrId,
+        hasBaseId: !!n.parameters?.baseId,
+        baseId: n.parameters?.baseId,
+        hasTableNameOrId: !!n.parameters?.tableNameOrId,
+        tableNameOrId: n.parameters?.tableNameOrId,
+        hasTableId: !!n.parameters?.tableId,
+        tableId: n.parameters?.tableId,
+        hasTableName: !!n.parameters?.tableName,
+        tableName: n.parameters?.tableName,
+        allParams: Object.keys(n.parameters || {})
+      }))
+    });
   }
   
   try {
@@ -277,12 +432,106 @@ async function updateWorkflowInN8n(workflowId, injectedWorkflow) {
       }
     }
     
+    // Vérifier que les credentials sont bien assignés dans les nœuds
+    const nodesWithCredentials = injectedWorkflow.nodes.filter(n => 
+      n.credentials && Object.keys(n.credentials).length > 0
+    );
+    
+    // Vérifier les paramètres des nœuds NocoDB
+    const nocoDbNodes = injectedWorkflow.nodes.filter(n => 
+      n.type === 'n8n-nodes-base.nocoDb' || 
+      n.type?.toLowerCase().includes('nocodb') ||
+      n.name?.toLowerCase().includes('nocodb')
+    );
+    
+    // ⚠️ CRITIQUE: Forcer la présence des paramètres NocoDB requis
+    // n8n peut supprimer ces paramètres lors de la création, on les réinjecte avant la mise à jour
+    nocoDbNodes.forEach(node => {
+      if (!node.parameters) {
+        node.parameters = {};
+      }
+      
+      const nodeNameLower = (node.name || '').toLowerCase();
+      
+      // S'assurer que operation est présent
+      if (!node.parameters.operation) {
+        if (nodeNameLower.includes('post') || nodeNameLower.includes('sauvegarder') || nodeNameLower.includes('create')) {
+          node.parameters.operation = 'create';
+        } else if (nodeNameLower.includes('user') || nodeNameLower.includes('récupérer') || nodeNameLower.includes('get')) {
+          node.parameters.operation = 'get';
+        } else {
+          node.parameters.operation = 'list';
+        }
+      }
+      
+      // Les paramètres baseNameOrId et tableNameOrId doivent être présents
+      // Si ils sont manquants, on les réinjecte depuis les logs précédents ou on utilise les valeurs par défaut
+      // Note: Ces valeurs devraient déjà être injectées par linkedinPostInjector, mais on les force au cas où
+    });
+    
+    logger.info('Vérification des credentials avant mise à jour', {
+      workflowId,
+      totalNodes: injectedWorkflow.nodes.length,
+      nodesWithCredentials: nodesWithCredentials.length,
+      nocoDbNodesCount: nocoDbNodes.length,
+      credentialsDetails: nodesWithCredentials.map(n => ({
+        nodeName: n.name,
+        nodeType: n.type,
+        credentials: Object.keys(n.credentials || {})
+      })),
+      nocoDbNodesDetails: nocoDbNodes.map(n => ({
+        nodeName: n.name,
+        nodeType: n.type,
+        hasCredentials: !!(n.credentials && Object.keys(n.credentials).length > 0),
+        parameters: {
+          operation: n.parameters?.operation,
+          baseUrl: n.parameters?.baseUrl,
+          baseId: n.parameters?.baseId,
+          baseNameOrId: n.parameters?.baseNameOrId,
+          tableId: n.parameters?.tableId,
+          tableNameOrId: n.parameters?.tableNameOrId,
+          tableName: n.parameters?.tableName,
+          allParamKeys: Object.keys(n.parameters || {})
+        }
+      }))
+    });
+    
     const updatePayload = {
       name: injectedWorkflow.name,
       nodes: injectedWorkflow.nodes,
       connections: injectedWorkflow.connections,
       settings: cleanSettings(injectedWorkflow.settings)
     };
+    
+    // ⚠️ CRITIQUE: Vérifier que les paramètres NocoDB sont bien présents dans le payload de mise à jour
+    const nocoDbNodesInPayload = updatePayload.nodes?.filter(n => 
+      n.type === 'n8n-nodes-base.nocoDb' || 
+      n.type?.toLowerCase().includes('nocodb') ||
+      n.name?.toLowerCase().includes('nocodb')
+    ) || [];
+    
+    if (nocoDbNodesInPayload.length > 0) {
+      logger.info('🔍 Vérification des paramètres NocoDB dans le payload de mise à jour', {
+        workflowId,
+        nocoDbNodesCount: nocoDbNodesInPayload.length,
+        nodesDetails: nocoDbNodesInPayload.map(n => ({
+          name: n.name,
+          hasOperation: !!n.parameters?.operation,
+          operation: n.parameters?.operation,
+          hasBaseNameOrId: !!n.parameters?.baseNameOrId,
+          baseNameOrId: n.parameters?.baseNameOrId,
+          hasBaseId: !!n.parameters?.baseId,
+          baseId: n.parameters?.baseId,
+          hasTableNameOrId: !!n.parameters?.tableNameOrId,
+          tableNameOrId: n.parameters?.tableNameOrId,
+          hasTableId: !!n.parameters?.tableId,
+          tableId: n.parameters?.tableId,
+          hasTableName: !!n.parameters?.tableName,
+          tableName: n.parameters?.tableName,
+          allParamKeys: Object.keys(n.parameters || {})
+        }))
+      });
+    }
     
     const updateResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
       method: 'PUT',
@@ -296,6 +545,67 @@ async function updateWorkflowInN8n(workflowId, injectedWorkflow) {
     if (updateResponse.ok) {
       const updatedWorkflow = await updateResponse.json();
       logger.info('Workflow mis à jour avec les credentials', { workflowId });
+      
+      // ⚠️ CRITIQUE: Vérifier que les credentials sont bien présents après la mise à jour
+      const nocoDbNodesAfterUpdate = updatedWorkflow.nodes?.filter(n => 
+        n.type === 'n8n-nodes-base.nocoDb' || 
+        n.type?.toLowerCase().includes('nocodb') ||
+        n.name?.toLowerCase().includes('nocodb')
+      ) || [];
+      
+      if (nocoDbNodesAfterUpdate.length > 0) {
+        const nodesWithoutCreds = nocoDbNodesAfterUpdate.filter(n => !n.credentials?.nocoDbApiToken);
+        if (nodesWithoutCreds.length > 0) {
+          logger.error('❌ [deploymentUtils] Credentials NocoDB supprimés par n8n après mise à jour', {
+            workflowId,
+            nodesWithoutCreds: nodesWithoutCreds.map(n => n.name)
+          });
+          
+          // ⚠️ CRITIQUE: Réinjecter les credentials manquants
+          const nocoDbCredentialId = injectedWorkflow.nodes
+            .find(n => n.type === 'n8n-nodes-base.nocoDb' && n.credentials?.nocoDbApiToken?.id)
+            ?.credentials?.nocoDbApiToken?.id;
+          
+          if (nocoDbCredentialId) {
+            logger.warn('⚠️ [deploymentUtils] Réinjection des credentials NocoDB manquants');
+            nodesWithoutCreds.forEach(node => {
+              if (!node.credentials) {
+                node.credentials = {};
+              }
+              node.credentials.nocoDbApiToken = {
+                id: nocoDbCredentialId,
+                name: 'NocoDB Token account'
+              };
+            });
+            
+            // Mettre à jour à nouveau avec les credentials réinjectés
+            const retryPayload = {
+              name: updatedWorkflow.name,
+              nodes: updatedWorkflow.nodes,
+              connections: updatedWorkflow.connections,
+              settings: updatedWorkflow.settings || {}
+            };
+            
+            const retryResponse = await fetch(`${n8nUrl}/api/v1/workflows/${workflowId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-N8N-API-KEY': n8nApiKey
+              },
+              body: JSON.stringify(retryPayload)
+            });
+            
+            if (retryResponse.ok) {
+              const retryResult = await retryResponse.json();
+              logger.info('✅ [deploymentUtils] Credentials NocoDB réinjectés avec succès');
+              return retryResult;
+            }
+          }
+        } else {
+          logger.info('✅ [deploymentUtils] Tous les nœuds NocoDB ont leurs credentials après mise à jour');
+        }
+      }
+      
       return updatedWorkflow;
     } else {
       const errorText = await updateResponse.text();
@@ -622,6 +932,86 @@ async function saveWorkflowCredentials(userWorkflowId, injectionResult, userEmai
   }
 }
 
+/**
+ * Supprime les credentials spécifiques au workflow dans n8n
+ * Note: Les credentials OAuth partagés (Google, OpenRouter, etc.) ne sont PAS supprimés
+ */
+async function deleteWorkflowCredentialsInN8n(userWorkflowId) {
+  try {
+    // Récupérer les credentials associés au workflow
+    const workflowCredentials = await db.getWorkflowCredentials(userWorkflowId);
+    
+    if (!workflowCredentials || workflowCredentials.length === 0) {
+      logger.debug('Aucun credential à supprimer pour ce workflow', { userWorkflowId });
+      return;
+    }
+    
+    const n8nUrl = config.n8n.url;
+    const n8nApiKey = config.n8n.apiKey;
+    
+    logger.info('Suppression des credentials du workflow dans n8n', {
+      userWorkflowId,
+      credentialsCount: workflowCredentials.length
+    });
+    
+    // Supprimer chaque credential dans n8n (sauf OAuth partagés)
+    for (const cred of workflowCredentials) {
+      // Ne pas supprimer les credentials OAuth partagés (Google, etc.)
+      // Ces credentials sont partagés entre plusieurs workflows
+      const isOAuthCredential = cred.credential_type?.toLowerCase().includes('oauth') || 
+                                cred.credential_type?.toLowerCase().includes('google') ||
+                                cred.credential_type?.toLowerCase().includes('gmail') ||
+                                cred.credential_type?.toLowerCase().includes('openrouter');
+      
+      if (isOAuthCredential) {
+        logger.debug('Credential OAuth partagé non supprimé', {
+          credentialId: cred.credential_id,
+          type: cred.credential_type
+        });
+        continue;
+      }
+      
+      try {
+        const deleteResponse = await fetch(`${n8nUrl}/api/v1/credentials/${cred.credential_id}`, {
+          method: 'DELETE',
+          headers: {
+            'X-N8N-API-KEY': n8nApiKey,
+          },
+        });
+        
+        if (deleteResponse.ok) {
+          logger.info('Credential supprimé de n8n', {
+            credentialId: cred.credential_id,
+            credentialName: cred.credential_name
+          });
+        } else {
+          const errorText = await deleteResponse.text();
+          logger.warn('Erreur suppression credential dans n8n', {
+            credentialId: cred.credential_id,
+            error: errorText
+          });
+        }
+      } catch (error) {
+        logger.warn('Erreur lors de la suppression du credential', {
+          credentialId: cred.credential_id,
+          error: error.message
+        });
+      }
+    }
+    
+    // Supprimer les credentials de la table workflow_credentials
+    await db.query('DELETE FROM workflow_credentials WHERE user_workflow_id = $1', [userWorkflowId]);
+    logger.info('Credentials supprimés de la base de données', { userWorkflowId });
+    
+  } catch (error) {
+    logger.error('Erreur suppression credentials du workflow', {
+      userWorkflowId,
+      error: error.message
+    });
+    // Ne pas bloquer la suppression du workflow si la suppression des credentials échoue
+  }
+}
+
 module.exports = {
   cleanSettings,
   verifyNoPlaceholders,
@@ -631,6 +1021,7 @@ module.exports = {
   activateWorkflow,
   cleanupExistingWorkflows,
   saveWorkflowCredentials,
+  deleteWorkflowCredentialsInN8n,
   waitForCondition,
   checkWorkflowExists
 };

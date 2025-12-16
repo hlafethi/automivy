@@ -218,6 +218,42 @@ class EnhancedAIService {
     }
   }
 
+  // Récupérer tous les nœuds disponibles depuis n8n
+  async getAllNodes(): Promise<{
+    nodes: Record<string, any[]>;
+    totalCount: number;
+    allTypes: string[];
+    categories: string[];
+    source: string;
+  }> {
+    try {
+      console.log('📦 [EnhancedAI] Récupération de tous les nœuds n8n...');
+      
+      // Essayer d'abord l'API n8n directe
+      try {
+        const n8nResponse = await apiClient.request('/n8n/nodes');
+        if (n8nResponse.success && n8nResponse.data) {
+          console.log('✅ [EnhancedAI] Nœuds récupérés depuis n8n API');
+          return n8nResponse.data;
+        }
+      } catch (n8nError) {
+        console.warn('⚠️ [EnhancedAI] Impossible de récupérer depuis n8n API, utilisation du registre local');
+      }
+      
+      // Fallback: utiliser le registre local
+      const registryResponse = await apiClient.request(`${this.baseUrl}/nodes-registry`);
+      if (registryResponse.success && registryResponse.data) {
+        console.log('✅ [EnhancedAI] Nœuds récupérés depuis le registre local');
+        return registryResponse.data;
+      }
+      
+      throw new Error('Aucune source de nœuds disponible');
+    } catch (error) {
+      console.error('❌ [EnhancedAI] Erreur lors de la récupération des nœuds:', error);
+      throw error;
+    }
+  }
+
   // Analyser la description et suggérer des améliorations
   async analyzeDescription(description: string): Promise<{
     suggestions: string[];

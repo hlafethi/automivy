@@ -359,6 +359,65 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
       createdCredentials.postgres = postgresCred;
       logger.info('Credential PostgreSQL créé', { id: postgresCred.id });
     }
+    
+    if (credConfig.type === 'googleDriveOAuth2') {
+      // Pour Google Drive OAuth2, on vérifie si l'utilisateur a déjà un credential OAuth stocké
+      const db = require('../database');
+      logger.debug('Recherche credential Google Drive OAuth2', { userId });
+      
+      // Vérifier si l'utilisateur a un credential OAuth dans la base de données
+      const oauthCreds = await db.getOAuthCredentials(userId, 'google_drive');
+      logger.debug('Credentials OAuth Google Drive trouvés dans la BDD', { count: oauthCreds?.length || 0 });
+      
+      if (oauthCreds && oauthCreds.length > 0) {
+        // Prendre le credential le plus récent
+        const latestCred = oauthCreds[0];
+        
+        if (latestCred.n8n_credential_id) {
+          // Utiliser le credential OAuth existant
+          createdCredentials.googleDriveOAuth2 = {
+            id: latestCred.n8n_credential_id,
+            name: latestCred.email || 'Google Drive OAuth2'
+          };
+          logger.info('Credential Google Drive OAuth2 existant trouvé et utilisé', { 
+            id: createdCredentials.googleDriveOAuth2.id,
+            name: createdCredentials.googleDriveOAuth2.name 
+          });
+        } else {
+          logger.error('Credential OAuth Google Drive trouvé mais n8n_credential_id manquant', { credId: latestCred.id });
+        }
+      } else if (userCredentials.googleDriveOAuth2 === 'connected') {
+        // Si l'utilisateur vient de se connecter, attendre un peu et réessayer
+        logger.debug('Utilisateur vient de se connecter Google Drive, attente');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const retryOauthCreds = await db.getOAuthCredentials(userId, 'google_drive');
+        logger.debug('Nouvelle tentative - Credentials OAuth Google Drive trouvés', { count: retryOauthCreds?.length || 0 });
+        if (retryOauthCreds && retryOauthCreds.length > 0 && retryOauthCreds[0].n8n_credential_id) {
+          const latestCred = retryOauthCreds[0];
+          createdCredentials.googleDriveOAuth2 = {
+            id: latestCred.n8n_credential_id,
+            name: latestCred.email || 'Google Drive OAuth2'
+          };
+          logger.info('Credential Google Drive OAuth2 récupéré après connexion', { 
+            id: createdCredentials.googleDriveOAuth2.id 
+          });
+        } else {
+          logger.error('Aucun credential Google Drive trouvé après connexion');
+        }
+      } else if (userCredentials.googleDriveOAuth2CredentialId) {
+        // Si l'utilisateur a fourni un credential ID directement
+        createdCredentials.googleDriveOAuth2 = {
+          id: userCredentials.googleDriveOAuth2CredentialId,
+          name: userCredentials.googleDriveOAuth2CredentialName || 'Google Drive OAuth2'
+        };
+        logger.info('Credential Google Drive OAuth2 fourni directement', { 
+          id: createdCredentials.googleDriveOAuth2.id 
+        });
+      } else {
+        logger.error('CRITIQUE: Aucun credential Google Drive OAuth2 trouvé pour l\'utilisateur', { userId });
+      }
+    }
   }
   
   // Remplacer les placeholders dans la string AVANT de parser (comme dans injectParams)
@@ -465,6 +524,30 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
     logger.debug('Placeholders Google Sheets remplacés', { 
       googleSheetsId: createdCredentials.googleSheetsOAuth2.id 
     });
+  
+  if (createdCredentials.googleDriveOAuth2) {
+    // Remplacer les placeholders Google Drive
+    workflowString = workflowString.replace(
+      /"USER_GOOGLE_DRIVE_CREDENTIAL_ID"/g,
+      `"${createdCredentials.googleDriveOAuth2.id}"`
+    );
+    workflowString = workflowString.replace(
+      /"USER_GOOGLE_DRIVE_CREDENTIAL_NAME"/g,
+      `"${createdCredentials.googleDriveOAuth2.name || 'Google Drive OAuth2'}"`
+    );
+    logger.debug('Placeholders Google Drive remplacés', { 
+      googleDriveId: createdCredentials.googleDriveOAuth2.id 
+    });
+    
+    // Remplacer le placeholder du dossier Google Drive si fourni
+    if (userCredentials.googleDriveFolderId) {
+      workflowString = workflowString.replace(
+        /"USER_GOOGLE_DRIVE_FOLDER_ID"/g,
+        `"${userCredentials.googleDriveFolderId}"`
+      );
+      logger.debug('Folder ID Google Drive remplacé', { folderId: userCredentials.googleDriveFolderId });
+    }
+  }
     
     // ⚠️ DEBUG: Vérifier que les placeholders sont bien remplacés
     const hasGooglePlaceholder = workflowString.includes('USER_GOOGLE_SHEETS_CREDENTIAL_ID') || 
@@ -820,6 +903,42 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
         } else {
           logger.error('Nœud IMAP sans credential IMAP', { nodeName: node.name, nodeType: node.type });
         }
+      } else if (node.type === 'n8n-nodes-base.googleDrive') {
+        // Nœud Google Drive - assigner automatiquement le credential Google Drive OAuth2 utilisateur
+        const templateCredId = node.credentials?.googleDriveOAuth2?.id || 'aucun';
+        const templateCredName = node.credentials?.googleDriveOAuth2?.name || 'aucun';
+        const hasPlaceholder = templateCredId === 'USER_GOOGLE_DRIVE_CREDENTIAL_ID' || 
+                               templateCredId?.includes('USER_GOOGLE_DRIVE');
+        
+        logger.debug('Nœud Google Drive détecté', { 
+          nodeName: node.name,
+          templateCredId,
+          templateCredName,
+          hasPlaceholder,
+          hasGoogleDriveCred: !!createdCredentials.googleDriveOAuth2
+        });
+        
+        if (createdCredentials.googleDriveOAuth2) {
+          cleanedNode.credentials = {
+            ...cleanedNode.credentials,
+            googleDriveOAuth2: {
+              id: createdCredentials.googleDriveOAuth2.id,
+              name: createdCredentials.googleDriveOAuth2.name
+            }
+          };
+          logger.info('Credential Google Drive OAuth2 assigné automatiquement', { 
+            nodeName: node.name,
+            nodeType: node.type,
+            oldCredId: templateCredId,
+            newCredId: createdCredentials.googleDriveOAuth2.id,
+            newCredName: createdCredentials.googleDriveOAuth2.name
+          });
+        } else {
+          logger.error('Nœud Google Drive sans credential Google Drive OAuth2', { 
+            nodeName: node.name,
+            nodeType: node.type 
+          });
+        }
       } else if (node.type === 'n8n-nodes-base.googleSheets') {
         // Nœud Google Sheets - assigner automatiquement le credential Google Sheets OAuth2 utilisateur
         // ⚠️ IMPORTANT: n8n utilise googleSheetsOAuth2Api (avec "Api"), pas googleSheetsOAuth2
@@ -1115,6 +1234,17 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
             }
           };
           logger.info('Credential Google Sheets OAuth2 assigné automatiquement (nœud sans credential)', { nodeName: node.name });
+        }
+        
+        // Nœuds Google Drive
+        if (node.type === 'n8n-nodes-base.googleDrive' && createdCredentials.googleDriveOAuth2) {
+          cleanedNode.credentials = {
+            googleDriveOAuth2: {
+              id: createdCredentials.googleDriveOAuth2.id,
+              name: createdCredentials.googleDriveOAuth2.name
+            }
+          };
+          logger.info('Credential Google Drive OAuth2 assigné automatiquement (nœud sans credential)', { nodeName: node.name });
         }
         
         // Nœuds Notion

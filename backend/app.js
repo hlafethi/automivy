@@ -4,6 +4,34 @@ const fetch = require('node-fetch');
 const config = require('./config');
 const logger = require('./utils/logger');
 
+// Validation des mappings de templates au démarrage
+try {
+  const { validateMappings } = require('./config/templateMappings');
+  const validation = validateMappings();
+  
+  if (!validation.valid) {
+    console.error('❌ [Template Mappings] Erreurs de validation:');
+    validation.errors.forEach(error => {
+      console.error(`   - ${error}`);
+    });
+    throw new Error('Configuration des templates invalide. Vérifiez backend/config/templateMappings.js');
+  }
+  
+  if (validation.warnings.length > 0) {
+    console.warn('⚠️ [Template Mappings] Avertissements:');
+    validation.warnings.forEach(warning => {
+      console.warn(`   - ${warning}`);
+    });
+  }
+  
+  console.log('✅ [Template Mappings] Configuration validée avec succès');
+} catch (err) {
+  if (err.message.includes('Configuration des templates invalide')) {
+    throw err; // Arrêter le serveur si erreurs critiques
+  }
+  console.warn('⚠️ [Template Mappings] Impossible de valider la configuration:', err.message);
+}
+
 // Import des routes
 const authRoutes = require('./routes/auth');
 const templateRoutes = require('./routes/templates');
@@ -30,6 +58,11 @@ const userProfileRoutes = require('./routes/userProfile');
 const notificationRoutes = require('./routes/notifications');
 const enhancedAIRoutes = require('./routes/enhancedAI');
 const ollamaRoutes = require('./routes/ollama');
+const videoProductionRoutes = require('./routes/videoProduction');
+const ffmpegRoutes = require('./routes/ffmpeg');
+const nextcloudRoutes = require('./routes/nextcloud');
+const mcpChatRoutes = require('./routes/mcpChat');
+const linkedinRoutes = require('./routes/linkedin');
 // const databaseMonitoringService = require('./services/databaseMonitoringService');
 const { logApiRequest } = require('./middleware/logging');
 
@@ -99,6 +132,11 @@ app.use('/api/user-profile', logApiRequest, userProfileRoutes);
 app.use('/api/notifications', logApiRequest, notificationRoutes);
 app.use('/api/enhanced-ai', logApiRequest, enhancedAIRoutes);
 app.use('/api/ollama', logApiRequest, ollamaRoutes);
+app.use('/api/video-production', logApiRequest, videoProductionRoutes);
+app.use('/api/ffmpeg', logApiRequest, ffmpegRoutes);
+app.use('/api/nextcloud', logApiRequest, nextcloudRoutes);
+app.use('/api/mcp-chat', logApiRequest, mcpChatRoutes);
+app.use('/api/linkedin', logApiRequest, linkedinRoutes);
 
 // Démarrer le monitoring de base de données
 // databaseMonitoringService.startMonitoring();

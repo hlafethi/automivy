@@ -1,36 +1,18 @@
 // Système de routing vers les injecteurs spécifiques par template
 // Si aucun injecteur spécifique n'est trouvé, utilise l'injecteur générique
+//
+// ⚠️ IMPORTANT: Les mappings sont maintenant centralisés dans backend/config/templateMappings.js
+// Pour ajouter un nouveau template, modifiez uniquement ce fichier de configuration.
 
 const genericInjector = require('../credentialInjector');
 const logger = require('../../utils/logger');
+const { buildInjectorMappings, findTemplateConfig } = require('../../config/templateMappings');
 
-// Mapping des templates vers leurs injecteurs spécifiques
-const TEMPLATE_INJECTORS = {
-  // GMAIL Tri Automatique Boite Email
-  '5114f297-e56e-4fec-be2b-1afbb5ea8619': require('./gmailTriInjector'),
-  'GMAIL Tri Automatique Boite Email': require('./gmailTriInjector'),
-  
-  // Template fonctionnel résume email
-  '6ff57a3c-c9a0-40ec-88c0-7e25ef031cb0': require('./resumeEmailInjector'),
-  'Template fonctionnel résume email': require('./resumeEmailInjector'),
-  
-  // PDF Analysis Complete
-  '132d04c8-e36a-4dbd-abac-21fa8280650e': require('./pdfAnalysisInjector'),
-  'PDF Analysis Complete': require('./pdfAnalysisInjector'),
-  
-  // CV Analysis and Candidate Evaluation
-  'aa3ba641-9bfb-429c-8b42-506d4f33ff40': require('./cvAnalysisInjector'),
-  'CV Analysis and Candidate Evaluation': require('./cvAnalysisInjector'),
-  'cv-analysis-evaluation': require('./cvAnalysisInjector'), // Alias pour le webhook path
-  
-  // IMAP Tri Automatique BAL
-  'c1bd6bd6-8a2b-4beb-89ee-1cd734a907a2': require('./imapTriInjector'),
-  'IMAP Tri Automatique BAL': require('./imapTriInjector'),
-  
-  // Microsoft Tri Automatique BAL (version Microsoft du template IMAP Tri)
-  'a3b5ba35-aeea-48f4-83d7-34e964a6a8b6': require('./microsoftTriInjector'),
-  'Microsoft Tri Automatique BAL': require('./microsoftTriInjector'),
-};
+// Construire les mappings depuis la configuration centralisée
+const TEMPLATE_INJECTORS = buildInjectorMappings();
+
+// Alias supplémentaire pour le webhook path CV Analysis
+TEMPLATE_INJECTORS['cv-analysis-evaluation'] = require('./cvAnalysisInjector');
 
 /**
  * Route vers l'injecteur approprié selon le template
@@ -55,10 +37,34 @@ async function injectUserCredentials(workflow, userCredentials, userId, template
     logger.debug('Injecteur spécifique trouvé par ID', { templateId });
   }
   
-  // Si pas trouvé par ID, chercher par nom (fallback)
+  // Si pas trouvé par ID, chercher par nom exact (fallback)
   if (!specificInjector && templateName && TEMPLATE_INJECTORS[templateName]) {
     specificInjector = TEMPLATE_INJECTORS[templateName];
-    logger.debug('Injecteur spécifique trouvé par nom', { templateName });
+    logger.debug('Injecteur spécifique trouvé par nom exact', { templateName });
+  }
+  
+  // Si pas trouvé par nom exact, chercher par pattern via la configuration centralisée
+  if (!specificInjector && templateName) {
+    const config = findTemplateConfig(templateId, templateName);
+    if (config) {
+      const path = require('path');
+      const injectorsDir = __dirname;
+      const injectorFileName = config.injector.replace('./', '');
+      const injectorPath = path.join(injectorsDir, injectorFileName);
+      try {
+        specificInjector = require(injectorPath);
+        logger.debug('Injecteur trouvé par pattern', { 
+          templateName,
+          injector: config.injector
+        });
+      } catch (err) {
+        logger.warn('Erreur lors du chargement de l\'injecteur par pattern', {
+          templateName,
+          injector: config.injector,
+          error: err.message
+        });
+      }
+    }
   }
   
   // Si un injecteur spécifique est trouvé, l'utiliser

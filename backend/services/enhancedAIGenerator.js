@@ -3,6 +3,11 @@ const ApplicationContextService = require('./applicationContextService');
 const N8nNodeValidator = require('./n8nNodeValidator');
 const aiService = require('./aiService');
 
+// Nouveau générateur parfait
+const PerfectAIGenerator = require('./perfectAIGenerator');
+const PerfectWorkflowValidator = require('./perfectWorkflowValidator');
+const PerfectN8nNodesRegistry = require('./perfectN8nNodesRegistry');
+
 class EnhancedAIGenerator {
   
   // Générer un workflow intelligent avec contexte complet
@@ -303,6 +308,101 @@ Return ONLY valid JSON with complete workflow structure.`;
     // Ajuster les paramètres selon le contexte utilisateur
     // Par exemple, ajuster les intervalles de temps, les formats, etc.
     return parameters;
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NOUVELLE MÉTHODE: Génération PARFAITE avec validation exhaustive
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  /**
+   * Génère un workflow PARFAIT avec le nouveau générateur
+   * Cette méthode garantit :
+   * - AUCUN nœud oublié
+   * - TOUS les nœuds sont compatibles n8n
+   * - TOUTES les connexions sont valides
+   * - TOUS les paramètres requis sont présents
+   * 
+   * @param {string} description - Description du workflow souhaité
+   * @param {string} model - Modèle IA à utiliser (défaut: openai/gpt-4o-mini)
+   * @returns {Object} Workflow n8n valide et fonctionnel
+   */
+  static async generatePerfectWorkflow(description, model = 'openai/gpt-4o-mini') {
+    console.log('🚀 [EnhancedAI] Utilisation du générateur PARFAIT...');
+    
+    try {
+      // 1. Utiliser le PerfectAIGenerator
+      const workflow = await PerfectAIGenerator.generateWorkflow(description, model);
+      
+      // 2. Valider une dernière fois avec le validateur parfait
+      const validationResult = PerfectWorkflowValidator.validateAndFix(workflow);
+      
+      if (!validationResult.valid) {
+        console.log('⚠️ [EnhancedAI] Workflow généré mais avec des avertissements');
+        console.log('   Erreurs restantes:', validationResult.report.errors);
+      }
+      
+      // 3. Log des statistiques
+      console.log('✅ [EnhancedAI] Workflow parfait généré:', {
+        name: validationResult.workflow.name,
+        nodes: validationResult.workflow.nodes.length,
+        connections: Object.keys(validationResult.workflow.connections).length,
+        valid: validationResult.valid,
+        fixes: validationResult.report.fixes?.length || 0
+      });
+      
+      return validationResult.workflow;
+      
+    } catch (error) {
+      console.error('❌ [EnhancedAI] Erreur génération parfaite:', error.message);
+      
+      // Fallback sur l'ancienne méthode
+      console.log('🔄 [EnhancedAI] Fallback sur la méthode standard...');
+      return this.generateIntelligentWorkflow(description, 'openrouter', model);
+    }
+  }
+  
+  /**
+   * Valide un workflow existant avec le validateur parfait
+   * @param {Object} workflow - Workflow à valider
+   * @returns {Object} Rapport de validation détaillé
+   */
+  static validateWorkflowPerfectly(workflow) {
+    return PerfectWorkflowValidator.validate(workflow);
+  }
+  
+  /**
+   * Corrige automatiquement un workflow existant
+   * @param {Object} workflow - Workflow à corriger
+   * @returns {Object} Workflow corrigé + rapport
+   */
+  static autoFixWorkflow(workflow) {
+    return PerfectWorkflowValidator.autoFix(workflow);
+  }
+  
+  /**
+   * Obtient la liste de tous les nœuds n8n valides
+   * @returns {string[]} Liste des types de nœuds
+   */
+  static getAllValidNodeTypes() {
+    return PerfectN8nNodesRegistry.getAllValidTypes();
+  }
+  
+  /**
+   * Vérifie si un type de nœud est valide
+   * @param {string} nodeType - Type à vérifier
+   * @returns {boolean}
+   */
+  static isValidNodeType(nodeType) {
+    return PerfectN8nNodesRegistry.nodeExists(nodeType);
+  }
+  
+  /**
+   * Obtient les informations d'un nœud
+   * @param {string} nodeType - Type du nœud
+   * @returns {Object|null} Définition du nœud
+   */
+  static getNodeInfo(nodeType) {
+    return PerfectN8nNodesRegistry.getNode(nodeType);
   }
 }
 

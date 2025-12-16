@@ -84,7 +84,7 @@ export function EditAutomationModal({ isOpen, onClose, onSuccess, workflow }: Ed
           if (webhookPath) {
             const webhookUrl = `https://n8n.globalsaas.eu/webhook/${webhookPath}`;
             console.log('🔧 [EditAutomationModal] Fallback: utilisation directe du webhook path:', webhookUrl);
-            await userWorkflowService.scheduleDirectWebhook(webhookUrl, schedule, userId);
+            await userWorkflowService.scheduleDirectWebhook(webhookUrl, schedule, userId, n8nWorkflowId);
             console.log('✅ [EditAutomationModal] Planification directe réussie (fallback)');
           } else {
             throw error;
@@ -96,7 +96,9 @@ export function EditAutomationModal({ isOpen, onClose, onSuccess, workflow }: Ed
         if (webhookPath) {
           const webhookUrl = `https://n8n.globalsaas.eu/webhook/${webhookPath}`;
           console.log('🔧 [EditAutomationModal] Utilisation directe du webhook path:', webhookUrl);
-          await userWorkflowService.scheduleDirectWebhook(webhookUrl, schedule, userId);
+          // Extraire le n8nWorkflowId du webhookPath si possible
+          const extractedN8nWorkflowId = webhookPath.replace(/^workflow-/, '');
+          await userWorkflowService.scheduleDirectWebhook(webhookUrl, schedule, userId, extractedN8nWorkflowId || null);
           console.log('✅ [EditAutomationModal] Planification directe réussie');
         } else {
           console.warn('⚠️ [EditAutomationModal] Aucun webhook path disponible, planification impossible');

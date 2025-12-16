@@ -50,10 +50,10 @@ router.post('/analyze', authenticateToken, async (req, res) => {
       return sendError(res, 'Template JSON manquant', null, { templateId: template.id }, 500);
     }
     
-    // Analyser les credentials requis (passer le templateId pour exclure IMAP si nécessaire)
+    // Analyser les credentials requis (passer le templateId ET templateName pour la détection)
     let requiredCredentials;
     try {
-      requiredCredentials = analyzeWorkflowCredentials(workflowJson, template.id);
+      requiredCredentials = analyzeWorkflowCredentials(workflowJson, template.id, template.name);
       logger.info('Credentials analysés', { count: requiredCredentials.length });
     } catch (analyzeErr) {
       logger.error('Erreur analyse des credentials', { error: analyzeErr.message, templateId: template.id });
@@ -182,6 +182,35 @@ router.get('/workflows', authenticateToken, async (req, res) => {
       userId: req.user?.id 
     });
     return sendError(res, 'Erreur lors de la récupération des workflows', error.message, {
+      userId: req.user?.id
+    });
+  }
+});
+
+/**
+ * Obtenir les informations de routing pour un template (débogage)
+ * GET /api/smart-deploy/routing-info?templateId=xxx&templateName=xxx
+ */
+router.get('/routing-info', authenticateToken, async (req, res) => {
+  try {
+    const { templateId, templateName } = req.query;
+    
+    if (!templateId && !templateName) {
+      return sendValidationError(res, 'templateId ou templateName requis');
+    }
+    
+    const { getTemplateRoutingInfo } = require('../services/templateHelper');
+    const routingInfo = getTemplateRoutingInfo(templateId, templateName);
+    
+    return sendSuccess(res, routingInfo);
+    
+  } catch (error) {
+    logger.error('Erreur récupération routing info', { 
+      error: error.message, 
+      stack: error.stack,
+      userId: req.user?.id 
+    });
+    return sendError(res, 'Erreur lors de la récupération des informations de routing', error.message, {
       userId: req.user?.id
     });
   }
