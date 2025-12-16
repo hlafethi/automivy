@@ -2,9 +2,11 @@
 
 ## 📋 Architecture
 
-- **Frontend** : Conteneur `automivy-frontend` sur le port **3005** (fichiers statiques uniquement)
-- **Backend** : Conteneur `automivy-backend` sur le port **3004** (API)
-- **Nginx Proxy Manager** : Gère le reverse proxy et SSL
+- **Frontend** : Conteneur `automivy-frontend` sur le port **80** (interne, accessible via réseau Docker)
+- **Backend** : Conteneur `automivy-backend` sur le port **3004** (interne, accessible via réseau Docker)
+- **Nginx Proxy Manager** : Gère le reverse proxy et SSL, se connecte aux conteneurs via le réseau Docker
+
+⚠️ **Important** : Les conteneurs n'exposent pas de ports sur l'hôte. Nginx Proxy Manager se connecte directement via le réseau Docker en utilisant les noms de conteneurs.
 
 ## 🚀 Configuration dans Nginx Proxy Manager
 
@@ -15,8 +17,8 @@
 2. **Details Tab** :
    - **Domain Names** : `automivy.com` (ou votre domaine)
    - **Scheme** : `http`
-   - **Forward Hostname / IP** : `automivy-frontend` (nom du conteneur) OU `147.93.58.155` (IP du VPS)
-   - **Forward Port** : `3005`
+   - **Forward Hostname / IP** : `automivy-frontend` (nom du conteneur - ⚠️ utilisez le nom du conteneur, pas l'IP)
+   - **Forward Port** : `80` (port interne du conteneur Nginx)
    - **Cache Assets** : ✅ Activé (optionnel)
    - **Block Common Exploits** : ✅ Activé
    - **Websockets Support** : ✅ Activé (pour les futures fonctionnalités)
@@ -105,8 +107,9 @@ CORS_ORIGIN=https://automivy.com
 
 ### Le frontend ne charge pas
 
-- Vérifiez que le conteneur `automivy-frontend` est en état `running`
-- Vérifiez que le port 3005 est accessible depuis Nginx Proxy Manager
+- Vérifiez que le conteneur `automivy-frontend` est en état `running` ou `healthy`
+- Vérifiez que Nginx Proxy Manager et `automivy-frontend` sont sur le même réseau Docker
+- Vérifiez que vous utilisez le nom du conteneur (`automivy-frontend`) et non l'IP dans Nginx Proxy Manager
 - Vérifiez les logs du conteneur : `docker logs automivy-frontend`
 
 ### Le backend ne répond pas
