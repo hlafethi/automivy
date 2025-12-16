@@ -70,20 +70,22 @@ services:
       retries: 3
       start_period: 40s
 
-  # Frontend Nginx
+  # Frontend Nginx (fichiers statiques uniquement - Nginx Proxy Manager gère le reverse proxy)
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: automivy-frontend
     restart: unless-stopped
-    # Pas besoin de monter nginx.conf, il est intégré dans l'image Docker
+    # Exposer le port 80 pour Nginx Proxy Manager
+    ports:
+      - "3005:80"
     networks:
       - default
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
