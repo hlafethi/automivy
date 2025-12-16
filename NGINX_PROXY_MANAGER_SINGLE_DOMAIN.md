@@ -50,6 +50,20 @@ location /api {
     proxy_read_timeout 60s;
 }
 
+# Proxy vers le backend pour les fichiers uploads (images, vidéos)
+location /uploads {
+    proxy_pass http://automivy-backend:3004;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    
+    # Cache pour les images/vidéos
+    expires 1h;
+    add_header Cache-Control "public, max-age=3600";
+}
+
 # Frontend - SPA routing (toutes les autres routes vers index.html)
 location / {
     proxy_pass http://automivy-frontend:80;
