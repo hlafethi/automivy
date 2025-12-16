@@ -29,7 +29,9 @@ Vous n'avez qu'un seul host pour le nom de domaine `automivy.com`. Il faut donc 
 
 4. **Advanced Tab** (⚠️ CRITIQUE - Configuration complète) :
 
-```nginx
+⚠️ **IMPORTANT** : Copiez SEULEMENT le contenu ci-dessous, SANS les triple backticks (```) au début et à la fin !
+
+```
 # Proxy vers le backend pour les routes /api
 location /api {
     proxy_pass http://automivy-backend:3004;
@@ -64,6 +66,8 @@ location / {
     proxy_intercept_errors off;
 }
 ```
+
+**Configuration à copier (sans les backticks)** :
 
 5. Cliquez sur **Save**
 
@@ -112,7 +116,9 @@ BACKEND_URL=https://automivy.com
 
 Si la configuration ci-dessus ne fonctionne pas, vous pouvez essayer cette version alternative dans l'onglet Advanced :
 
-```nginx
+⚠️ **IMPORTANT** : Copiez SEULEMENT le contenu ci-dessous, SANS les triple backticks (```) !
+
+```
 # Backend API - doit être en premier
 location /api/ {
     proxy_pass http://automivy-backend:3004/;
@@ -141,6 +147,10 @@ location / {
 ```
 
 Note : Dans cette version, `proxy_pass http://automivy-backend:3004/;` a un `/` à la fin, ce qui supprime le préfixe `/api` de l'URL avant de la transmettre au backend.
+
+## 🔧 Fichier de Configuration Propre
+
+Un fichier `NGINX_PROXY_MANAGER_CONFIG_CLEAN.txt` est disponible dans le dépôt avec la configuration sans les backticks Markdown. Vous pouvez l'ouvrir et copier son contenu directement.
 
 ---
 
